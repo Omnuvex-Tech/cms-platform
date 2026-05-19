@@ -1,0 +1,49 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.title {
+    font-family: 'Poppins';
+    font-weight: 700;
+    font-size: 32px;
+    color: rgba(20, 20, 20, 1);
+}
+
+.subtitle {
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 15px;
+    color: rgba(100, 100, 100, 1);
+    margin-top: -24px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 24px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.cardValue {
+    font-family: 'Poppins';
+    font-weight: 700;
+    font-size: 36px;
+    color: rgba(1, 72, 194, 1);
+}
+
+.cardLabel {
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 14px;
+    color: rgba(100, 100, 100, 1);
+    margin-top: 4px;
+}

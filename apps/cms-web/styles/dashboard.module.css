@@ -1,0 +1,12 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.main {
+    flex: 1;
+    margin-left: 260px;
+    padding: 40px;
+    min-height: 100vh;
+}
