@@ -1,14 +1,44 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "@/styles/login.module.css";
 
 export default function LoginPage() {
+    
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+          console.log("API URL:", process.env.NEXT_PUBLIC_API_URL); // ← bura
+        setError("");
+        setLoading(true);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.message || "Invalid credentials");
+                return;
+            }
+
+            document.cookie = `access_token=${data.access_token}; path=/`;
+            router.push("/");
+        } catch {
+            setError("Serverlə əlaqə qurmaq mümkün olmadı");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -40,8 +70,9 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
-                    <button type="submit" className={styles.submitBtn}>
-                        Daxil ol
+                    {error && <p className={styles.error}>{error}</p>}
+                    <button type="submit" className={styles.submitBtn} disabled={loading}>
+                        {loading ? "Yüklənir..." : "Daxil ol"}
                     </button>
                 </form>
             </div>

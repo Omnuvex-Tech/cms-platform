@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URI")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_owners")
+}
+
+model Faq {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model TestimonialsSection {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  testimonials Testimonial[]
+
+  @@map("testimonials_sections")
+}
+
+model Testimonial {
+  id         Int                 @id @default(autoincrement())
+  company    String
+  quote      String
+  name       String
+  role       String
+  image      String
+   altText    String              @default("") 
+  order      Int                 @default(0)
+  sectionId  Int
+  section    TestimonialsSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@map("testimonials")
+}
+
+
+enum BulletType {
+  BULLET
+  NUMBERED
+  DASH
+}
+
+model VacancyCategory {
+  id        Int       @id @default(autoincrement())
+  name      String
+  order     Int       @default(0)
+  vacancies Vacancy[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+model Vacancy {
+  id                 Int             @id @default(autoincrement())
+  title              String
+  slug               String          @unique
+  tags               String[]
+  isNew              Boolean         @default(false)
+  newLabel           String?
+  isVisible          Boolean         @default(true)
+  order              Int             @default(0)
+  categoryId         Int
+  category           VacancyCategory @relation(fields: [categoryId], references: [id])
+  startDate          DateTime?
+  isStartDateVisible Boolean         @default(true)
+  closingDate        DateTime?
+  isDateVisible      Boolean         @default(true)
+  aboutRole          String?
+  skills             String[]
+  responsible        String[]
+  responsibleType    BulletType      @default(BULLET)
+  requirements       String[]
+  requirementsType   BulletType      @default(BULLET)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+model VacancyPageHeader {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VacancySettings {
+  id                  Int      @id @default(autoincrement())
+  backLabel           String   @default("Vakansiya")
+  applyTitle          String   @default("APPLY NOW")
+  aboutRoleLabel      String   @default("About the Role")
+  skillsLabel         String   @default("Skills")
+  responsibleLabel    String   @default("Responsible")
+  requirementsLabel   String   @default("Requirements")
+  email               String   @default("")
+  emailHref           String   @default("")
+  phone               String   @default("")
+  phoneHref           String   @default("")
+  location            String   @default("")
+  emailLabel          String   @default("Email Adres")
+  phoneLabel          String   @default("Phone")
+  locationLabel       String   @default("Location")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("vacancy_settings")
+}
+
+
+model Portfolio {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  tags        String[]
+  coverImage  String
+  sections    Json      @default("[]")
+  order       Int       @default(0)
+  isVisible   Boolean   @default(true)
+  isHomepage  Boolean   @default(false) 
+    coverImageAlt String @default("") 
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("portfolios")
+}
+
+
+model PartnerSection {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  linkText    String    @default("")
+  linkHref    String    @default("")
+  partners    Partner[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("partner_sections")
+}
+
+model Partner {
+  id          Int            @id @default(autoincrement())
+  image       String
+  altText     String         @default("")
+  name        String
+  order       Int            @default(0)
+  isVisible   Boolean   @default(true)
+  isHomepage  Boolean        @default(false)
+  sectionId   Int
+  section     PartnerSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("partners")
+}

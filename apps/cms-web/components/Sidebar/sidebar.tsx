@@ -18,6 +18,7 @@ import {
     Info,
     Phone,
     HelpCircle,
+    Handshake,
     ChevronDown,
     LogOut,
 } from "lucide-react";
@@ -55,13 +56,19 @@ const NAV_ITEMS = [
         ],
     },
     { label: "Service", href: "/service", icon: <Settings size={18} /> },
+      { label: "Partners", href: "/partners", icon: <Handshake size={18} /> },
     { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} /> },
     { label: "Blog", href: "/blog", icon: <FileText size={18} /> },
     { label: "Team", href: "/team", icon: <Users size={18} /> },
-    { label: "Vacancy", href: "/vacancy", icon: <Briefcase size={18} /> },
-    { label: "About", href: "/about", icon: <Info size={18} /> },
+{
+    label: "Vacancy",
+    icon: <Briefcase size={18} />,
+    children: [
+        { label: "Vakansiyalar", href: "/Vacancy" },
+        { label: "Settings", href: "/Vacancy/VacancySetting" },
+    ],
+},    { label: "About", href: "/about", icon: <Info size={18} /> },
     { label: "Contact", href: "/contact", icon: <Phone size={18} /> },
-    { label: "FAQ", href: "/faq", icon: <HelpCircle size={18} /> },
 ];
 
 export function Sidebar() {
