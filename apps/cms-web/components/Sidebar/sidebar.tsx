@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "@/styles/sidebar.module.css";
 
-
-
 import {
     LayoutDashboard,
     Home,
@@ -17,10 +15,11 @@ import {
     Briefcase,
     Info,
     Phone,
-    HelpCircle,
+    Menu,
     Handshake,
     ChevronDown,
     LogOut,
+    PanelsTopLeft,
 } from "lucide-react";
 
 
@@ -46,29 +45,45 @@ const NAV_ITEMS = [
         icon: <Home size={18} />,
         children: [
             { label: "Hero", href: "/home/hero" },
-            { label: "Projects", href: "/home/projects" },
-            { label: "Partners", href: "/home/partners" },
             { label: "Testimonials", href: "/home/testimonials" },
-            { label: "Team", href: "/home/team" },
-            { label: "Blog", href: "/home/blog" },
-            { label: "Contact", href: "/home/contact" },
-            { label: "FAQ", href: "/home/faq" },
+            { label: "Faq", href: "/home/faq" },
         ],
     },
+
     { label: "Service", href: "/service", icon: <Settings size={18} /> },
-      { label: "Partners", href: "/partners", icon: <Handshake size={18} /> },
+    { label: "Partners", href: "/partners", icon: <Handshake size={18} /> },
     { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} /> },
     { label: "Blog", href: "/blog", icon: <FileText size={18} /> },
     { label: "Team", href: "/team", icon: <Users size={18} /> },
-{
-    label: "Vacancy",
-    icon: <Briefcase size={18} />,
-    children: [
-        { label: "Vakansiyalar", href: "/Vacancy" },
-        { label: "Settings", href: "/Vacancy/VacancySetting" },
-    ],
-},    { label: "About", href: "/about", icon: <Info size={18} /> },
-    { label: "Contact", href: "/contact", icon: <Phone size={18} /> },
+    {
+        label: "Vacancy",
+        icon: <Briefcase size={18} />,
+        children: [
+            { label: "Vakansiyalar", href: "/Vacancy" },
+            { label: "Settings", href: "/Vacancy/VacancySetting" },
+        ],
+    },
+    { label: "About", href: "/about", icon: <Info size={18} /> },
+
+    {
+        label: "Contact",
+        icon: <Phone size={18} />,
+        children: [
+            { label: "Contact", href: "/contact" },
+            { label: "Contact Submissions", href: "/contact-submissions" },
+        ],
+    },
+
+    {
+        label: "Navbar",
+        href: "/navbar",
+        icon: <Menu size={18} />,
+    },
+    {
+        label: "Footer",
+        href: "/footer",
+        icon: <PanelsTopLeft size={18} />,
+    },
 ];
 
 export function Sidebar() {
@@ -85,12 +100,10 @@ export function Sidebar() {
 
     return (
         <aside className={styles.sidebar}>
-            {/* Logo */}
             <div className={styles.logoWrap}>
                 <img src="/images/logo-svg.svg" alt="Trenders" className={styles.logo} />
             </div>
 
-            {/* Nav */}
             <nav className={styles.nav}>
                 {NAV_ITEMS.map((item) => (
                     <div key={item.label}>
@@ -134,7 +147,6 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Logout */}
             <div className={styles.logoutWrap}>
                 <button className={styles.logoutBtn}>
                     <LogOut size={16} />

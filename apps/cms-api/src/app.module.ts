@@ -8,9 +8,17 @@ import { TestimonialsModule } from './modules/Home/Testimonials/testimonials.mod
 import { VacancyModule } from './modules/Vacancy/vacancy.module';
 import { PortfolioModule } from './modules/Portfolio/portfolio.module';
 import { PartnersModule } from './modules/Partners/partners.module';
+import { ServiceModule } from './modules/Service/service.module';
+import { BlogModule } from './modules/Blog/blog.module';
+import { AboutModule } from './modules/About/about.module';
+import { NavbarSettingsModule } from './modules/Navbar/navbar.module';
+import { FooterModule } from './modules/Footer/footer.module';
+import { ContactModule } from './modules/Contact/contact.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule,VacancyModule, PortfolioModule,PartnersModule],
+  imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
+           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

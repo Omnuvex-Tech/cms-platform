@@ -233,21 +233,21 @@ export default function FaqPage() {
         ) : faqs.length === 0 ? (
           <div className={styles.empty}>Hələ FAQ əlavə edilməyib</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Sual</th>
-                <th>Cavab</th>
-                <th>Status</th>
-                <th>Əməliyyatlar</th>
-              </tr>
-            </thead>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Sual</th>
+                  <th>Cavab</th>
+                  <th>Status</th>
+                  <th>Əməliyyatlar</th>
+                </tr>
+              </thead>
               <SortableContext
                 items={faqs.map((f) => f.id)}
                 strategy={verticalListSortingStrategy}
@@ -265,8 +265,8 @@ export default function FaqPage() {
                   ))}
                 </tbody>
               </SortableContext>
-            </DndContext>
-          </table>
+            </table>
+          </DndContext>
         )}
       </div>
 

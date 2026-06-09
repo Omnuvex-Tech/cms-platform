@@ -367,17 +367,17 @@ export default function TestimonialsPage() {
                     {testimonials.length === 0 ? (
                         <div className={styles.empty}>Hələ testimonial əlavə edilməyib</div>
                     ) : (
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Şirkət</th>
-                                    <th>Sitat</th>
-                                    <th>Müəllif</th>
-                                    <th>Əməliyyatlar</th>
-                                </tr>
-                            </thead>
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Şirkət</th>
+                                        <th>Sitat</th>
+                                        <th>Müəllif</th>
+                                        <th>Əməliyyatlar</th>
+                                    </tr>
+                                </thead>
                                 <SortableContext items={testimonials.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                                     <tbody>
                                         {testimonials.map((t, i) => (
@@ -385,8 +385,8 @@ export default function TestimonialsPage() {
                                         ))}
                                     </tbody>
                                 </SortableContext>
-                            </DndContext>
-                        </table>
+                            </table>
+                        </DndContext>
                     )}
                 </div>
             )}
@@ -476,14 +476,14 @@ export default function TestimonialsPage() {
                                 )}
                             </div>
                             <div className={styles.field}>
-  <label>Şəkil Alt Text <small>(SEO üçün)</small></label>
-  <input
-    className={styles.input}
-    value={altText}
-    onChange={(e) => setAltText(e.target.value)}
-    placeholder="Məsələn: Aşur Cəbiyev, MAZDA CEO portreti"
-  />
-</div>
+                                <label>Şəkil Alt Text <small>(SEO üçün)</small></label>
+                                <input
+                                    className={styles.input}
+                                    value={altText}
+                                    onChange={(e) => setAltText(e.target.value)}
+                                    placeholder="Məsələn: Aşur Cəbiyev, MAZDA CEO portreti"
+                                />
+                            </div>
 
                         </div>
                         <div className={styles.modalFooter}>

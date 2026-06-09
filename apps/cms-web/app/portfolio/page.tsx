@@ -478,8 +478,6 @@ function SectionEditor({ section, index, onChange, onRemove }: {
   onRemove: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `section-${index}-${section.type}` });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   const renderEditor = () => {
     switch (section.type) {
@@ -493,10 +491,9 @@ function SectionEditor({ section, index, onChange, onRemove }: {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={styles.sectionBlock}>
+    <div className={styles.sectionBlock}>
       <div className={styles.sectionBlockHeader}>
         <div className={styles.sectionBlockLeft}>
-          <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
           <span className={styles.sectionTypeTag}>{section.type.toUpperCase()}</span>
           <span className={styles.sectionIndex}>#{index + 1}</span>
         </div>
@@ -512,7 +509,6 @@ function SectionEditor({ section, index, onChange, onRemove }: {
   );
 }
 
-// ---- Sortable Portfolio Row ----
 function SortableRow({ p, onEdit, onToggle, onToggleHomepage, onDelete }: {
   p: any;
   onEdit: (p: any) => void;
@@ -645,14 +641,6 @@ export default function PortfolioPage() {
     setSections(prev => prev.filter((_, idx) => idx !== i));
   };
 
-  const handleSectionDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = sections.findIndex((s, i) => `section-${i}-${s.type}` === active.id);
-    const newIndex = sections.findIndex((s, i) => `section-${i}-${s.type}` === over.id);
-    setSections(prev => arrayMove(prev, oldIndex, newIndex));
-  };
-
   const save = async () => {
     if (!title.trim() || !slug.trim()) return;
     setSaving(true);
@@ -731,13 +719,13 @@ export default function PortfolioPage() {
         ) : portfolios.length === 0 ? (
           <div className={styles.empty}>Hələ portfolio əlavə edilməyib</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th>
-              </tr>
-            </thead>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th>
+                </tr>
+              </thead>
               <SortableContext items={portfolios.map(p => p.id)} strategy={verticalListSortingStrategy}>
                 <tbody>
                   {portfolios.map(p => (
@@ -751,8 +739,8 @@ export default function PortfolioPage() {
                     />))}
                 </tbody>
               </SortableContext>
-            </DndContext>
-          </table>
+            </table>
+          </DndContext>
         )}
       </div>
 
@@ -812,22 +800,15 @@ export default function PortfolioPage() {
 
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>Detail Səhifəsi Sectionları</h3>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
-                <SortableContext
-                  items={sections.map((s, i) => `section-${i}-${s.type}`)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {sections.map((section, i) => (
-                    <SectionEditor
-                      key={`section-${i}-${section.type}`}
-                      section={section}
-                      index={i}
-                      onChange={data => updateSection(i, data)}
-                      onRemove={() => removeSection(i)}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
+              {sections.map((section, i) => (
+                <SectionEditor
+                  key={`section-${i}-${section.type}`}
+                  section={section}
+                  index={i}
+                  onChange={data => updateSection(i, data)}
+                  onRemove={() => removeSection(i)}
+                />
+              ))}
               <div className={styles.addSectionRow}>
                 {SECTION_TYPES.filter(({ type }) => !usedTypes.includes(type)).map(({ type, label }) => (
                   <button key={type} type="button" className={styles.addSectionBtn} onClick={() => addSection(type)}>

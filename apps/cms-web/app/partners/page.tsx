@@ -739,11 +739,11 @@ function RichEditor({
       }),
       Underline,
       TiptapHeading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-      TiptapLink.configure({ 
-        openOnClick: false, 
-        HTMLAttributes: { 
-          rel: "noopener noreferrer" 
-        } 
+      TiptapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: "noopener noreferrer"
+        }
       }),
     ],
     content: value,
@@ -764,7 +764,7 @@ function RichEditor({
     e.preventDefault();
     if (!editor) return;
     if (editor.state.selection.empty) { alert("Əvvəlcə bir mətn seçin"); return; }
-    
+
     const attrs = editor.getAttributes("link");
     setLinkUrl(attrs.href ?? "");
     setOpenInNewTab(attrs.target === "_blank" || !attrs.href);
@@ -778,9 +778,9 @@ function RichEditor({
         .chain()
         .focus()
         .extendMarkRange("link")
-        .setLink({ 
-          href: linkUrl.trim(), 
-          target: openInNewTab ? "_blank" : "_self" 
+        .setLink({
+          href: linkUrl.trim(),
+          target: openInNewTab ? "_blank" : "_self"
         })
         .run();
     }
@@ -810,8 +810,8 @@ function RichEditor({
         {([1, 2, 3, 4, 5, 6] as const).map((level) => (
           <button key={level} type="button" title={`H${level}`}
             className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}
-            onMouseDown={(e) => { 
-              e.preventDefault(); 
+            onMouseDown={(e) => {
+              e.preventDefault();
               if (editor?.isActive("heading", { level })) {
                 editor?.chain().focus().setParagraph().run();
               } else {
@@ -841,9 +841,9 @@ function RichEditor({
             autoFocus
           />
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', userSelect: 'none' }}>
-            <input 
-              type="checkbox" 
-              checked={openInNewTab} 
+            <input
+              type="checkbox"
+              checked={openInNewTab}
               onChange={(e) => setOpenInNewTab(e.target.checked)}
             />
             Yeni tabda açılsın (_blank)
@@ -897,7 +897,8 @@ function SortableRow({
               mətn düz xətt üzrə səliqəli şəkildə CSS-dəki öz sabit ölçüsünü götürür.
             */}
             <div className={styles.authorName} data-admin-preview="true">
-              <style dangerouslySetInnerHTML={{__html: `
+              <style dangerouslySetInnerHTML={{
+                __html: `
                 [data-admin-preview="true"] h1, [data-admin-preview="true"] h2, 
                 [data-admin-preview="true"] h3, [data-admin-preview="true"] h4, 
                 [data-admin-preview="true"] h5, [data-admin-preview="true"] h6,
@@ -908,7 +909,7 @@ function SortableRow({
                   padding: 0 !important;
                   display: inline !important;
                 }
-              `}}/>
+              `}} />
               <span dangerouslySetInnerHTML={{ __html: p.name }} />
             </div>
             {p.altText && <p className={styles.authorRole}>{p.altText}</p>}
@@ -935,7 +936,7 @@ function SortableRow({
             {p.isHomepage ? "Ana səhifən çıxar" : "Ana səhifəyə əlavə et"}
           </button>
           <button
-           type="button" className={`${styles.visBtn} ${p.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
+            type="button" className={`${styles.visBtn} ${p.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
             onClick={(e) => { e.preventDefault(); onToggleVisibility(p); }}
           >
             {p.isVisible ? "Gizlət" : "Göstər"}
@@ -1093,10 +1094,10 @@ export default function PartnersPage() {
     setModalOpen(true);
   };
 
-  const closeModal = (e?: React.MouseEvent) => { 
+  const closeModal = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
-    setModalOpen(false); 
-    setEditItem(null); 
+    setModalOpen(false);
+    setEditItem(null);
   };
 
   const savePartner = async (e: React.MouseEvent) => {
@@ -1198,16 +1199,16 @@ export default function PartnersPage() {
           {partners.length === 0 ? (
             <div className={styles.empty}>Hələ partnyор əlavə edilməyib</div>
           ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Partnyор</th>
-                  <th>Status</th>
-                  <th>Əməliyyatlar</th>
-                </tr>
-              </thead>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Partnyор</th>
+                    <th>Status</th>
+                    <th>Əməliyyatlar</th>
+                  </tr>
+                </thead>
                 <SortableContext items={partners.map((p) => p.id)} strategy={verticalListSortingStrategy}>
                   <tbody>
                     {partners.map((p, i) => (
@@ -1223,8 +1224,8 @@ export default function PartnersPage() {
                     ))}
                   </tbody>
                 </SortableContext>
-              </DndContext>
-            </table>
+              </table>
+            </DndContext>
           )}
         </div>
       )}
