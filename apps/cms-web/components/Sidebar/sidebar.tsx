@@ -61,6 +61,7 @@ const NAV_ITEMS = [
         children: [
             { label: "Vakansiyalar", href: "/Vacancy" },
             { label: "Settings", href: "/Vacancy/VacancySetting" },
+            { label: "Vacancy Submissions", href: "/Vacancy/VacancySubmissions" },
         ],
     },
     { label: "About", href: "/about", icon: <Info size={18} /> },

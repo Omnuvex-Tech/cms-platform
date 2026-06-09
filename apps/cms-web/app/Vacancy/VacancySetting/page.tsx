@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,30 +37,56 @@ interface VacancySettings {
     emailLabel: string;
     phoneLabel: string;
     locationLabel: string;
+    // Form sahələri
+    formNameLabel: string;
+    formNamePlaceholder: string;
+    formEmailLabel: string;
+    formEmailPlaceholder: string;
+    formPhoneLabel: string;
+    formPhonePlaceholder: string;
+    formMessageLabel: string;
+    formMessagePlaceholder: string;
+    formCvLabel: string;
+    formCvPlaceholder: string;
+    formSubmitLabel: string;
 }
+
+const DEFAULT: VacancySettings = {
+    backLabel: "",
+    applyTitle: "",
+    aboutRoleLabel: "",
+    skillsLabel: "",
+    responsibleLabel: "",
+    requirementsLabel: "",
+    email: "",
+    emailHref: "",
+    phone: "",
+    phoneHref: "",
+    location: "",
+    emailLabel: "",
+    phoneLabel: "",
+    locationLabel: "",
+    formNameLabel: "",
+    formNamePlaceholder: "",
+    formEmailLabel: "",
+    formEmailPlaceholder: "",
+    formPhoneLabel: "",
+    formPhonePlaceholder: "",
+    formMessageLabel: "",
+    formMessagePlaceholder: "",
+    formCvLabel: "",
+    formCvPlaceholder: "",
+    formSubmitLabel: "",
+};
 
 export default function VacancySettingPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState<"success" | "error" | null>(null); const [settings, setSettings] = useState<VacancySettings>({
-        backLabel: "",
-        applyTitle: "",
-        aboutRoleLabel: "",
-        skillsLabel: "",
-        responsibleLabel: "",
-        requirementsLabel: "",
-        email: "",
-        emailHref: "",
-        phone: "",
-        phoneHref: "",
-        location: "",
-        emailLabel: "",
-        phoneLabel: "",
-        locationLabel: "",
-    });
+    const [toast, setToast] = useState<"success" | "error" | null>(null);
+    const [settings, setSettings] = useState<VacancySettings>(DEFAULT);
 
     useEffect(() => {
-        apiFetch("/vacancy-settings")
+        apiFetch("/vacancy/settings")
             .then((data) => { if (data) setSettings(data); })
             .finally(() => setLoading(false));
     }, []);
@@ -67,11 +95,11 @@ export default function VacancySettingPage() {
         setSettings((prev) => ({ ...prev, [key]: value }));
     };
 
-   const save = async () => {
+    const save = async () => {
         setSaving(true);
         try {
-            await apiFetch("/vacancy-settings", {
-                method: "PUT",
+            await apiFetch("/vacancy/settings", {
+                method: "PATCH",
                 body: JSON.stringify(settings),
             });
             setToast("success");
@@ -97,46 +125,41 @@ export default function VacancySettingPage() {
                     {toast === "success" ? "✓ Uğurla saxlanıldı" : "✕ Xəta baş verdi"}
                 </div>
             )}
+
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Vakansiya Ayarları</h1>
                     <p className={styles.subtitle}>Vakansiya səhifəsinin mətn və kontakt məlumatlarını idarə edin</p>
                 </div>
+                <button className={styles.saveBtn} onClick={save} disabled={saving}>
+                    {saving ? "Saxlanır..." : "Yadda saxla"}
+                </button>
             </div>
 
             {/* Detail səhifəsi başlıqları */}
             <div className={styles.sectionCard}>
                 <h2 className={styles.sectionCardTitle}>Detail səhifəsi başlıqları</h2>
                 <p className={styles.sectionDesc}>Vakansiya detail səhifəsindəki bölmə adları</p>
-
-                {[
-                    { key: "backLabel", label: "Geri düyməsi mətni", hint: "Detail səhifəsinin sol üstündəki ← geri linki" },
-                    { key: "applyTitle", label: "Müraciət başlığı", hint: "Formun üstündəki böyük başlıq (APPLY NOW)" },
-                    { key: "aboutRoleLabel", label: "\"About the Role\" başlığı", hint: "Vakansiya təsviri bölməsinin adı" },
-                    { key: "skillsLabel", label: "\"Skills\" başlığı", hint: "Bacarıqlar bölməsinin adı" },
-                    { key: "responsibleLabel", label: "\"Responsible\" başlığı", hint: "Məsuliyyətlər bölməsinin adı" },
-                    { key: "requirementsLabel", label: "\"Requirements\" başlığı", hint: "Tələblər bölməsinin adı" },
-                ].map(({ key, label, hint }) => (
+                {([
+                    { key: "backLabel", label: "Geri düyməsi mətni", hint: "← geri linki" },
+                    { key: "applyTitle", label: "Müraciət başlığı", hint: "APPLY NOW" },
+                    { key: "aboutRoleLabel", label: "About the Role başlığı", hint: "Vakansiya təsviri bölməsi" },
+                    { key: "skillsLabel", label: "Skills başlığı", hint: "Bacarıqlar bölməsi" },
+                    { key: "responsibleLabel", label: "Responsible başlığı", hint: "Məsuliyyətlər bölməsi" },
+                    { key: "requirementsLabel", label: "Requirements başlığı", hint: "Tələblər bölməsi" },
+                ] as { key: keyof VacancySettings; label: string; hint: string }[]).map(({ key, label, hint }) => (
                     <div className={styles.field} key={key}>
-                        <label>
-                            {label}
-                            <span className={styles.hint}> — {hint}</span>
-                        </label>
-                        <input
-                            className={styles.input}
-                            value={settings[key as keyof VacancySettings]}
-                            onChange={(e) => handleChange(key as keyof VacancySettings, e.target.value)}
-                        />
+                        <label>{label}<span className={styles.hint}> — {hint}</span></label>
+                        <input className={styles.input} value={settings[key]}
+                            onChange={(e) => handleChange(key, e.target.value)} />
                     </div>
                 ))}
             </div>
 
-            {/* Kontakt məlumatları */}
             <div className={styles.sectionCard}>
                 <h2 className={styles.sectionCardTitle}>Kontakt məlumatları</h2>
                 <p className={styles.sectionDesc}>Detail səhifəsinin sağ altındakı kontakt bloku</p>
-
-                {[
+                {([
                     { key: "emailLabel", label: "Email bölməsinin adı", hint: "\"Email Adres\" yazısı" },
                     { key: "email", label: "Email ünvanı", hint: "Göstərilən email mətn" },
                     { key: "emailHref", label: "Email link", hint: "mailto:... formatında" },
@@ -145,29 +168,41 @@ export default function VacancySettingPage() {
                     { key: "phoneHref", label: "Telefon link", hint: "tel:... formatında" },
                     { key: "locationLabel", label: "Ünvan bölməsinin adı", hint: "\"Location\" yazısı" },
                     { key: "location", label: "Ünvan", hint: "Göstərilən ünvan mətni" },
-                ].map(({ key, label, hint }) => (
+                ] as { key: keyof VacancySettings; label: string; hint: string }[]).map(({ key, label, hint }) => (
                     <div className={styles.field} key={key}>
-                        <label>
-                            {label}
-                            <span className={styles.hint}> — {hint}</span>
-                        </label>
-                        <input
-                            className={styles.input}
-                            value={settings[key as keyof VacancySettings]}
-                            onChange={(e) => handleChange(key as keyof VacancySettings, e.target.value)}
-                        />
+                        <label>{label}<span className={styles.hint}> — {hint}</span></label>
+                        <input className={styles.input} value={settings[key]}
+                            onChange={(e) => handleChange(key, e.target.value)} />
                     </div>
                 ))}
             </div>
 
-            {/* Saxla */}
+            {/* Apply Now Formu */}
             <div className={styles.sectionCard}>
-                <div className={styles.sectionFooter}>
-                    <button className={styles.saveBtn} onClick={save} disabled={saving}>
-                        {saving ? "Saxlanır..." : "Yadda saxla"}
-                    </button>
-                </div>
+                <h2 className={styles.sectionCardTitle}>Apply Now Formu</h2>
+                <p className={styles.sectionDesc}>Müraciət formasındakı sahə adları və placeholder-lər</p>
+
+                {([
+                    { key: "formNameLabel", label: "Ad — label", hint: "Name" },
+                    { key: "formNamePlaceholder", label: "Ad — placeholder", hint: "Your name*" },
+                    { key: "formEmailLabel", label: "Email — label", hint: "Email" },
+                    { key: "formEmailPlaceholder", label: "Email — placeholder", hint: "Your email*" },
+                    { key: "formPhoneLabel", label: "Telefon — label", hint: "Phone" },
+                    { key: "formPhonePlaceholder", label: "Telefon — placeholder", hint: "Your phone*" },
+                    { key: "formMessageLabel", label: "Mesaj — label", hint: "Message" },
+                    { key: "formMessagePlaceholder", label: "Mesaj — placeholder", hint: "Your message" },
+                    { key: "formCvLabel", label: "CV — label", hint: "CV yüklə*" },
+                    { key: "formCvPlaceholder", label: "CV — placeholder", hint: "pdf, png, jpg" },
+                    { key: "formSubmitLabel", label: "Submit düyməsi yazısı", hint: "Göndər" },
+                ] as { key: keyof VacancySettings; label: string; hint: string }[]).map(({ key, label, hint }) => (
+                    <div className={styles.field} key={key}>
+                        <label>{label}<span className={styles.hint}> — {hint}</span></label>
+                        <input className={styles.input} value={settings[key]}
+                            onChange={(e) => handleChange(key, e.target.value)} />
+                    </div>
+                ))}
             </div>
+
         </div>
     );
 }

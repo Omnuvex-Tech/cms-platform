@@ -113,4 +113,73 @@ export class MailService {
       throw err;
     }
   }
+
+  async sendVacancySubmission(data: {
+    name: string;
+    email: string;
+    phone: string;
+    message?: string;
+    cvUrl: string;
+    vacancyTitle?: string;
+    submittedAt: Date;
+  }) {
+    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'aitajjf2@gmail.com';
+
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <h2 style="color: #1a1a1a; margin-bottom: 24px; font-size: 20px;">
+        📋 Yeni vakansiya müraciəti — Trenders
+      </h2>
+
+      ${data.vacancyTitle ? `
+      <p style="margin-bottom: 16px; padding: 10px 16px; background: #f0f9ff; border-radius: 6px; font-size: 14px; color: #0369a1;">
+        Vakansiya: <strong>${data.vacancyTitle}</strong>
+      </p>` : ''}
+
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px; width: 140px;">Ad</td>
+          <td style="padding: 10px 0; color: #1a1a1a; font-size: 14px; font-weight: 500;">${data.name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Email</td>
+          <td style="padding: 10px 0; color: #1a1a1a; font-size: 14px;">
+            <a href="mailto:${data.email}" style="color: #2563eb;">${data.email}</a>
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">Telefon</td>
+          <td style="padding: 10px 0; color: #1a1a1a; font-size: 14px;">${data.phone}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px; vertical-align: top;">Mesaj</td>
+          <td style="padding: 10px 0; color: #1a1a1a; font-size: 14px; white-space: pre-line;">${data.message || '—'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">CV</td>
+          <td style="padding: 10px 0; font-size: 14px;">
+<a href="${process.env.API_URL}${data.cvUrl}" style="color: #2563eb;">CV-yə bax / yüklə</a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
+        Göndərilmə tarixi: ${data.submittedAt.toLocaleString('az-AZ')}
+      </p>
+    </div>
+  `;
+
+    try {
+      await this.getTransporter().sendMail({
+        from: `"Trenders CMS" <${process.env.MAIL_USER}>`,
+        to,
+        subject: `Vakansiya müraciəti: ${data.name}${data.vacancyTitle ? ` — ${data.vacancyTitle}` : ''}`,
+        html,
+      });
+      this.logger.log(`Vakansiya mail göndərildi: ${to}`);
+    } catch (err) {
+      this.logger.error('Vakansiya mail göndərilmədi', err);
+      throw err;
+    }
+  }
 }

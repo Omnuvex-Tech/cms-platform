@@ -1,7 +1,12 @@
 import {
   Controller, Get, Post, Put, Delete, Patch,
   Param, Body, ParseIntPipe, HttpCode,
+  UploadedFile, UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import * as fs from 'fs';
 import { VacancyService } from './vacancy.service';
 import { VacancyHeaderService } from './vacancy-header.service';
 import { CreateVacancyCategoryDto } from './dto/create-vacancy-category.dto';
@@ -11,6 +16,8 @@ import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 import { ReorderVacancyDto } from './dto/reorder-vacancy.dto';
 import { UpdateVacancyHeaderDto } from './dto/update-vacancy-header.dto';
+import { UpdateVacancySettingsDto } from './dto/update-vacancy-settings.dto';
+import { CreateVacancySubmissionDto } from './dto/create-vacancy-submission.dto';
 
 @Controller('vacancy')
 export class VacancyController {
@@ -19,13 +26,61 @@ export class VacancyController {
     private readonly headerService: VacancyHeaderService,
   ) {}
 
-  // ─── Header ──────────────────────────────────────────────
   @Get('header')
   getHeader() { return this.headerService.getHeader(); }
 
   @Put('header')
   updateHeader(@Body() dto: UpdateVacancyHeaderDto) {
     return this.headerService.updateHeader(dto);
+  }
+
+  @Get('settings')
+  getSettings() { return this.service.getSettings(); }
+
+  @Patch('settings')
+  updateSettings(@Body() dto: UpdateVacancySettingsDto) {
+    return this.service.updateSettings(dto);
+  }
+
+  @Post('upload-cv')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = './public/uploads/cv';
+        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + extname(file.originalname));
+      },
+    }),
+fileFilter: (req, file, cb) => {
+    const allowed = [
+        'application/pdf',
+        'application/msword',   
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+    ];
+    if (!allowed.includes(file.mimetype)) {
+        return cb(new Error('Yalnız PDF, DOC, DOCX qəbul edilir'), false);
+    }
+    cb(null, true);
+},
+    limits: { fileSize: 10 * 1024 * 1024 },
+  }))
+  uploadCv(@UploadedFile() file: Express.Multer.File) {
+    return { url: `/uploads/cv/${file.filename}` };
+  }
+
+  // ─── Submissions ──────────────────────────────────────────
+  @Post('submit')
+  createSubmission(@Body() dto: CreateVacancySubmissionDto) {
+    return this.service.createSubmission(dto);
+  }
+
+  @Get('submissions')
+  findAllSubmissions() {
+    return this.service.findAllSubmissions();
   }
 
   // ─── Categories ──────────────────────────────────────────
@@ -75,10 +130,12 @@ export class VacancyController {
   reorderVacancies(@Body() dto: ReorderVacancyDto) {
     return this.service.reorderVacancies(dto);
   }
-@Get('slug/:slug')
-getVacancyBySlug(@Param('slug') slug: string) {
-  return this.service.getVacancyBySlug(slug);
-}
+
+  @Get('slug/:slug')
+  getVacancyBySlug(@Param('slug') slug: string) {
+    return this.service.getVacancyBySlug(slug);
+  }
+
   // ─── :id — həmişə ən sonda ───────────────────────────────
   @Get(':id')
   getVacancyById(@Param('id', ParseIntPipe) id: number) {

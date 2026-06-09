@@ -6,10 +6,16 @@ import { ReorderVacancyCategoryDto } from './dto/reorder-vacancy-category.dto';
 import { CreateVacancyDto } from './dto/create-vacancy.dto';
 import { UpdateVacancyDto } from './dto/update-vacancy.dto';
 import { ReorderVacancyDto } from './dto/reorder-vacancy.dto';
+import { UpdateVacancySettingsDto } from './dto/update-vacancy-settings.dto';
+import { MailService } from '../mail/mail.service';
+import { CreateVacancySubmissionDto } from './dto/create-vacancy-submission.dto';
+
 
 @Injectable()
 export class VacancyService {
-  constructor(private readonly repo: VacancyRepository) {}
+  constructor(private readonly repo: VacancyRepository,
+              private readonly mailService: MailService, 
+  ) {}
 
   // ─── Category ────────────────────────────────────────────
   getAllCategories() { return this.repo.findAllCategories(); }
@@ -79,5 +85,39 @@ export class VacancyService {
   const v = await this.repo.findVacancyBySlug(slug);
   if (!v) throw new NotFoundException('Vacancy not found');
   return v;
+}
+
+// vacancy.service.ts — MailService inject et, bunları əlavə et
+
+async getSettings() {
+  const s = await this.repo.getSettings();
+  if (s) return s;
+  return this.repo.createSettings();
+}
+
+async updateSettings(dto: UpdateVacancySettingsDto) {
+  const s = await this.repo.getSettings();
+  if (!s) {
+    const created = await this.repo.createSettings();
+    return this.repo.updateSettings(created.id, dto);
+  }
+  return this.repo.updateSettings(s.id, dto);
+}
+
+async createSubmission(dto: CreateVacancySubmissionDto) {
+  const submission = await this.repo.createSubmission(dto);
+  try {
+    await this.mailService.sendVacancySubmission({
+      ...dto,
+      submittedAt: submission.createdAt,
+    });
+  } catch {
+    // mail xətası prosesi bloklamamalıdır
+  }
+  return submission;
+}
+
+async findAllSubmissions() {
+  return this.repo.findAllSubmissions();
 }
 }

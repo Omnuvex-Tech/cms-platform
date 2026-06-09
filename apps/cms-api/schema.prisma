@@ -71,6 +71,7 @@ model VacancyCategory {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
+
 model Vacancy {
   id                 Int             @id @default(autoincrement())
   title              String
@@ -122,7 +123,33 @@ model VacancySettings {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  formNameLabel       String   @default("Name")
+  formNamePlaceholder String   @default("Your name*")
+  formEmailLabel      String   @default("Email")
+  formEmailPlaceholder String  @default("Your email*")
+  formPhoneLabel      String   @default("Phone")
+  formPhonePlaceholder String  @default("Your phone*")
+  formMessageLabel    String   @default("Message")
+  formMessagePlaceholder String @default("Your message")
+  formCvLabel         String   @default("CV yüklə*")
+  formCvPlaceholder   String   @default("pdf, png, jpg")
+  formSubmitLabel     String   @default("Göndər")
+
   @@map("vacancy_settings")
+}
+
+model VacancySubmission {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String
+  message   String?
+  cvUrl     String
+  vacancyId Int?
+  vacancyTitle String?
+  createdAt DateTime @default(now())
+
+  @@map("vacancy_submissions")
 }
 
 model Portfolio {
@@ -381,7 +408,6 @@ model FooterSocialLink {
 
   @@map("footer_social_links")
 }
-
 
 
 model ContactSettings {

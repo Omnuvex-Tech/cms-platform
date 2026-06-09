@@ -8,8 +8,9 @@ import { VacancyHeaderRepository } from './vacancy-header.repository';;
 import { VacancySettingsService } from './vacancy-settings.service';
 import { VacancySettingsRepository } from './vacancy-settings.repository';
 import { VacancySettingsController } from './vacancy-settings.controller';
+import { MailModule } from '../mail/mail.module';
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MailModule],
   controllers: [VacancyController, VacancySettingsController],
   providers: [
     VacancyService,

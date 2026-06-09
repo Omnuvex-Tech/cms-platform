@@ -56,4 +56,17 @@ export class UpdateVacancySettingsDto {
   @IsOptional()
   @IsString()
   locationLabel?: string;
+
+
+  formNameLabel?: string;
+  formNamePlaceholder?: string;
+  formEmailLabel?: string;
+  formEmailPlaceholder?: string;
+  formPhoneLabel?: string;
+  formPhonePlaceholder?: string;
+  formMessageLabel?: string;
+  formMessagePlaceholder?: string;
+  formCvLabel?: string;
+  formCvPlaceholder?: string;
+  formSubmitLabel?: string;
 }
