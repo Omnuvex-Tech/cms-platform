@@ -1,17 +1,17 @@
-import { IsString, IsInt, IsOptional } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsObject } from 'class-validator';
 
 export class CreateTestimonialDto {
-  @IsString()
-  company: string;
+  @IsObject()
+  company: Record<string, string>;
 
-  @IsString()
-  quote: string;
+  @IsObject()
+  quote: Record<string, string>;
 
-  @IsString()
-  name: string;
+  @IsObject()
+  name: Record<string, string>;
 
-  @IsString()
-  role: string;
+  @IsObject()
+  role: Record<string, string>;
 
   @IsString()
   image: string;

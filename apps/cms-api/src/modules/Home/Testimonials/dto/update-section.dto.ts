@@ -1,11 +1,11 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsObject, IsOptional } from 'class-validator';
 
 export class UpdateSectionDto {
   @IsOptional()
-  @IsString()
-  title?: string;
+  @IsObject()
+  title?: Record<string, string>;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  @IsObject()
+  description?: Record<string, string>;
 }

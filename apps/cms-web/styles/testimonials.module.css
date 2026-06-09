@@ -118,3 +118,34 @@
   color: #6366f1;
   margin-top: 4px;
 }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.tab {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.tabActive {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}

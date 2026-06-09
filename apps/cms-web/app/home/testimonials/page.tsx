@@ -18,12 +18,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/testimonials.module.css";
 
+type LocalizedString = Record<string, string>;
+
 interface Testimonial {
     id: number;
-    company: string;
-    quote: string;
-    name: string;
-    role: string;
+    company: LocalizedString;
+    quote: LocalizedString;
+    name: LocalizedString;
+    role: LocalizedString;
     image: string;
     order: number;
     altText: string;
@@ -31,8 +33,8 @@ interface Testimonial {
 
 interface Section {
     id: number;
-    title: string;
-    description: string;
+    title: LocalizedString;
+    description: LocalizedString;
     testimonials: Testimonial[];
 }
 
@@ -82,22 +84,27 @@ function SortableRow({
         background: isDragging ? "#f0f7ff" : undefined,
     };
 
+    const quoteAz = t.quote?.az || "";
+    const nameAz = t.name?.az || "";
+    const roleAz = t.role?.az || "";
+    const companyAz = t.company?.az || "";
+
     return (
         <tr ref={setNodeRef} style={style}>
             <td className={styles.num}>
                 <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
                 {String(index + 1).padStart(2, "0")}
             </td>
-            <td className={styles.company}>{t.company}</td>
+            <td className={styles.company}>{companyAz}</td>
             <td className={styles.quoteCell}>
-                {t.quote.length > 60 ? t.quote.slice(0, 60) + "..." : t.quote}
+                {quoteAz.length > 60 ? quoteAz.slice(0, 60) + "..." : quoteAz}
             </td>
             <td>
                 <div className={styles.authorCell}>
-                    <img src={toAbsoluteUrl(t.image)} alt={t.name} className={styles.avatar} />
+                    <img src={toAbsoluteUrl(t.image)} alt={nameAz} className={styles.avatar} />
                     <div>
-                        <p className={styles.authorName}>{t.name}</p>
-                        <p className={styles.authorRole}>{t.role.slice(0, 40)}...</p>
+                        <p className={styles.authorName}>{nameAz}</p>
+                        <p className={styles.authorRole}>{roleAz.slice(0, 40)}...</p>
                     </div>
                 </div>
             </td>
@@ -111,23 +118,29 @@ function SortableRow({
     );
 }
 
+type Lang = "az" | "en" | "ru";
+
 export default function TestimonialsPage() {
     const [section, setSection] = useState<Section | null>(null);
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Section edit
-    const [sectionTitle, setSectionTitle] = useState("");
-    const [sectionDesc, setSectionDesc] = useState("");
+    const [sectionActiveLang, setSectionActiveLang] = useState<Lang>("az");
+    const [sectionTitle, setSectionTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [sectionDesc, setSectionDesc] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [sectionSaving, setSectionSaving] = useState(false);
 
     // Testimonial modal
     const [modalOpen, setModalOpen] = useState(false);
+    const [modalActiveLang, setModalActiveLang] = useState<Lang>("az");
     const [editItem, setEditItem] = useState<Testimonial | null>(null);
-    const [company, setCompany] = useState("");
-    const [quote, setQuote] = useState("");
-    const [name, setName] = useState("");
-    const [role, setRole] = useState("");
+    
+    const [company, setCompany] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [quote, setQuote] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    
     const [image, setImage] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState("");
@@ -147,8 +160,8 @@ export default function TestimonialsPage() {
             const data: Section = await apiFetch("/testimonials");
             if (data) {
                 setSection(data);
-                setSectionTitle(data.title);
-                setSectionDesc(data.description);
+                setSectionTitle(data.title || { az: "", en: "", ru: "" });
+                setSectionDesc(data.description || { az: "", en: "", ru: "" });
                 setTestimonials(data.testimonials);
             }
         } catch {
@@ -161,18 +174,21 @@ export default function TestimonialsPage() {
     useEffect(() => { load(); }, []);
 
     const saveSection = async () => {
-        if (!sectionTitle.trim() || !sectionDesc.trim()) return;
         setSectionSaving(true);
         try {
+            const body = {
+                title: sectionTitle,
+                description: sectionDesc
+            };
             if (section) {
                 await apiFetch(`/testimonials/section/${section.id}`, {
                     method: "PUT",
-                    body: JSON.stringify({ title: sectionTitle, description: sectionDesc }),
+                    body: JSON.stringify(body),
                 });
             } else {
                 await apiFetch("/testimonials/section", {
                     method: "POST",
-                    body: JSON.stringify({ title: sectionTitle, description: sectionDesc }),
+                    body: JSON.stringify(body),
                 });
             }
             load();
@@ -217,7 +233,6 @@ export default function TestimonialsPage() {
 
 
     const uploadImageIfNeeded = async (): Promise<string> => {
-        // Yeni fayl seçilməyibsə mövcud URL-i qaytar
         if (!imageFile) return image;
 
         setImageUploading(true);
@@ -227,7 +242,6 @@ export default function TestimonialsPage() {
 
             const res = await fetch(`${API}/testimonials/upload`, {
                 method: "POST",
-                // Content-Type header-i ƏLAVƏ ETMƏ — browser multipart boundary-ni özü qoyur
                 headers: { Authorization: `Bearer ${getToken()}` },
                 body: formData,
             });
@@ -248,17 +262,21 @@ export default function TestimonialsPage() {
 
     const openCreate = () => {
         setEditItem(null);
-        setCompany(""); setQuote(""); setName(""); setRole(""); setAltText("");
+        setCompany({ az: "", en: "", ru: "" });
+        setQuote({ az: "", en: "", ru: "" });
+        setName({ az: "", en: "", ru: "" });
+        setRole({ az: "", en: "", ru: "" });
+        setAltText("");
         resetImageState();
         setModalOpen(true);
     };
 
     const openEdit = (t: Testimonial) => {
         setEditItem(t);
-        setCompany(t.company);
-        setQuote(t.quote);
-        setName(t.name);
-        setRole(t.role);
+        setCompany(t.company || { az: "", en: "", ru: "" });
+        setQuote(t.quote || { az: "", en: "", ru: "" });
+        setName(t.name || { az: "", en: "", ru: "" });
+        setRole(t.role || { az: "", en: "", ru: "" });
         setImage(t.image);
         setImageFile(null);
         setImagePreview(t.image);
@@ -273,24 +291,27 @@ export default function TestimonialsPage() {
     };
 
     const saveTestimonial = async () => {
-        if (!company.trim() || !quote.trim() || !name.trim()) return;
         setSaving(true);
         try {
             const imageUrl = await uploadImageIfNeeded();
+            const body = {
+                company,
+                quote,
+                name,
+                role,
+                image: imageUrl,
+                altText
+            };
             if (editItem) {
                 await apiFetch(`/testimonials/${editItem.id}`, {
                     method: "PUT",
-                    body: JSON.stringify({ company, quote, name, role, image: imageUrl, altText }),
+                    body: JSON.stringify(body),
                 });
             } else {
                 await apiFetch("/testimonials", {
                     method: "POST",
                     body: JSON.stringify({
-                        company,
-                        quote,
-                        name,
-                        role,
-                        image: imageUrl,
+                        ...body,
                         sectionId: section!.id,
                     }),
                 });
@@ -307,6 +328,18 @@ export default function TestimonialsPage() {
         await apiFetch(`/testimonials/${deleteId}`, { method: "DELETE" });
         setDeleteId(null);
         load();
+    };
+
+    const LangTabs = ({ active, onChange }: { active: Lang, onChange: (l: Lang) => void }) => (
+        <div className={styles.tabs}>
+            <button className={`${styles.tab} ${active === "az" ? styles.tabActive : ""}`} onClick={() => onChange("az")}>AZ</button>
+            <button className={`${styles.tab} ${active === "en" ? styles.tabActive : ""}`} onClick={() => onChange("en")}>EN</button>
+            <button className={`${styles.tab} ${active === "ru" ? styles.tabActive : ""}`} onClick={() => onChange("ru")}>RU</button>
+        </div>
+    );
+
+    const updateLocalizedField = (setter: React.Dispatch<React.SetStateAction<LocalizedString>>, lang: Lang, value: string) => {
+        setter(prev => ({ ...prev, [lang]: value }));
     };
 
     if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
@@ -329,24 +362,25 @@ export default function TestimonialsPage() {
             {/* Section məlumatları */}
             <div className={styles.sectionCard}>
                 <h2 className={styles.sectionCardTitle}>Bölmə Məlumatları</h2>
+                <LangTabs active={sectionActiveLang} onChange={setSectionActiveLang} />
                 <div className={styles.sectionFields}>
                     <div className={styles.field}>
-                        <label>Başlıq</label>
-                        <input
-                            className={styles.input}
-                            value={sectionTitle}
-                            onChange={(e) => setSectionTitle(e.target.value)}
-                            placeholder="Müştəri Rəyləri"
+                        <label>Başlıq ({sectionActiveLang.toUpperCase()})</label>
+                        <input 
+                            className={styles.input} 
+                            value={sectionTitle[sectionActiveLang] || ""} 
+                            onChange={(e) => updateLocalizedField(setSectionTitle, sectionActiveLang, e.target.value)} 
+                            placeholder="Müştəri Rəyləri" 
                         />
                     </div>
                     <div className={styles.field}>
-                        <label>Təsvir</label>
-                        <textarea
-                            className={styles.textarea}
-                            value={sectionDesc}
-                            onChange={(e) => setSectionDesc(e.target.value)}
-                            placeholder="Bölmə təsviri..."
-                            rows={3}
+                        <label>Təsvir ({sectionActiveLang.toUpperCase()})</label>
+                        <textarea 
+                            className={styles.textarea} 
+                            value={sectionDesc[sectionActiveLang] || ""} 
+                            onChange={(e) => updateLocalizedField(setSectionDesc, sectionActiveLang, e.target.value)} 
+                            placeholder="Bölmə təsviri..." 
+                            rows={3} 
                         />
                     </div>
                 </div>
@@ -373,7 +407,7 @@ export default function TestimonialsPage() {
                                     <tr>
                                         <th>#</th>
                                         <th>Şirkət</th>
-                                        <th>Sitat</th>
+                                        <th>Sitat (AZ)</th>
                                         <th>Müəllif</th>
                                         <th>Əməliyyatlar</th>
                                     </tr>
@@ -400,67 +434,58 @@ export default function TestimonialsPage() {
                             <button className={styles.closeBtn} onClick={closeModal}>✕</button>
                         </div>
                         <div className={styles.modalBody}>
+                            <LangTabs active={modalActiveLang} onChange={setModalActiveLang} />
+
                             <div className={styles.field}>
-                                <label>Şirkət</label>
-                                <input
-                                    className={styles.input}
-                                    value={company}
-                                    onChange={(e) => setCompany(e.target.value)}
-                                    placeholder="MAZDA"
+                                <label>Şirkət ({modalActiveLang.toUpperCase()})</label>
+                                <input 
+                                    className={styles.input} 
+                                    value={company[modalActiveLang] || ""} 
+                                    onChange={(e) => updateLocalizedField(setCompany, modalActiveLang, e.target.value)} 
+                                    placeholder="MAZDA" 
                                 />
                             </div>
+
                             <div className={styles.field}>
-                                <label>Sitat</label>
-                                <textarea
-                                    className={styles.textarea}
-                                    value={quote}
-                                    onChange={(e) => setQuote(e.target.value)}
-                                    placeholder="Rəy mətni..."
-                                    rows={3}
+                                <label>Sitat ({modalActiveLang.toUpperCase()})</label>
+                                <textarea 
+                                    className={styles.textarea} 
+                                    value={quote[modalActiveLang] || ""} 
+                                    onChange={(e) => updateLocalizedField(setQuote, modalActiveLang, e.target.value)} 
+                                    placeholder="Rəy mətni..." 
+                                    rows={3} 
                                 />
                             </div>
+                            
                             <div className={styles.twoCol}>
                                 <div className={styles.field}>
-                                    <label>Ad Soyad</label>
-                                    <input
-                                        className={styles.input}
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="Aşur Cəbiyev"
+                                    <label>Ad Soyad ({modalActiveLang.toUpperCase()})</label>
+                                    <input 
+                                        className={styles.input} 
+                                        value={name[modalActiveLang] || ""} 
+                                        onChange={(e) => updateLocalizedField(setName, modalActiveLang, e.target.value)} 
+                                        placeholder="Aşur Cəbiyev" 
                                     />
                                 </div>
                                 <div className={styles.field}>
-                                    <label>Vəzifə</label>
-                                    <input
-                                        className={styles.input}
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value)}
-                                        placeholder="CEO @ Company"
+                                    <label>Vəzifə ({modalActiveLang.toUpperCase()})</label>
+                                    <input 
+                                        className={styles.input} 
+                                        value={role[modalActiveLang] || ""} 
+                                        onChange={(e) => updateLocalizedField(setRole, modalActiveLang, e.target.value)} 
+                                        placeholder="CEO @ Company" 
                                     />
                                 </div>
                             </div>
 
                             <div className={styles.field}>
                                 <label>Şəkil</label>
-
-                                <input
-                                    ref={fileInputRef}
-                                    id="imageFileInput"
-                                    type="file"
-                                    accept="image/webp"
-                                    style={{ display: "none" }}
-                                    onChange={handleImageSelect}
-                                />
-                                <div
-                                    className={styles.imageUploadArea}
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
+                                <input ref={fileInputRef} id="imageFileInput" type="file" accept="image/webp" style={{ display: "none" }} onChange={handleImageSelect} />
+                                <div className={styles.imageUploadArea} onClick={() => fileInputRef.current?.click()}>
                                     {imagePreview ? (
                                         <>
                                             <img src={toAbsoluteUrl(imagePreview)} alt="preview" className={styles.imagePreview} />
-                                            <span className={styles.imageChangeHint}>
-                                                Dəyişmək üçün klik et
-                                            </span>
+                                            <span className={styles.imageChangeHint}>Dəyişmək üçün klik et</span>
                                         </>
                                     ) : (
                                         <div className={styles.imagePlaceholder}>
@@ -470,29 +495,16 @@ export default function TestimonialsPage() {
                                         </div>
                                     )}
                                 </div>
-
-                                {imageUploading && (
-                                    <p className={styles.uploadingText}>Şəkil yüklənir...</p>
-                                )}
+                                {imageUploading && <p className={styles.uploadingText}>Şəkil yüklənir...</p>}
                             </div>
                             <div className={styles.field}>
                                 <label>Şəkil Alt Text <small>(SEO üçün)</small></label>
-                                <input
-                                    className={styles.input}
-                                    value={altText}
-                                    onChange={(e) => setAltText(e.target.value)}
-                                    placeholder="Məsələn: Aşur Cəbiyev, MAZDA CEO portreti"
-                                />
+                                <input className={styles.input} value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Məsələn: Aşur Cəbiyev, MAZDA CEO portreti" />
                             </div>
-
                         </div>
                         <div className={styles.modalFooter}>
                             <button className={styles.cancelBtn} onClick={closeModal}>Ləğv et</button>
-                            <button
-                                className={styles.saveBtn}
-                                onClick={saveTestimonial}
-                                disabled={saving || imageUploading}
-                            >
+                            <button className={styles.saveBtn} onClick={saveTestimonial} disabled={saving || imageUploading}>
                                 {saving ? "Saxlanır..." : imageUploading ? "Şəkil yüklənir..." : "Saxla"}
                             </button>
                         </div>

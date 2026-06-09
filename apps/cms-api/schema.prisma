@@ -21,80 +21,74 @@ model Faq {
   id        Int      @id @default(autoincrement())
   question  String
   answer    String
-  order     Int      @default(0)
   isVisible Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  order     Int      @default(0)
 
   @@map("faqs")
 }
 
 model TestimonialsSection {
   id           Int           @id @default(autoincrement())
-  title        String
-  description  String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  description  Json          @default("{}")
+  title        Json          @default("{}")
   testimonials Testimonial[]
 
   @@map("testimonials_sections")
 }
 
 model Testimonial {
-  id         Int                 @id @default(autoincrement())
-  company    String
-  quote      String
-  name       String
-  role       String
-  image      String
-   altText    String              @default("") 
-  order      Int                 @default(0)
-  sectionId  Int
-  section    TestimonialsSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  id        Int                 @id @default(autoincrement())
+  image     String
+  order     Int                 @default(0)
+  sectionId Int
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  altText   String              @default("")
+  quote     Json                @default("{}")
+  role      Json                @default("{}")
+  company   Json                @default("{}")
+  name      Json                @default("{}")
+  section   TestimonialsSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@map("testimonials")
-}
-
-enum BulletType {
-  BULLET
-  NUMBERED
-  DASH
 }
 
 model VacancyCategory {
   id        Int       @id @default(autoincrement())
   name      String
   order     Int       @default(0)
-  vacancies Vacancy[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  vacancies Vacancy[]
 }
 
 model Vacancy {
   id                 Int             @id @default(autoincrement())
   title              String
-  slug               String          @unique
   tags               String[]
   isNew              Boolean         @default(false)
-  newLabel           String?
   isVisible          Boolean         @default(true)
   order              Int             @default(0)
   categoryId         Int
-  category           VacancyCategory @relation(fields: [categoryId], references: [id])
-  startDate          DateTime?
-  isStartDateVisible Boolean         @default(true)
-  closingDate        DateTime?
-  isDateVisible      Boolean         @default(true)
-  aboutRole          String?
-  skills             String[]
-  responsible        String[]
-  responsibleType    BulletType      @default(BULLET)
-  requirements       String[]
-  requirementsType   BulletType      @default(BULLET)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+  aboutRole          String?
+  closingDate        DateTime?
+  isDateVisible      Boolean         @default(true)
+  newLabel           String?
+  requirements       String[]
+  requirementsType   BulletType      @default(BULLET)
+  responsible        String[]
+  responsibleType    BulletType      @default(BULLET)
+  skills             String[]
+  isStartDateVisible Boolean         @default(true)
+  startDate          DateTime?
+  slug               String          @unique
+  category           VacancyCategory @relation(fields: [categoryId], references: [id])
 }
 
 model VacancyPageHeader {
@@ -105,23 +99,34 @@ model VacancyPageHeader {
 }
 
 model VacancySettings {
-  id                  Int      @id @default(autoincrement())
-  backLabel           String   @default("Vakansiya")
-  applyTitle          String   @default("APPLY NOW")
-  aboutRoleLabel      String   @default("About the Role")
-  skillsLabel         String   @default("Skills")
-  responsibleLabel    String   @default("Responsible")
-  requirementsLabel   String   @default("Requirements")
-  email               String   @default("")
-  emailHref           String   @default("")
-  phone               String   @default("")
-  phoneHref           String   @default("")
-  location            String   @default("")
-  emailLabel          String   @default("Email Adres")
-  phoneLabel          String   @default("Phone")
-  locationLabel       String   @default("Location")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                     Int      @id @default(autoincrement())
+  backLabel              String   @default("Vakansiya")
+  applyTitle             String   @default("APPLY NOW")
+  aboutRoleLabel         String   @default("About the Role")
+  skillsLabel            String   @default("Skills")
+  responsibleLabel       String   @default("Responsible")
+  requirementsLabel      String   @default("Requirements")
+  email                  String   @default("")
+  emailHref              String   @default("")
+  phone                  String   @default("")
+  phoneHref              String   @default("")
+  location               String   @default("")
+  emailLabel             String   @default("Email Adres")
+  phoneLabel             String   @default("Phone")
+  locationLabel          String   @default("Location")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  formCvLabel            String   @default("CV yüklə*")
+  formCvPlaceholder      String   @default("pdf, png, jpg")
+  formEmailLabel         String   @default("Email")
+  formEmailPlaceholder   String   @default("Your email*")
+  formMessageLabel       String   @default("Message")
+  formMessagePlaceholder String   @default("Your message")
+  formNameLabel          String   @default("Name")
+  formNamePlaceholder    String   @default("Your name*")
+  formPhoneLabel         String   @default("Phone")
+  formPhonePlaceholder   String   @default("Your phone*")
+  formSubmitLabel        String   @default("Göndər")
 
   formNameLabel       String   @default("Name")
   formNamePlaceholder String   @default("Your name*")
@@ -153,18 +158,18 @@ model VacancySubmission {
 }
 
 model Portfolio {
-  id          Int       @id @default(autoincrement())
-  title       String
-  slug        String    @unique
-  tags        String[]
-  coverImage  String
-  sections    Json      @default("[]")
-  order       Int       @default(0)
-  isVisible   Boolean   @default(true)
-  isHomepage  Boolean   @default(false) 
-    coverImageAlt String @default("") 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            Int      @id @default(autoincrement())
+  title         String
+  slug          String   @unique
+  tags          String[]
+  coverImage    String
+  sections      Json     @default("[]")
+  order         Int      @default(0)
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isHomepage    Boolean  @default(false)
+  coverImageAlt String   @default("")
 
   @@map("portfolios")
 }
@@ -175,73 +180,73 @@ model PartnerSection {
   description String
   linkText    String    @default("")
   linkHref    String    @default("")
-  partners    Partner[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  partners    Partner[]
 
   @@map("partner_sections")
 }
 
 model Partner {
-  id          Int            @id @default(autoincrement())
-  image       String
-  altText     String         @default("")
-  name        String
-  order       Int            @default(0)
-  isVisible   Boolean   @default(true)
-  isHomepage  Boolean        @default(false)
-  sectionId   Int
-  section     PartnerSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id         Int            @id @default(autoincrement())
+  image      String
+  altText    String         @default("")
+  name       String
+  order      Int            @default(0)
+  isHomepage Boolean        @default(false)
+  sectionId  Int
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  isVisible  Boolean        @default(true)
+  section    PartnerSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@map("partners")
 }
 
 model Service {
-  id                   Int      @id @default(autoincrement())
-  number               String
-  slug                 String   @unique
-  badge                String
-  title                String
-  description          String
-  image                String
-  imageAlt             String?
-  gif                  String?
-  features             Json     @default("[]")
-  portfolioButtonText  String?
-  portfolioButtonLink  String?
-  portfolioButtonNewTab Boolean @default(false)
-  detailButtonText     String?
-  detailButtonLink     String?
-  detailButtonNewTab   Boolean  @default(false)
-  order                Int      @default(0)
-  isVisible            Boolean  @default(true)
-  sections             Json     @default("[]")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  number                String
+  slug                  String   @unique
+  badge                 String
+  title                 String
+  description           String
+  image                 String
+  imageAlt              String?
+  gif                   String?
+  features              Json     @default("[]")
+  portfolioButtonText   String?
+  portfolioButtonLink   String?
+  portfolioButtonNewTab Boolean  @default(false)
+  detailButtonText      String?
+  detailButtonLink      String?
+  detailButtonNewTab    Boolean  @default(false)
+  order                 Int      @default(0)
+  isVisible             Boolean  @default(true)
+  sections              Json     @default("[]")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@map("services")
 }
 
 model BlogAuthor {
   id           Int      @id @default(autoincrement())
-  slug         String?  @unique
   name         String
   role         String?
   avatar       String?
-  linkedinHref  String?
-  avatarAlt     String?
-  linkedinIcon  String?  
-  bio          String?
-  skillsTitle  String?
-  skills       String[] 
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  bio          String?
+  linkedinHref String?
+  skills       String[]
+  skillsTitle  String?
+  slug         String?  @unique
+  avatarAlt    String?
+  linkedinIcon String?
+  isOurTeam    Boolean  @default(false)
+  isVisible    Boolean  @default(true)
   blogs        Blog[]
-  isVisible  Boolean  @default(true)
-  isOurTeam  Boolean  @default(false)
 
   @@map("blog_authors")
 }
@@ -259,72 +264,64 @@ model BlogCategory {
 }
 
 model Blog {
-  id              Int           @id @default(autoincrement())
-  title           String
-  slug            String        @unique
-  badge           String
-  excerpt         String
-  coverImage      String
-  coverImageAlt   String?
-  publishedAt     DateTime      @default(now())
-  isVisible       Boolean       @default(true)
-
-  isFeaturedMain  Boolean       @default(false)
-  isFeaturedSide  Boolean       @default(false)
-  isPickOfWeek    Boolean       @default(false)
-  isHomeVisible   Boolean       @default(false)
-  isPreview       Boolean       @default(false)
-  isGrid          Boolean       @default(false)
-  isAuthorPreview   Boolean  @default(false)  
- isAuthorList        Boolean   @default(false)
- authorListPinnedAt  DateTime?
-
-  hashtags        String[]
-  sections        Json          @default("[]")
-
-  authorId        Int?
-  author          BlogAuthor?   @relation(fields: [authorId], references: [id])
-  categoryId      Int?
-  category        BlogCategory? @relation(fields: [categoryId], references: [id])
-
-  order           Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                 Int           @id @default(autoincrement())
+  title              String
+  slug               String        @unique
+  badge              String
+  excerpt            String
+  coverImage         String
+  coverImageAlt      String?
+  publishedAt        DateTime      @default(now())
+  isVisible          Boolean       @default(true)
+  isFeaturedMain     Boolean       @default(false)
+  isFeaturedSide     Boolean       @default(false)
+  isPickOfWeek       Boolean       @default(false)
+  isPreview          Boolean       @default(false)
+  isGrid             Boolean       @default(false)
+  hashtags           String[]
+  sections           Json          @default("[]")
+  authorId           Int?
+  categoryId         Int?
+  order              Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  isAuthorList       Boolean       @default(false)
+  isAuthorPreview    Boolean       @default(false)
+  isHomeVisible      Boolean       @default(false)
+  authorListPinnedAt DateTime?
+  author             BlogAuthor?   @relation(fields: [authorId], references: [id])
+  category           BlogCategory? @relation(fields: [categoryId], references: [id])
 
   @@map("blogs")
 }
 
 model BlogSettings {
-  id              Int      @id @default(autoincrement())
-  pageTitle       String   @default("Bloglar")
-  buttonText      String   @default("Portfolio")
-  buttonLink      String   @default("/portfolio")
-  quoteText       String   @default("")
-  quoteImage      String   @default("")
-  quoteImageAlt   String   @default("")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  buttonNewTab Boolean @default(false)
+  id            Int      @id @default(autoincrement())
+  pageTitle     String   @default("Bloglar")
+  buttonText    String   @default("Portfolio")
+  buttonLink    String   @default("/portfolio")
+  quoteText     String   @default("")
+  quoteImage    String   @default("")
+  quoteImageAlt String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  buttonNewTab  Boolean  @default(false)
 
   @@map("blog_settings")
 }
 
 model AboutSettings {
   id              Int      @id @default(autoincrement())
-  
   heroImage       String?
   heroImageAlt    String?
   heroBadge       String?
   heroTitle       String?
   heroParagraphs  Json     @default("[]")
-  
   storyBlocks     Json     @default("[]")
-  
   teamTitle       String?
   teamDescription String?
   teamCtaLabel    String?
   teamCtaHref     String?
-  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -332,130 +329,122 @@ model AboutSettings {
 }
 
 model NavbarSettings {
-  id          Int       @id @default(autoincrement())
-  logoText    String    @default("trenders")
-  logoImage   String?
-  showSearch  Boolean   @default(true)
-  showLang    Boolean   @default(true)
-  links       NavLink[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         Int       @id @default(autoincrement())
+  logoText   String    @default("trenders")
+  logoImage  String?
+  showSearch Boolean   @default(true)
+  showLang   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  links      NavLink[]
 
   @@map("navbar_settings")
 }
 
 model NavLink {
-  id           Int             @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   label        String
   href         String
-  order        Int             @default(0)     
-  isVisible    Boolean         @default(true)  
-  openInNewTab Boolean         @default(false)
+  order        Int            @default(0)
+  isVisible    Boolean        @default(true)
+  openInNewTab Boolean        @default(false)
   navbarId     Int
-  navbar       NavbarSettings  @relation(fields: [navbarId], references: [id], onDelete: Cascade)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  navbar       NavbarSettings @relation(fields: [navbarId], references: [id], onDelete: Cascade)
 
   @@map("nav_links")
 }
 
 model FooterSettings {
-  id              Int           @id @default(autoincrement())
-  logoImage       String?
-  logoAlt         String        @default("trenders")
-  description     String        @default("")
-  copyrightText   String        @default("© 2023 Trenders")
-  privacyText     String        @default("Məxfilik siyasəti | Bütün hüquqlar qorunur")
-  locationLabel   String        @default("Location")
-  phoneLabel      String        @default("Phone")
-  emailLabel      String        @default("Email Adress")
-  locationValue   String        @default("")
-  phoneValue      String        @default("")
-  emailValue      String        @default("")
-  socialLinks     FooterSocialLink[]
-  navLinks        FooterNavLink[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id            Int                @id @default(autoincrement())
+  logoImage     String?
+  logoAlt       String             @default("trenders")
+  description   String             @default("")
+  copyrightText String             @default("© 2023 Trenders")
+  privacyText   String             @default("Məxfilik siyasəti | Bütün hüquqlar qorunur")
+  locationLabel String             @default("Location")
+  phoneLabel    String             @default("Phone")
+  emailLabel    String             @default("Email Adress")
+  locationValue String             @default("")
+  phoneValue    String             @default("")
+  emailValue    String             @default("")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  navLinks      FooterNavLink[]
+  socialLinks   FooterSocialLink[]
 
   @@map("footer_settings")
 }
 
 model FooterNavLink {
-  id           Int             @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   label        String
   href         String
-  order        Int             @default(0)
-  isVisible    Boolean         @default(true)
-  openInNewTab Boolean         @default(false)
+  order        Int            @default(0)
+  isVisible    Boolean        @default(true)
+  openInNewTab Boolean        @default(false)
   footerId     Int
-  footer       FooterSettings  @relation(fields: [footerId], references: [id], onDelete: Cascade)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  footer       FooterSettings @relation(fields: [footerId], references: [id], onDelete: Cascade)
 
   @@map("footer_nav_links")
 }
 
 model FooterSocialLink {
   id        Int            @id @default(autoincrement())
-  icon      String?     
+  icon      String?
   href      String
   order     Int            @default(0)
   isVisible Boolean        @default(true)
   footerId  Int
-  footer    FooterSettings @relation(fields: [footerId], references: [id], onDelete: Cascade)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+  footer    FooterSettings @relation(fields: [footerId], references: [id], onDelete: Cascade)
 
   @@map("footer_social_links")
 }
 
 
 model ContactSettings {
-  id              Int      @id @default(autoincrement())
-  title           String   @default("Contact us")
-  description     String   @default("")
-  
-  emailLabel      String   @default("Email Adress")
-  emailValue      String   @default("")
-  
-  phoneLabel      String   @default("Phone")
-  phoneValue      String   @default("")
-  
-  locationLabel   String   @default("Location")
-  locationValue   String   @default("")
-  
-  hoursLabel      String   @default("Hours")
-  hoursValue      String   @default("")
-  
-  followUsLabel   String   @default("Follow Us")
-  tags            String[] 
-  
-  formNameLabel       String   @default("Name")
-  formNamePlaceholder String   @default("Your name*")
-  formEmailLabel      String   @default("Email")
-  formEmailPlaceholder String  @default("Your email*")
-  formPhoneLabel      String   @default("Phone")
-  formPhonePlaceholder String  @default("Your phone*")
-  formServiceLabel    String   @default("Service")
-  formBudgetLabel     String   @default("Budget")
-  formTimelineLabel   String   @default("Project Timeline")
-  formMessageLabel    String   @default("Message")
-  formMessagePlaceholder String @default("Your message")
-  formSubmitLabel     String   @default("Submit Inquiry")
-
-  socialLinks     ContactSocialLink[]
-  budgetOptions   ContactBudgetOption[]
-  timelineOptions ContactTimelineOption[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  title                  String                  @default("Contact us")
+  description            String                  @default("")
+  emailLabel             String                  @default("Email Adress")
+  emailValue             String                  @default("")
+  phoneLabel             String                  @default("Phone")
+  phoneValue             String                  @default("")
+  locationLabel          String                  @default("Location")
+  locationValue          String                  @default("")
+  hoursLabel             String                  @default("Hours")
+  hoursValue             String                  @default("")
+  followUsLabel          String                  @default("Follow Us")
+  tags                   String[]
+  formNameLabel          String                  @default("Name")
+  formNamePlaceholder    String                  @default("Your name*")
+  formEmailLabel         String                  @default("Email")
+  formEmailPlaceholder   String                  @default("Your email*")
+  formPhoneLabel         String                  @default("Phone")
+  formPhonePlaceholder   String                  @default("Your phone*")
+  formServiceLabel       String                  @default("Service")
+  formBudgetLabel        String                  @default("Budget")
+  formTimelineLabel      String                  @default("Project Timeline")
+  formMessageLabel       String                  @default("Message")
+  formMessagePlaceholder String                  @default("Your message")
+  formSubmitLabel        String                  @default("Submit Inquiry")
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  budgetOptions          ContactBudgetOption[]
+  socialLinks            ContactSocialLink[]
+  timelineOptions        ContactTimelineOption[]
 
   @@map("contact_settings")
 }
 
 model ContactSocialLink {
   id        Int             @id @default(autoincrement())
-  icon      String?    
+  icon      String?
   href      String
   order     Int             @default(0)
   isVisible Boolean         @default(true)
@@ -497,4 +486,22 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@map("contact_submissions")
+}
+
+model vacancy_submissions {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String
+  phone        String
+  message      String?
+  cvUrl        String
+  vacancyId    Int?
+  vacancyTitle String?
+  createdAt    DateTime @default(now())
+}
+
+enum BulletType {
+  BULLET
+  NUMBERED
+  DASH
 }

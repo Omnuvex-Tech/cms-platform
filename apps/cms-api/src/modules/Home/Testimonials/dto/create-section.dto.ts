@@ -1,9 +1,9 @@
-import { IsString } from 'class-validator';
+import { IsObject } from 'class-validator';
 
 export class CreateSectionDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
-  @IsString()
-  description: string;
+  @IsObject()
+  description: Record<string, string>;
 }
