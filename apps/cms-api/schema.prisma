@@ -19,8 +19,8 @@ model User {
 
 model Faq {
   id        Int      @id @default(autoincrement())
-  question  String
-  answer    String
+  question  Json     @default("{}")
+  answer    Json     @default("{}")
   isVisible Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -28,6 +28,7 @@ model Faq {
 
   @@map("faqs")
 }
+
 
 model TestimonialsSection {
   id           Int           @id @default(autoincrement())
@@ -59,7 +60,7 @@ model Testimonial {
 
 model VacancyCategory {
   id        Int       @id @default(autoincrement())
-  name      String
+  name      Json      @default("{}")
   order     Int       @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -68,23 +69,23 @@ model VacancyCategory {
 
 model Vacancy {
   id                 Int             @id @default(autoincrement())
-  title              String
-  tags               String[]
+  title              Json            @default("{}")
+  tags               Json            @default("[]")
   isNew              Boolean         @default(false)
   isVisible          Boolean         @default(true)
   order              Int             @default(0)
   categoryId         Int
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
-  aboutRole          String?
+  aboutRole          Json?
   closingDate        DateTime?
   isDateVisible      Boolean         @default(true)
-  newLabel           String?
-  requirements       String[]
+  newLabel           Json?
+  requirements       Json            @default("[]")
   requirementsType   BulletType      @default(BULLET)
-  responsible        String[]
+  responsible        Json            @default("[]")
   responsibleType    BulletType      @default(BULLET)
-  skills             String[]
+  skills             Json            @default("[]")
   isStartDateVisible Boolean         @default(true)
   startDate          DateTime?
   slug               String          @unique
@@ -93,71 +94,71 @@ model Vacancy {
 
 model VacancyPageHeader {
   id        Int      @id @default(autoincrement())
-  title     String
+  title     Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model VacancySettings {
   id                     Int      @id @default(autoincrement())
-  backLabel              String   @default("Vakansiya")
-  applyTitle             String   @default("APPLY NOW")
-  aboutRoleLabel         String   @default("About the Role")
-  skillsLabel            String   @default("Skills")
-  responsibleLabel       String   @default("Responsible")
-  requirementsLabel      String   @default("Requirements")
+  backLabel              Json     @default("{}")
+  applyTitle             Json     @default("{}")
+  aboutRoleLabel         Json     @default("{}")
+  skillsLabel            Json     @default("{}")
+  responsibleLabel       Json     @default("{}")
+  requirementsLabel      Json     @default("{}")
   email                  String   @default("")
   emailHref              String   @default("")
   phone                  String   @default("")
   phoneHref              String   @default("")
-  location               String   @default("")
-  emailLabel             String   @default("Email Adres")
-  phoneLabel             String   @default("Phone")
-  locationLabel          String   @default("Location")
+  location               Json     @default("{}")
+  emailLabel             Json     @default("{}")
+  phoneLabel             Json     @default("{}")
+  locationLabel          Json     @default("{}")
+  formCvLabel            Json     @default("{}")
+  formCvPlaceholder      Json     @default("{}")
+  formEmailLabel         Json     @default("{}")
+  formEmailPlaceholder   Json     @default("{}")
+  formMessageLabel       Json     @default("{}")
+  formMessagePlaceholder Json     @default("{}")
+  formNameLabel          Json     @default("{}")
+  formNamePlaceholder    Json     @default("{}")
+  formPhoneLabel         Json     @default("{}")
+  formPhonePlaceholder   Json     @default("{}")
+  formSubmitLabel        Json     @default("{}")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
-  formCvLabel            String   @default("CV yüklə*")
-  formCvPlaceholder      String   @default("pdf, png, jpg")
-  formEmailLabel         String   @default("Email")
-  formEmailPlaceholder   String   @default("Your email*")
-  formMessageLabel       String   @default("Message")
-  formMessagePlaceholder String   @default("Your message")
-  formNameLabel          String   @default("Name")
-  formNamePlaceholder    String   @default("Your name*")
-  formPhoneLabel         String   @default("Phone")
-  formPhonePlaceholder   String   @default("Your phone*")
-  formSubmitLabel        String   @default("Göndər")
 
   @@map("vacancy_settings")
 }
 
 model VacancySubmission {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
-  phone     String
-  message   String?
-  cvUrl     String
-  vacancyId Int?
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String
+  phone        String
+  message      String?
+  cvUrl        String
+  vacancyId    Int?
   vacancyTitle String?
-  createdAt DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@map("vacancy_submissions")
 }
 
 model Portfolio {
   id            Int      @id @default(autoincrement())
-  title         String
+  title         Json     @default("{}")
   slug          String   @unique
   tags          String[]
   coverImage    String
+  coverImageAlt Json     @default("{}")
   sections      Json     @default("[]")
   order         Int      @default(0)
   isVisible     Boolean  @default(true)
+  isHomepage    Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  isHomepage    Boolean  @default(false)
-  coverImageAlt String   @default("")
 
   @@map("portfolios")
 }
@@ -195,17 +196,17 @@ model Service {
   id                    Int      @id @default(autoincrement())
   number                String
   slug                  String   @unique
-  badge                 String
-  title                 String
-  description           String
+  badge                 Json     @default("{}")
+  title                 Json     @default("{}")
+  description           Json     @default("{}")
   image                 String
-  imageAlt              String?
+  imageAlt              Json     @default("{}")
   gif                   String?
   features              Json     @default("[]")
-  portfolioButtonText   String?
+  portfolioButtonText   Json     @default("{}")
   portfolioButtonLink   String?
   portfolioButtonNewTab Boolean  @default(false)
-  detailButtonText      String?
+  detailButtonText      Json     @default("{}")
   detailButtonLink      String?
   detailButtonNewTab    Boolean  @default(false)
   order                 Int      @default(0)
@@ -301,14 +302,14 @@ model BlogSettings {
 model AboutSettings {
   id              Int      @id @default(autoincrement())
   heroImage       String?
-  heroImageAlt    String?
-  heroBadge       String?
-  heroTitle       String?
+  heroImageAlt    Json     @default("{}")
+  heroBadge       Json     @default("{}")
+  heroTitle       Json     @default("{}")
   heroParagraphs  Json     @default("[]")
   storyBlocks     Json     @default("[]")
-  teamTitle       String?
-  teamDescription String?
-  teamCtaLabel    String?
+  teamTitle       Json     @default("{}")
+  teamDescription Json     @default("{}")
+  teamCtaLabel    Json     @default("{}")
   teamCtaHref     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -317,21 +318,21 @@ model AboutSettings {
 }
 
 model NavbarSettings {
-  id         Int       @id @default(autoincrement())
-  logoText   String    @default("trenders")
-  logoImage  String?
-  showSearch Boolean   @default(true)
-  showLang   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  links      NavLink[]
+  id           Int       @id @default(autoincrement())
+  logoImage    String?
+  logoImageAlt Json      @default("{}")
+  showSearch   Boolean   @default(true)
+  showLang     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  links        NavLink[]
 
   @@map("navbar_settings")
 }
 
 model NavLink {
   id           Int            @id @default(autoincrement())
-  label        String
+  label        Json           @default("{}")
   href         String
   order        Int            @default(0)
   isVisible    Boolean        @default(true)
@@ -347,16 +348,16 @@ model NavLink {
 model FooterSettings {
   id            Int                @id @default(autoincrement())
   logoImage     String?
-  logoAlt       String             @default("trenders")
-  description   String             @default("")
-  copyrightText String             @default("© 2023 Trenders")
-  privacyText   String             @default("Məxfilik siyasəti | Bütün hüquqlar qorunur")
-  locationLabel String             @default("Location")
-  phoneLabel    String             @default("Phone")
-  emailLabel    String             @default("Email Adress")
-  locationValue String             @default("")
-  phoneValue    String             @default("")
-  emailValue    String             @default("")
+  logoAlt       Json               @default("{}")
+  description   Json               @default("{}")
+  copyrightText Json               @default("{}")
+  privacyText   Json               @default("{}")
+  locationLabel Json               @default("{}")
+  phoneLabel    Json               @default("{}")
+  emailLabel    Json               @default("{}")
+  locationValue Json               @default("{}")
+  phoneValue    Json               @default("{}")
+  emailValue    Json               @default("{}")
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   navLinks      FooterNavLink[]
@@ -367,7 +368,7 @@ model FooterSettings {
 
 model FooterNavLink {
   id           Int            @id @default(autoincrement())
-  label        String
+  label        Json           @default("{}")
   href         String
   order        Int            @default(0)
   isVisible    Boolean        @default(true)
@@ -394,42 +395,6 @@ model FooterSocialLink {
   @@map("footer_social_links")
 }
 
-
-model ContactSettings {
-  id                     Int                     @id @default(autoincrement())
-  title                  String                  @default("Contact us")
-  description            String                  @default("")
-  emailLabel             String                  @default("Email Adress")
-  emailValue             String                  @default("")
-  phoneLabel             String                  @default("Phone")
-  phoneValue             String                  @default("")
-  locationLabel          String                  @default("Location")
-  locationValue          String                  @default("")
-  hoursLabel             String                  @default("Hours")
-  hoursValue             String                  @default("")
-  followUsLabel          String                  @default("Follow Us")
-  tags                   String[]
-  formNameLabel          String                  @default("Name")
-  formNamePlaceholder    String                  @default("Your name*")
-  formEmailLabel         String                  @default("Email")
-  formEmailPlaceholder   String                  @default("Your email*")
-  formPhoneLabel         String                  @default("Phone")
-  formPhonePlaceholder   String                  @default("Your phone*")
-  formServiceLabel       String                  @default("Service")
-  formBudgetLabel        String                  @default("Budget")
-  formTimelineLabel      String                  @default("Project Timeline")
-  formMessageLabel       String                  @default("Message")
-  formMessagePlaceholder String                  @default("Your message")
-  formSubmitLabel        String                  @default("Submit Inquiry")
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  budgetOptions          ContactBudgetOption[]
-  socialLinks            ContactSocialLink[]
-  timelineOptions        ContactTimelineOption[]
-
-  @@map("contact_settings")
-}
-
 model ContactSocialLink {
   id        Int             @id @default(autoincrement())
   icon      String?
@@ -440,26 +405,6 @@ model ContactSocialLink {
   contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@map("contact_social_links")
-}
-
-model ContactBudgetOption {
-  id        Int             @id @default(autoincrement())
-  label     String
-  order     Int             @default(0)
-  contactId Int
-  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@map("contact_budget_options")
-}
-
-model ContactTimelineOption {
-  id        Int             @id @default(autoincrement())
-  label     String
-  order     Int             @default(0)
-  contactId Int
-  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@map("contact_timeline_options")
 }
 
 model ContactSubmission {
@@ -474,6 +419,63 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@map("contact_submissions")
+}
+
+model ContactSettings {
+  id                      Int                     @id @default(autoincrement())
+  title                   Json                    @default("{}")
+  description             Json                    @default("{}")
+  emailLabel              Json                    @default("{}")
+  emailValue              Json                    @default("{}")
+  phoneLabel              Json                    @default("{}")
+  phoneValue              Json                    @default("{}")
+  locationLabel           Json                    @default("{}")
+  locationValue           Json                    @default("{}")
+  hoursLabel              Json                    @default("{}")
+  hoursValue              Json                    @default("{}")
+  followUsLabel           Json                    @default("{}")
+  tags                    String[]
+  formNameLabel           Json                    @default("{}")
+  formNamePlaceholder     Json                    @default("{}")
+  formEmailLabel          Json                    @default("{}")
+  formEmailPlaceholder    Json                    @default("{}")
+  formPhoneLabel          Json                    @default("{}")
+  formPhonePlaceholder    Json                    @default("{}")
+  formServiceLabel        Json                    @default("{}")
+  formBudgetLabel         Json                    @default("{}")
+  formBudgetPlaceholder   Json                    @default("{}")
+  formTimelineLabel       Json                    @default("{}")
+  formTimelinePlaceholder Json                    @default("{}")
+  formMessageLabel        Json                    @default("{}")
+  formMessagePlaceholder  Json                    @default("{}")
+  formSubmitLabel         Json                    @default("{}")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  budgetOptions           ContactBudgetOption[]
+  socialLinks             ContactSocialLink[]
+  timelineOptions         ContactTimelineOption[]
+
+  @@map("contact_settings")
+}
+
+model ContactBudgetOption {
+  id        Int             @id @default(autoincrement())
+  label     Json            @default("{}")
+  order     Int             @default(0)
+  contactId Int
+  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("contact_budget_options")
+}
+
+model ContactTimelineOption {
+  id        Int             @id @default(autoincrement())
+  label     Json            @default("{}")
+  order     Int             @default(0)
+  contactId Int
+  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("contact_timeline_options")
 }
 
 enum BulletType {

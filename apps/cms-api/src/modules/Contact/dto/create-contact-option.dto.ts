@@ -1,4 +1,10 @@
+import { IsObject, IsOptional, IsInt } from 'class-validator';
+
 export class CreateContactOptionDto {
-  label: string;
+  @IsObject()
+  label: Record<string, string>;
+
+  @IsOptional()
+  @IsInt()
   order?: number;
 }

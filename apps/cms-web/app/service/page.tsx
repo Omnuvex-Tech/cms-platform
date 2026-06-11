@@ -11,12 +11,15 @@ import {
 } from "@dnd-kit/core";
 import {
     SortableContext, verticalListSortingStrategy,
-    useSortable, arrayMove, horizontalListSortingStrategy,
+    useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/service.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
 
 function getToken() {
     return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
@@ -64,12 +67,38 @@ function generateSlug(title: string) {
         .replace(/\s+/g, "-").trim();
 }
 
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+    return (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {(["az", "en", "ru"] as Lang[]).map((l) => (
+                <button key={l} type="button" onClick={() => onChange(l)}
+                    style={{
+                        padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                        border: "1.5px solid",
+                        borderColor: active === l ? "#3b82f6" : "#333",
+                        background: active === l ? "#1e3a5f" : "transparent",
+                        color: active === l ? "#fff" : "#888",
+                        cursor: "pointer",
+                    }}>
+                    {l.toUpperCase()}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
     const editor = useEditor({
         extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
         content: value,
         onUpdate: ({ editor }) => onChange(editor.getHTML()),
     });
+
+    useEffect(() => {
+        if (editor && editor.getHTML() !== value) {
+            editor.commands.setContent(value || "");
+        }
+    }, [value]);
 
     return (
         <div className={styles.richEditor}>
@@ -125,7 +154,8 @@ function SingleImageUpload({ value, onChange, accept = "image/webp", label }: {
                     </div>
                 ) : (
                     <div className={styles.imagePlaceholder}>
-                        <span>🖼️</span><span>{label ?? "Şəkil seçin"}</span><small>{accept.includes("gif") ? "WebP / GIF" : "WebP"}</small>
+                        <span>🖼️</span><span>{label ?? "Şəkil seçin"}</span>
+                        <small>{accept.includes("gif") ? "WebP / GIF" : "WebP"}</small>
                     </div>
                 )}
             </div>
@@ -133,9 +163,9 @@ function SingleImageUpload({ value, onChange, accept = "image/webp", label }: {
     );
 }
 
-function SortableFeatureRow({ id, feature, onChange, onRemove }: {
-    id: string; feature: any;
-    onChange: (key: string, val: string) => void; onRemove: () => void;
+function SortableFeatureRow({ id, feature, activeLang, onChange, onRemove }: {
+    id: string; feature: any; activeLang: Lang;
+    onChange: (key: string, val: any) => void; onRemove: () => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     return (
@@ -143,14 +173,28 @@ function SortableFeatureRow({ id, feature, onChange, onRemove }: {
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
             className={styles.featureRow}>
             <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
-            <input className={styles.input} value={feature.label ?? ""} placeholder="Feature mətni"
-                onChange={e => onChange("label", e.target.value)} />
+            <input className={styles.input}
+                value={feature.label?.[activeLang] || ""}
+                placeholder="Feature mətni"
+                onChange={e => onChange("label", { ...feature.label, [activeLang]: e.target.value })} />
             <button type="button" className={styles.removeBtn} onClick={onRemove}>✕</button>
         </div>
     );
 }
 
-function HeroSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+// Section editorları — aktivLang prop qəbul edir
+function LocalizedRichEditor({ value, lang, onChange }: {
+    value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
+}) {
+    return (
+        <RichEditor
+            value={value?.[lang] || ""}
+            onChange={v => onChange({ ...value, [lang]: v })}
+        />
+    );
+}
+
+function HeroSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
     const stats = data.stats ?? [];
     const sensors = useSensors(useSensor(PointerSensor));
 
@@ -171,32 +215,58 @@ function HeroSectionEditor({ data, onChange }: { data: any; onChange: (d: any) =
 
     return (
         <div className={styles.sectionFields}>
-            <div className={styles.field}><label>Badge</label>
-                <input className={styles.input} value={data.badge ?? ""} placeholder="Brendinq"
-                    onChange={e => onChange({ ...data, badge: e.target.value })} />
+            <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.badge?.[activeLang] || ""}
+                    placeholder="Brendinq"
+                    onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })} />
             </div>
-            <div className={styles.field}><label>Başlıq</label>
-                <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+            <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+                    onChange={v => onChange({ ...data, title: v })} />
             </div>
-            <div className={styles.field}><label>Təsvir 1</label>
-                <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? ""] })} />
+            <div className={styles.field}><label>Təsvir 1 ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor
+                    value={{ [activeLang]: data.descriptions?.[0]?.[activeLang] || "" }}
+                    lang={activeLang}
+                    onChange={v => onChange({
+                        ...data,
+                        descriptions: [
+                            { ...(data.descriptions?.[0] ?? {}), [activeLang]: v[activeLang] },
+                            data.descriptions?.[1] ?? {}
+                        ]
+                    })} />
             </div>
-            <div className={styles.field}><label>Təsvir 2(optional)</label>
-                <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v] })} />
+            <div className={styles.field}><label>Təsvir 2 (optional) ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor
+                    value={{ [activeLang]: data.descriptions?.[1]?.[activeLang] || "" }}
+                    lang={activeLang}
+                    onChange={v => onChange({
+                        ...data,
+                        descriptions: [
+                            data.descriptions?.[0] ?? {},
+                            { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }
+                        ]
+                    })} />
             </div>
-            <SingleImageUpload label="Hero şəkil (yuxarı)" value={data.heroImage ?? ""} onChange={v => onChange({ ...data, heroImage: v })} />
-            <div className={styles.field}><label>Hero şəkil alt mətn</label>
-                <input className={styles.input} value={data.heroImageAlt ?? ""} onChange={e => onChange({ ...data, heroImageAlt: e.target.value })} />
+            <SingleImageUpload label="Hero şəkil" value={data.heroImage ?? ""} onChange={v => onChange({ ...data, heroImage: v })} />
+            <div className={styles.field}><label>Hero şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.heroImageAlt?.[activeLang] || ""}
+                    onChange={e => onChange({ ...data, heroImageAlt: { ...data.heroImageAlt, [activeLang]: e.target.value } })} />
             </div>
-            <SingleImageUpload label="Alt şəkil (aşağı)" value={data.bottomImage ?? ""} onChange={v => onChange({ ...data, bottomImage: v })} />
-            <div className={styles.field}><label>Alt şəkilin alt mətni</label>
-                <input className={styles.input} value={data.bottomImageAlt ?? ""} onChange={e => onChange({ ...data, bottomImageAlt: e.target.value })} />
+            <SingleImageUpload label="Alt şəkil" value={data.bottomImage ?? ""} onChange={v => onChange({ ...data, bottomImage: v })} />
+            <div className={styles.field}><label>Alt şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.bottomImageAlt?.[activeLang] || ""}
+                    onChange={e => onChange({ ...data, bottomImageAlt: { ...data.bottomImageAlt, [activeLang]: e.target.value } })} />
             </div>
-            <div className={styles.field}><label>Quote mətni</label>
-                <RichEditor value={data.quoteText ?? ""} onChange={v => onChange({ ...data, quoteText: v })} />
+            <div className={styles.field}><label>Quote mətni ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor value={data.quoteText ?? {}} lang={activeLang}
+                    onChange={v => onChange({ ...data, quoteText: v })} />
             </div>
             <div className={styles.field}>
-                <label>Statistikalar <small>(sürüşdürüb sırala)</small></label>
+                <label>Statistikalar</label>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleStatDragEnd}>
                     <SortableContext items={stats.map((_: any, i: number) => `stat-${i}`)} strategy={verticalListSortingStrategy}>
                         {stats.map((stat: any, i: number) => (
@@ -222,12 +292,11 @@ function SortableStatRow({ id, stat, onChange, onRemove }: {
     const handleIconSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!['image/webp', 'image/svg+xml'].includes(file.type)) {
-            alert("Yalnız WebP və ya SVG"); return;
-        }
+        if (!['image/webp', 'image/svg+xml'].includes(file.type)) { alert("Yalnız WebP və ya SVG"); return; }
         const url = await uploadFile(file);
         onChange("icon", url);
     };
+
     return (
         <div ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
@@ -235,13 +304,9 @@ function SortableStatRow({ id, stat, onChange, onRemove }: {
             <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
             <div className={styles.statIconWrap} onClick={() => inputRef.current?.click()}>
                 {stat.icon ? <img src={toAbsUrl(stat.icon)} alt="" className={styles.statIcon} /> : <span className={styles.statIconPlaceholder}>+</span>}
-                <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/webp,image/svg+xml"
-                    style={{ display: "none" }}
-                    onChange={handleIconSelect}
-                />            </div>
+                <input ref={inputRef} type="file" accept="image/webp,image/svg+xml" style={{ display: "none" }} onChange={handleIconSelect} />
+            </div>
+            {/* stat label/value dil dəyişmir — rəqəm və qısa label */}
             <input className={styles.inputSmall} value={stat.label ?? ""} placeholder="Label" onChange={e => onChange("label", e.target.value)} />
             <input className={styles.inputSmall} value={stat.value ?? ""} placeholder="Dəyər" onChange={e => onChange("value", e.target.value)} />
             <button type="button" className={styles.removeBtn} onClick={onRemove}>✕</button>
@@ -249,10 +314,15 @@ function SortableStatRow({ id, stat, onChange, onRemove }: {
     );
 }
 
-function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function ContentSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
     const items = data.items ?? [];
 
-    const addItem = () => onChange({ ...data, items: [...items, { number: "", badge: "", title: "", descriptions: [], quote: "", quoteImage: "", subText: "", image: "", imageAlt: "" }] });
+    const addItem = () => onChange({
+        ...data, items: [...items, {
+            number: "", badge: {}, title: {}, descriptions: [{}, {}],
+            quote: {}, quoteImage: "", subText: {}, image: "", imageAlt: {}
+        }]
+    });
     const removeItem = (i: number) => onChange({ ...data, items: items.filter((_: any, idx: number) => idx !== i) });
     const updateItem = (i: number, key: string, val: any) => {
         const arr = [...items]; arr[i] = { ...arr[i], [key]: val };
@@ -269,36 +339,59 @@ function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any
                     </div>
                     <div className={styles.twoCol}>
                         <div className={styles.field}><label>Nömrə</label>
-                            <input className={styles.input} value={item.number ?? ""} placeholder="01" onChange={e => updateItem(i, "number", e.target.value)} />
+                            <input className={styles.input} value={item.number ?? ""} placeholder="01"
+                                onChange={e => updateItem(i, "number", e.target.value)} />
                         </div>
-                        <div className={styles.field}><label>Badge</label>
-                            <input className={styles.input} value={item.badge ?? ""} placeholder="Brendinq" onChange={e => updateItem(i, "badge", e.target.value)} />
+                        <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input}
+                                value={item.badge?.[activeLang] || ""}
+                                placeholder="Brendinq"
+                                onChange={e => updateItem(i, "badge", { ...item.badge, [activeLang]: e.target.value })} />
                         </div>
                     </div>
-                    <div className={styles.field}><label>Başlıq</label>
-                        <RichEditor value={item.title ?? ""} onChange={v => updateItem(i, "title", v)} />
+                    <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                        <LocalizedRichEditor value={item.title ?? {}} lang={activeLang}
+                            onChange={v => updateItem(i, "title", v)} />
                     </div>
-                    <div className={styles.field}><label>Təsvir 1</label>
-                        <RichEditor value={item.descriptions?.[0] ?? ""} onChange={v => updateItem(i, "descriptions", [v, item.descriptions?.[1] ?? ""])} />
+                    <div className={styles.field}><label>Təsvir 1 ({activeLang.toUpperCase()})</label>
+                        <LocalizedRichEditor
+                            value={{ [activeLang]: item.descriptions?.[0]?.[activeLang] || "" }}
+                            lang={activeLang}
+                            onChange={v => updateItem(i, "descriptions", [
+                                { ...(item.descriptions?.[0] ?? {}), [activeLang]: v[activeLang] },
+                                item.descriptions?.[1] ?? {}
+                            ])} />
                     </div>
-                    <div className={styles.field}><label>Təsvir 2 (optional)</label>
-                        <RichEditor value={item.descriptions?.[1] ?? ""} onChange={v => updateItem(i, "descriptions", [item.descriptions?.[0] ?? "", v])} />
+                    <div className={styles.field}><label>Təsvir 2 (optional) ({activeLang.toUpperCase()})</label>
+                        <LocalizedRichEditor
+                            value={{ [activeLang]: item.descriptions?.[1]?.[activeLang] || "" }}
+                            lang={activeLang}
+                            onChange={v => updateItem(i, "descriptions", [
+                                item.descriptions?.[0] ?? {},
+                                { ...(item.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }
+                            ])} />
                     </div>
 
                     {i === 0 && <>
-                        <div className={styles.field}><label>Sitat mətni</label>
-                            <RichEditor value={item.quote ?? ""} onChange={v => updateItem(i, "quote", v)} />
+                        <div className={styles.field}><label>Sitat mətni ({activeLang.toUpperCase()})</label>
+                            <LocalizedRichEditor value={item.quote ?? {}} lang={activeLang}
+                                onChange={v => updateItem(i, "quote", v)} />
                         </div>
-                        <SingleImageUpload label="Sitat şəkli" value={item.quoteImage ?? ""} onChange={v => updateItem(i, "quoteImage", v)} />
-                        <div className={styles.field}><label>Kiçik sitat (subText)</label>
-                            <RichEditor value={item.subText ?? ""} onChange={v => updateItem(i, "subText", v)} />
+                        <SingleImageUpload label="Sitat şəkli" value={item.quoteImage ?? ""}
+                            onChange={v => updateItem(i, "quoteImage", v)} />
+                        <div className={styles.field}><label>subText ({activeLang.toUpperCase()})</label>
+                            <LocalizedRichEditor value={item.subText ?? {}} lang={activeLang}
+                                onChange={v => updateItem(i, "subText", v)} />
                         </div>
                     </>}
 
                     {i !== 0 && <>
-                        <SingleImageUpload label="Alt şəkil" value={item.image ?? ""} onChange={v => updateItem(i, "image", v)} />
-                        <div className={styles.field}><label>Alt mətni</label>
-                            <input className={styles.input} value={item.imageAlt ?? ""} onChange={e => updateItem(i, "imageAlt", e.target.value)} />
+                        <SingleImageUpload label="Alt şəkil" value={item.image ?? ""}
+                            onChange={v => updateItem(i, "image", v)} />
+                        <div className={styles.field}><label>Alt mətn ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input}
+                                value={item.imageAlt?.[activeLang] || ""}
+                                onChange={e => updateItem(i, "imageAlt", { ...item.imageAlt, [activeLang]: e.target.value })} />
                         </div>
                     </>}
                 </div>
@@ -308,59 +401,84 @@ function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any
     );
 }
 
-function QuoteSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function QuoteSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
     return (
         <div className={styles.sectionFields}>
             <div className={styles.twoCol}>
                 <div className={styles.field}><label>Nömrə</label>
-                    <input className={styles.input} value={data.number ?? ""} placeholder="03" onChange={e => onChange({ ...data, number: e.target.value })} />
+                    <input className={styles.input} value={data.number ?? ""} placeholder="03"
+                        onChange={e => onChange({ ...data, number: e.target.value })} />
                 </div>
-                <div className={styles.field}><label>Badge</label>
-                    <input className={styles.input} value={data.badge ?? ""} onChange={e => onChange({ ...data, badge: e.target.value })} />
+                <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+                    <input className={styles.input}
+                        value={data.badge?.[activeLang] || ""}
+                        onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })} />
                 </div>
             </div>
-            <div className={styles.field}><label>Başlıq</label>
-                <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+            <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+                    onChange={v => onChange({ ...data, title: v })} />
             </div>
-            <div className={styles.field}><label>Təsvir 1</label>
-                <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? "", data.descriptions?.[2] ?? ""] })} />
+            {[0, 1, 2].map(idx => (
+                <div key={idx} className={styles.field}>
+                    <label>Təsvir {idx + 1}{idx > 0 ? " (optional)" : ""} ({activeLang.toUpperCase()})</label>
+                    <LocalizedRichEditor
+                        value={{ [activeLang]: data.descriptions?.[idx]?.[activeLang] || "" }}
+                        lang={activeLang}
+                        onChange={v => {
+                            const descs = [...(data.descriptions ?? [{}, {}, {}])];
+                            descs[idx] = { ...(descs[idx] ?? {}), [activeLang]: v[activeLang] };
+                            onChange({ ...data, descriptions: descs });
+                        }} />
+                </div>
+            ))}
+            <div className={styles.field}><label>Sitat mətni ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor value={data.quoteText ?? {}} lang={activeLang}
+                    onChange={v => onChange({ ...data, quoteText: v })} />
             </div>
-            <div className={styles.field}><label>Təsvir 2(optional)</label>
-                <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v, data.descriptions?.[2] ?? ""] })} />
-            </div>
-            <div className={styles.field}><label>Təsvir 3(optional)</label>
-                <RichEditor value={data.descriptions?.[2] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", data.descriptions?.[1] ?? "", v] })} />
-            </div>
-            <div className={styles.field}><label>Sitat mətni</label>
-                <RichEditor value={data.quoteText ?? ""} onChange={v => onChange({ ...data, quoteText: v })} />
-            </div>
-            <SingleImageUpload label="Sitat şəkli" value={data.quoteImage ?? ""} onChange={v => onChange({ ...data, quoteImage: v })} />
-            <div className={styles.field}><label>Sitat şəkil alt mətn</label>
-                <input className={styles.input} value={data.quoteImageAlt ?? ""} onChange={e => onChange({ ...data, quoteImageAlt: e.target.value })} />
+            <SingleImageUpload label="Sitat şəkli" value={data.quoteImage ?? ""}
+                onChange={v => onChange({ ...data, quoteImage: v })} />
+            <div className={styles.field}><label>Sitat şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.quoteImageAlt?.[activeLang] || ""}
+                    onChange={e => onChange({ ...data, quoteImageAlt: { ...data.quoteImageAlt, [activeLang]: e.target.value } })} />
             </div>
         </div>
     );
 }
 
-function OverlaySectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function OverlaySectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
     return (
         <div className={styles.sectionFields}>
-            <div className={styles.field}><label>Badge</label>
-                <input className={styles.input} value={data.badge ?? ""} onChange={e => onChange({ ...data, badge: e.target.value })} />
+            <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.badge?.[activeLang] || ""}
+                    onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })} />
             </div>
-            <div className={styles.field}><label>Başlıq</label>
-                <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+            <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+                    onChange={v => onChange({ ...data, title: v })} />
             </div>
-            <SingleImageUpload label="Şəkil" value={data.image ?? ""} onChange={v => onChange({ ...data, image: v })} />
-            <div className={styles.field}><label>Şəkil alt mətn</label>
-                <input className={styles.input} value={data.imageAlt ?? ""} onChange={e => onChange({ ...data, imageAlt: e.target.value })} />
+            <SingleImageUpload label="Şəkil" value={data.image ?? ""}
+                onChange={v => onChange({ ...data, image: v })} />
+            <div className={styles.field}><label>Şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                    value={data.imageAlt?.[activeLang] || ""}
+                    onChange={e => onChange({ ...data, imageAlt: { ...data.imageAlt, [activeLang]: e.target.value } })} />
             </div>
-            <div className={styles.field}><label>Təsvir 1</label>
-                <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? ""] })} />
-            </div>
-            <div className={styles.field}><label>Təsvir 2(optional)</label>
-                <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v] })} />
-            </div>
+            {[0, 1].map(idx => (
+                <div key={idx} className={styles.field}>
+                    <label>Təsvir {idx + 1}{idx > 0 ? " (optional)" : ""} ({activeLang.toUpperCase()})</label>
+                    <LocalizedRichEditor
+                        value={{ [activeLang]: data.descriptions?.[idx]?.[activeLang] || "" }}
+                        lang={activeLang}
+                        onChange={v => {
+                            const descs = [...(data.descriptions ?? [{}, {}])];
+                            descs[idx] = { ...(descs[idx] ?? {}), [activeLang]: v[activeLang] };
+                            onChange({ ...data, descriptions: descs });
+                        }} />
+                </div>
+            ))}
         </div>
     );
 }
@@ -372,18 +490,18 @@ const SECTION_TYPES = [
     { type: "overlay", label: "Overlay" },
 ];
 
-function SectionEditor({ section, index, onChange, onRemove }: {
-    section: any; index: number;
+function SectionEditor({ section, index, activeLang, onChange, onRemove }: {
+    section: any; index: number; activeLang: Lang;
     onChange: (d: any) => void; onRemove: () => void;
 }) {
     const [open, setOpen] = useState(true);
 
     const renderEditor = () => {
         switch (section.type) {
-            case "hero": return <HeroSectionEditor data={section} onChange={onChange} />;
-            case "content": return <ContentSectionEditor data={section} onChange={onChange} />;
-            case "quote": return <QuoteSectionEditor data={section} onChange={onChange} />;
-            case "overlay": return <OverlaySectionEditor data={section} onChange={onChange} />;
+            case "hero": return <HeroSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+            case "content": return <ContentSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+            case "quote": return <QuoteSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+            case "overlay": return <OverlaySectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
             default: return null;
         }
     };
@@ -412,6 +530,8 @@ function SortableRow({ s, onEdit, onToggle, onDelete }: {
     onToggle: (s: any) => void; onDelete: (id: number) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: s.id });
+    const titleAz = typeof s.title === "object" ? (s.title?.az || "") : (s.title || "");
+    const badgeAz = typeof s.badge === "object" ? (s.badge?.az || "") : (s.badge || "");
     return (
         <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
             <td className={styles.num}>
@@ -419,14 +539,14 @@ function SortableRow({ s, onEdit, onToggle, onDelete }: {
             </td>
             <td>
                 <div className={styles.serviceInfo}>
-                    {s.image && <img src={toAbsUrl(s.image)} alt={s.imageAlt ?? ""} className={styles.coverThumb} />}
+                    {s.image && <img src={toAbsUrl(s.image)} alt="" className={styles.coverThumb} />}
                     <div>
-                        <div className={styles.serviceTitle} dangerouslySetInnerHTML={{ __html: s.title }} />
+                        <div className={styles.serviceTitle} dangerouslySetInnerHTML={{ __html: titleAz }} />
                         <div className={styles.serviceSlug}>/{s.slug}</div>
                     </div>
                 </div>
             </td>
-            <td><span className={styles.badge}>{s.badge}</span></td>
+            <td><span className={styles.badge}>{badgeAz}</span></td>
             <td>
                 <span className={`${styles.statusBadge} ${s.isVisible ? styles.badgeVisible : styles.badgeHidden}`}>
                     {s.isVisible ? "Görünür" : "Gizli"}
@@ -453,20 +573,21 @@ export default function ServicePage() {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [reordering, setReordering] = useState(false);
+    const [activeLang, setActiveLang] = useState<Lang>("az");
 
     const [number, setNumber] = useState("");
-    const [title, setTitle] = useState("");
+    const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [slug, setSlug] = useState("");
-    const [badge, setBadge] = useState("");
-    const [description, setDescription] = useState("");
+    const [badge, setBadge] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [description, setDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [image, setImage] = useState("");
-    const [imageAlt, setImageAlt] = useState("");
+    const [imageAlt, setImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [gif, setGif] = useState("");
     const [features, setFeatures] = useState<any[]>([]);
-    const [portfolioButtonText, setPortfolioButtonText] = useState("");
+    const [portfolioButtonText, setPortfolioButtonText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [portfolioButtonLink, setPortfolioButtonLink] = useState("");
     const [portfolioButtonNewTab, setPortfolioButtonNewTab] = useState(false);
-    const [detailButtonText, setDetailButtonText] = useState("");
+    const [detailButtonText, setDetailButtonText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [detailButtonLink, setDetailButtonLink] = useState("");
     const [detailButtonNewTab, setDetailButtonNewTab] = useState(false);
     const [sections, setSections] = useState<any[]>([]);
@@ -484,38 +605,59 @@ export default function ServicePage() {
     useEffect(() => { load(); }, []);
 
     const resetForm = () => {
-        setNumber(""); setTitle(""); setSlug(""); setBadge(""); setDescription("");
-        setImage(""); setImageAlt(""); setGif(""); setFeatures([]);
-        setPortfolioButtonText(""); setPortfolioButtonLink(""); setPortfolioButtonNewTab(false);
-        setDetailButtonText(""); setDetailButtonLink(""); setDetailButtonNewTab(false);
+        setNumber(""); setTitle({ az: "", en: "", ru: "" }); setSlug("");
+        setBadge({ az: "", en: "", ru: "" });
+        setDescription({ az: "", en: "", ru: "" });
+        setImage(""); setImageAlt({ az: "", en: "", ru: "" }); setGif("");
+        setFeatures([]);
+        setPortfolioButtonText({ az: "", en: "", ru: "" });
+        setPortfolioButtonLink(""); setPortfolioButtonNewTab(false);
+        setDetailButtonText({ az: "", en: "", ru: "" });
+        setDetailButtonLink(""); setDetailButtonNewTab(false);
         setSections([]);
     };
 
     const openCreate = () => { setEditItem(null); resetForm(); setDrawerOpen(true); };
 
-    const openEdit = (s: any) => {
-        setEditItem(s);
-        setNumber(s.number ?? ""); setTitle(s.title ?? ""); setSlug(s.slug ?? "");
-        setBadge(s.badge ?? ""); setDescription(s.description ?? "");
-        setImage(s.image ?? ""); setImageAlt(s.imageAlt ?? ""); setGif(s.gif ?? "");
-        setFeatures(s.features ?? []);
-        setPortfolioButtonText(s.portfolioButtonText ?? ""); setPortfolioButtonLink(s.portfolioButtonLink ?? "");
-        setPortfolioButtonNewTab(s.portfolioButtonNewTab ?? false);
-        setDetailButtonText(s.detailButtonText ?? ""); setDetailButtonLink(s.detailButtonLink ?? "");
-        setDetailButtonNewTab(s.detailButtonNewTab ?? false);
-        setSections(s.sections ?? []);
-        setDrawerOpen(true);
-    };
+const openEdit = (s: any) => {
+    setEditItem(s);
+    setNumber(s.number ?? "");
+    setTitle(s.title ?? { az: "", en: "", ru: "" });
+    setSlug(s.slug ?? "");
+    setBadge(s.badge ?? { az: "", en: "", ru: "" });
+    setDescription(s.description ?? { az: "", en: "", ru: "" });
+    setImage(s.image ?? "");
+    setImageAlt(s.imageAlt ?? { az: "", en: "", ru: "" });
+    setGif(s.gif ?? "");
+
+    // features normalize — köhnə string label → {az: label, en: "", ru: ""}
+    const normalizedFeatures = (s.features ?? []).map((f: any) => ({
+        ...f,
+        label: typeof f.label === "string"
+            ? { az: f.label, en: "", ru: "" }
+            : (f.label ?? { az: "", en: "", ru: "" }),
+    }));
+    setFeatures(normalizedFeatures);
+
+    setPortfolioButtonText(s.portfolioButtonText ?? { az: "", en: "", ru: "" });
+    setPortfolioButtonLink(s.portfolioButtonLink ?? "");
+    setPortfolioButtonNewTab(s.portfolioButtonNewTab ?? false);
+    setDetailButtonText(s.detailButtonText ?? { az: "", en: "", ru: "" });
+    setDetailButtonLink(s.detailButtonLink ?? "");
+    setDetailButtonNewTab(s.detailButtonNewTab ?? false);
+    setSections(s.sections ?? []);
+    setDrawerOpen(true);
+};
 
     const closeDrawer = () => { setDrawerOpen(false); setEditItem(null); };
 
-    const handleTitleChange = (val: string) => {
+    const handleTitleChange = (val: LocalizedString) => {
         setTitle(val);
-        setSlug(generateSlug(val));
+        setSlug(generateSlug(val.az || ""));
     };
 
-    const addFeature = () => setFeatures(prev => [...prev, { label: "" }]);
-    const updateFeature = (i: number, key: string, val: string) => {
+    const addFeature = () => setFeatures(prev => [...prev, { label: { az: "", en: "", ru: "" } }]);
+    const updateFeature = (i: number, key: string, val: any) => {
         setFeatures(prev => { const arr = [...prev]; arr[i] = { ...arr[i], [key]: val }; return arr; });
     };
     const removeFeature = (i: number) => setFeatures(prev => prev.filter((_, idx) => idx !== i));
@@ -531,17 +673,18 @@ export default function ServicePage() {
     const addSection = (type: string) => setSections(prev => [...prev, { type }]);
     const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
     const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
+
     const save = async () => {
-        if (!title || !slug) return;
+        if (!title.az || !slug) return;
         setSaving(true);
         try {
             const payload = {
                 number, title, slug, badge, description, image, imageAlt,
                 gif: gif || null, features, sections,
-                portfolioButtonText: portfolioButtonText || null,
+                portfolioButtonText,
                 portfolioButtonLink: portfolioButtonLink || null,
                 portfolioButtonNewTab,
-                detailButtonText: detailButtonText || null,
+                detailButtonText,
                 detailButtonLink: detailButtonLink || null,
                 detailButtonNewTab,
             };
@@ -555,12 +698,10 @@ export default function ServicePage() {
     };
 
     const toggleVisibility = async (s: any) => {
-        try {
-            await apiFetch(`/services/${s.id}/visibility`, {
-                method: "PATCH", body: JSON.stringify({ isVisible: !s.isVisible }),
-            });
-            load();
-        } catch (e) { console.error(e); }
+        await apiFetch(`/services/${s.id}/visibility`, {
+            method: "PATCH", body: JSON.stringify({ isVisible: !s.isVisible }),
+        });
+        load();
     };
 
     const handleDelete = async () => {
@@ -629,32 +770,43 @@ export default function ServicePage() {
                     </div>
 
                     <div className={styles.fullDrawerBody}>
+                        <LangTabs active={activeLang} onChange={setActiveLang} />
+
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Əsas Məlumatlar</h3>
                             <div className={styles.twoCol}>
                                 <div className={styles.field}><label>Nömrə</label>
-                                    <input className={styles.input} value={number} onChange={e => setNumber(e.target.value)} placeholder="01" />
+                                    <input className={styles.input} value={number}
+                                        onChange={e => setNumber(e.target.value)} placeholder="01" />
                                 </div>
-                                <div className={styles.field}><label>Badge</label>
-                                    <input className={styles.input} value={badge} onChange={e => setBadge(e.target.value)} placeholder="Brendinq" />
+                                <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+                                    <input className={styles.input}
+                                        value={badge[activeLang] || ""}
+                                        onChange={e => setBadge(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                        placeholder="Brendinq" />
                                 </div>
                             </div>
-                            <div className={styles.field}><label>Başlıq</label>
-                                <RichEditor value={title} onChange={handleTitleChange} />
+                            <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                                <LocalizedRichEditor value={title} lang={activeLang}
+                                    onChange={v => handleTitleChange(v)} />
                             </div>
                             <div className={styles.twoCol}>
                                 <div className={styles.field}><label>Slug</label>
-                                    <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} placeholder="brendinq" />
+                                    <input className={styles.input} value={slug}
+                                        onChange={e => setSlug(e.target.value)} placeholder="brendinq" />
                                 </div>
                             </div>
-                            <div className={styles.field}><label>Qısa təsvir</label>
-                                <RichEditor value={description} onChange={setDescription} />
+                            <div className={styles.field}><label>Qısa təsvir ({activeLang.toUpperCase()})</label>
+                                <LocalizedRichEditor value={description} lang={activeLang}
+                                    onChange={setDescription} />
                             </div>
                             <SingleImageUpload label="Şəkil (WebP)" value={image} onChange={setImage} />
-                            <div className={styles.field}><label>Şəkil alt mətn</label>
-                                <input className={styles.input} value={imageAlt} onChange={e => setImageAlt(e.target.value)} />
+                            <div className={styles.field}><label>Şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                                <input className={styles.input}
+                                    value={imageAlt[activeLang] || ""}
+                                    onChange={e => setImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))} />
                             </div>
-                            <SingleImageUpload label="GIF (hover-da görünür, optional)" value={gif} onChange={setGif} accept="image/gif,image/webp" />
+                            <SingleImageUpload label="GIF (optional)" value={gif} onChange={setGif} accept="image/gif,image/webp" />
                         </div>
 
                         <div className={styles.fullDrawerSection}>
@@ -662,7 +814,8 @@ export default function ServicePage() {
                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleFeatureDragEnd}>
                                 <SortableContext items={features.map((_, i) => `feat-${i}`)} strategy={verticalListSortingStrategy}>
                                     {features.map((feat, i) => (
-                                        <SortableFeatureRow key={`feat-${i}`} id={`feat-${i}`} feature={feat}
+                                        <SortableFeatureRow key={`feat-${i}`} id={`feat-${i}`}
+                                            feature={feat} activeLang={activeLang}
                                             onChange={(key, val) => updateFeature(i, key, val)}
                                             onRemove={() => removeFeature(i)} />
                                     ))}
@@ -674,49 +827,60 @@ export default function ServicePage() {
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Buttonlar</h3>
                             <div className={styles.twoCol}>
-                                <div className={styles.field}><label>Portfolio button mətni</label>
-                                    <input className={styles.input} value={portfolioButtonText} onChange={e => setPortfolioButtonText(e.target.value)} placeholder="Portfolio" />
+                                <div className={styles.field}><label>Portfolio button mətni ({activeLang.toUpperCase()})</label>
+                                    <input className={styles.input}
+                                        value={portfolioButtonText[activeLang] || ""}
+                                        onChange={e => setPortfolioButtonText(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                        placeholder="Portfolio" />
                                 </div>
                                 <div className={styles.field}><label>Portfolio button linki</label>
-                                    <input className={styles.input} value={portfolioButtonLink} onChange={e => setPortfolioButtonLink(e.target.value)} placeholder="/portfolio" />
+                                    <input className={styles.input} value={portfolioButtonLink}
+                                        onChange={e => setPortfolioButtonLink(e.target.value)} placeholder="/portfolio" />
                                 </div>
                             </div>
                             <div className={styles.field}>
                                 <label>Portfolio button tab</label>
-                                <button
-                                    type="button"
+                                <button type="button"
                                     className={portfolioButtonNewTab ? styles.activeToggle : styles.inactiveToggle}
                                     onClick={() => setPortfolioButtonNewTab(!portfolioButtonNewTab)}>
                                     {portfolioButtonNewTab ? "Yeni tab" : "Eyni tab"}
                                 </button>
                             </div>
                             <div className={styles.twoCol}>
-                                <div className={styles.field}><label>Daha Ətraflı button mətni</label>
-                                    <input className={styles.input} value={detailButtonText} onChange={e => setDetailButtonText(e.target.value)} placeholder="Daha Ətraflı" />
+                                <div className={styles.field}><label>Daha Ətraflı button mətni ({activeLang.toUpperCase()})</label>
+                                    <input className={styles.input}
+                                        value={detailButtonText[activeLang] || ""}
+                                        onChange={e => setDetailButtonText(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                        placeholder="Daha Ətraflı" />
                                 </div>
                                 <div className={styles.field}><label>Daha Ətraflı button linki</label>
-                                    <input className={styles.input} value={detailButtonLink} onChange={e => setDetailButtonLink(e.target.value)} placeholder={`/service/${slug}`} />
+                                    <input className={styles.input} value={detailButtonLink}
+                                        onChange={e => setDetailButtonLink(e.target.value)}
+                                        placeholder={`/service/${slug}`} />
                                 </div>
                             </div>
                             <div className={styles.field}>
                                 <label>Daha Ətraflı button tab</label>
-                                <button
-                                    type="button"
+                                <button type="button"
                                     className={detailButtonNewTab ? styles.activeToggle : styles.inactiveToggle}
                                     onClick={() => setDetailButtonNewTab(!detailButtonNewTab)}>
                                     {detailButtonNewTab ? "Yeni tab" : "Eyni tab"}
                                 </button>
                             </div>
                         </div>
+
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Detail Səhifəsi Sectionları</h3>
                             {sections.map((section, i) => (
-                                <SectionEditor key={`section-${i}-${section.type}`} section={section} index={i}
-                                    onChange={data => updateSection(i, data)} onRemove={() => removeSection(i)} />
+                                <SectionEditor key={`section-${i}-${section.type}`}
+                                    section={section} index={i} activeLang={activeLang}
+                                    onChange={data => updateSection(i, data)}
+                                    onRemove={() => removeSection(i)} />
                             ))}
                             <div className={styles.addSectionRow}>
                                 {SECTION_TYPES.filter(({ type }) => !usedTypes.includes(type)).map(({ type, label }) => (
-                                    <button key={type} type="button" className={styles.addSectionBtn} onClick={() => addSection(type)}>
+                                    <button key={type} type="button" className={styles.addSectionBtn}
+                                        onClick={() => addSection(type)}>
                                         + {label}
                                     </button>
                                 ))}
@@ -725,6 +889,7 @@ export default function ServicePage() {
                     </div>
                 </div>
             )}
+
             {deleteId && (
                 <div className={styles.overlay} onClick={() => setDeleteId(null)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>

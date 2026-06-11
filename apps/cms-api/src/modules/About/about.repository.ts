@@ -1,3 +1,4 @@
+// about.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateAboutSettingsDto } from './dto/update-about-settings.dto';

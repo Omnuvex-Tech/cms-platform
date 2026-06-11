@@ -31,23 +31,18 @@ export class NavbarSettingsRepository {
     });
   }
 
-  async updateSettings(id: number, dto: UpdateNavbarSettingsDto) {
+async updateSettings(id: number, dto: UpdateNavbarSettingsDto) {
     return this.prisma.navbarSettings.update({
-      where: { id },
-      data: {
-        ...(dto.logoText !== undefined && { logoText: dto.logoText }),
-        ...(dto.logoImage !== undefined && { logoImage: dto.logoImage }),
-        ...(dto.showSearch !== undefined && { showSearch: dto.showSearch }),
-        ...(dto.showLang !== undefined && { showLang: dto.showLang }),
-      },
-      include: {
-        links: {
-          orderBy: { order: 'asc' },
+        where: { id },
+        data: {
+            ...(dto.logoImageAlt !== undefined && { logoImageAlt: dto.logoImageAlt }),
+            ...(dto.logoImage !== undefined && { logoImage: dto.logoImage }),
+            ...(dto.showSearch !== undefined && { showSearch: dto.showSearch }),
+            ...(dto.showLang !== undefined && { showLang: dto.showLang }),
         },
-      },
+        include: { links: { orderBy: { order: 'asc' } } },
     });
-  }
-
+}
   async reorderLinks(links: ReorderNavLinkItemDto[]) {
     return this.prisma.$transaction(
       links.map((link) =>

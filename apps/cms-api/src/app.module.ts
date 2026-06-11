@@ -14,10 +14,11 @@ import { AboutModule } from './modules/About/about.module';
 import { NavbarSettingsModule } from './modules/Navbar/navbar.module';
 import { FooterModule } from './modules/Footer/footer.module';
 import { ContactModule } from './modules/Contact/contact.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
-           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule
+           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule
   ],
   controllers: [AppController],
   providers: [AppService],

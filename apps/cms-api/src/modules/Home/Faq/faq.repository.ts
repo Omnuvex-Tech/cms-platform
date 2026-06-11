@@ -7,16 +7,16 @@ import { UpdateFaqDto } from './dto/update-faq.dto';
 export class FaqRepository {
   constructor(private readonly prisma: PrismaService) {}
 
- findAll() {
-  return this.prisma.faq.findMany({ orderBy: { order: 'asc' } });
-}
+  findAll() {
+    return this.prisma.faq.findMany({ orderBy: { order: 'asc' } });
+  }
 
-findAllVisible() {
-  return this.prisma.faq.findMany({
-    where: { isVisible: true },
-    orderBy: { order: 'asc' },
-  });
-}
+  findAllVisible() {
+    return this.prisma.faq.findMany({
+      where: { isVisible: true },
+      orderBy: { order: 'asc' },
+    });
+  }
 
   findOne(id: number) {
     return this.prisma.faq.findUnique({ where: { id } });
@@ -39,12 +39,12 @@ findAllVisible() {
   }
 
   async reorder(ids: number[]) {
-  const updates = ids.map((id, index) =>
-    this.prisma.faq.update({
-      where: { id },
-      data: { order: index },
-    })
-  );
-  return this.prisma.$transaction(updates);
-}
+    const updates = ids.map((id, index) =>
+      this.prisma.faq.update({
+        where: { id },
+        data: { order: index },
+      }),
+    );
+    return this.prisma.$transaction(updates);
+  }
 }

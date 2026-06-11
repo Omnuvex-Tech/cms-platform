@@ -30,28 +30,28 @@ export class FooterRepository {
     });
   }
 
-  async updateSettings(id: number, dto: UpdateFooterSettingsDto) {
+ async updateSettings(id: number, dto: UpdateFooterSettingsDto) {
     return this.prisma.footerSettings.update({
-      where: { id },
-      data: {
-        ...(dto.logoImage !== undefined && { logoImage: dto.logoImage }),
-        ...(dto.logoAlt !== undefined && { logoAlt: dto.logoAlt }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.copyrightText !== undefined && { copyrightText: dto.copyrightText }),
-        ...(dto.privacyText !== undefined && { privacyText: dto.privacyText }),
-        ...(dto.locationLabel !== undefined && { locationLabel: dto.locationLabel }),
-        ...(dto.phoneLabel !== undefined && { phoneLabel: dto.phoneLabel }),
-        ...(dto.emailLabel !== undefined && { emailLabel: dto.emailLabel }),
-        ...(dto.locationValue !== undefined && { locationValue: dto.locationValue }),
-        ...(dto.phoneValue !== undefined && { phoneValue: dto.phoneValue }),
-        ...(dto.emailValue !== undefined && { emailValue: dto.emailValue }),
-      },
-      include: {
-        navLinks: { orderBy: { order: 'asc' } },
-        socialLinks: { orderBy: { order: 'asc' } },
-      },
+        where: { id },
+        data: {
+            ...(dto.logoImage !== undefined && { logoImage: dto.logoImage }),
+            ...(dto.logoAlt !== undefined && { logoAlt: dto.logoAlt }),
+            ...(dto.description !== undefined && { description: dto.description }),
+            ...(dto.copyrightText !== undefined && { copyrightText: dto.copyrightText }),
+            ...(dto.privacyText !== undefined && { privacyText: dto.privacyText }),
+            ...(dto.locationLabel !== undefined && { locationLabel: dto.locationLabel }),
+            ...(dto.phoneLabel !== undefined && { phoneLabel: dto.phoneLabel }),
+            ...(dto.emailLabel !== undefined && { emailLabel: dto.emailLabel }),
+            ...(dto.locationValue !== undefined && { locationValue: dto.locationValue }),
+            ...(dto.phoneValue !== undefined && { phoneValue: dto.phoneValue }),
+            ...(dto.emailValue !== undefined && { emailValue: dto.emailValue }),
+        },
+        include: {
+            navLinks: { orderBy: { order: 'asc' } },
+            socialLinks: { orderBy: { order: 'asc' } },
+        },
     });
-  }
+}
 
   // Nav Links
   async createNavLink(footerId: number, dto: CreateFooterNavLinkDto) {

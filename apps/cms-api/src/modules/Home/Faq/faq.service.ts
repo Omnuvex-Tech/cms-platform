@@ -42,6 +42,6 @@ export class FaqService {
   }
 
   reorder(dto: ReorderFaqDto) {
-  return this.faqRepository.reorder(dto.ids);
-}
+    return this.faqRepository.reorder(dto.ids);
+  }
 }

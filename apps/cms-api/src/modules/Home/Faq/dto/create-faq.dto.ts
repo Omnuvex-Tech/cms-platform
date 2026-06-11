@@ -1,9 +1,9 @@
-import { IsString } from 'class-validator';
+import { IsObject } from 'class-validator';
 
 export class CreateFaqDto {
-  @IsString()
-  question: string;
+  @IsObject()
+  question: Record<string, string>;
 
-  @IsString()
-  answer: string;
+  @IsObject()
+  answer: Record<string, string>;
 }

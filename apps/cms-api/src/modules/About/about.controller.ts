@@ -1,4 +1,8 @@
-import { Controller, Get, Put, Body, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+// about.controller.ts
+import {
+  Controller, Get, Put, Body,
+  Post, UploadedFile, UseInterceptors,
+} from '@nestjs/common';
 import { AboutService } from './about.service';
 import { UpdateAboutSettingsDto } from './dto/update-about-settings.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -11,7 +15,9 @@ export class AboutController {
   constructor(private readonly service: AboutService) {}
 
   @Get('settings')
-  getSettings() { return this.service.findSettings(); }
+  getSettings() {
+    return this.service.findSettings();
+  }
 
   @Put('settings')
   updateSettings(@Body() dto: UpdateAboutSettingsDto) {

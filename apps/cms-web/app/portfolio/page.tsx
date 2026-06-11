@@ -18,6 +18,9 @@ import styles from "@/styles/portfolio.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
+
 function getToken() {
   return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
 }
@@ -57,92 +60,107 @@ function toAbsUrl(path: string) {
 function generateSlug(title: string) {
   return title
     .toLowerCase()
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "and")
     .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
     .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c")
     .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-").trim();
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .trim();
 }
 
-// ---- Rich Editor ----
-function RichEditor({ value, onChange }: {
-  value: string;
-  onChange: (val: string) => void;
-}) {
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      {(["az", "en", "ru"] as Lang[]).map((l) => (
+        <button key={l} type="button" onClick={() => onChange(l)}
+          style={{
+            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+            border: "1.5px solid",
+            borderColor: active === l ? "#3b82f6" : "#333",
+            background: active === l ? "#1e3a5f" : "transparent",
+            color: active === l ? "#fff" : "#888",
+            cursor: "pointer",
+          }}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function RichEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-    ],
+    extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
   });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
 
   return (
     <div className={styles.richEditor}>
       <div className={styles.richToolbar}>
         <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
-          className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}>
-          <b>B</b>
-        </button>
+          className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
         <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
-          className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}>
-          <i>I</i>
-        </button>
+          className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
         <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
-          className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}>
-          <u>U</u>
-        </button>
+          className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
         <div className={styles.toolbarDivider} />
         {([1, 2, 3, 4, 5, 6] as const).map(level => (
-          <button
-            key={level}
-            type="button"
+          <button key={level} type="button"
             onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
-            className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}
-          >
+            className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
             H{level}
           </button>
         ))}
         <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
-          className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>
-          P
-        </button>
+          className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
       </div>
       <EditorContent editor={editor} className={styles.richContent} />
     </div>
   );
 }
 
-// ---- Sortable Image ----
-function SortableImage({ id, src, onRemove }: {
-  id: string;
-  src: string;
-  onRemove: () => void;
+function LocalizedRichEditor({ value, lang, onChange }: {
+  value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className={styles.imageItem}>
+    <RichEditor
+      value={value?.[lang] || ""}
+      onChange={v => onChange({ ...value, [lang]: v })}
+    />
+  );
+}
+
+function SortableImage({ id, src, onRemove }: { id: string; src: string; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className={styles.imageItem}>
       <div className={styles.imageDragHandle} {...attributes} {...listeners}>⠿</div>
       <img src={toAbsUrl(src)} alt="" className={styles.imageThumb} />
       <button type="button" className={styles.imageRemoveBtn} onClick={onRemove}>✕</button>
-      {src === src && <span className={styles.heroLabel} style={{ display: 'none' }} />}
     </div>
   );
 }
-function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange, altPlaceholder }: {
+
+function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange, altPlaceholder, activeLang }: {
   images: string[];
   onChange: (imgs: string[]) => void;
   maxImages?: number;
-  altText?: string;
-  onAltTextChange?: (val: string) => void;
+  altText?: LocalizedString;
+  onAltTextChange?: (val: LocalizedString) => void;
   altPlaceholder?: string;
+  activeLang?: Lang;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
@@ -168,8 +186,6 @@ function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange
     onChange(arrayMove(images, oldIndex, newIndex));
   };
 
-  const canAdd = !maxImages || images.length < maxImages;
-
   return (
     <div className={styles.imageUploadWrap}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -177,111 +193,97 @@ function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange
           <div className={styles.imageGrid}>
             {images.map((img, i) => (
               <div key={`img-${i}`} className={styles.imageItem}>
-                <SortableImage
-                  id={`img-${i}`}
-                  src={img}
-                  onRemove={() => onChange(images.filter((_, idx) => idx !== i))}
-                />
+                <SortableImage id={`img-${i}`} src={img}
+                  onRemove={() => onChange(images.filter((_, idx) => idx !== i))} />
                 {i === 0 && <span className={styles.heroLabel}>Hero</span>}
               </div>
             ))}
-            {canAdd && (
+            {(!maxImages || images.length < maxImages) && (
               <div className={styles.imageAddBtn} onClick={() => inputRef.current?.click()}>
-                <span>+</span>
-                <small>WebP əlavə et</small>
+                <span>+</span><small>WebP əlavə et</small>
               </div>
             )}
           </div>
         </SortableContext>
       </DndContext>
-
-      {onAltTextChange !== undefined && (
+      {onAltTextChange !== undefined && activeLang && (
         <div className={styles.field} style={{ marginTop: 8 }}>
-          <label>Şəkil Alt Text <small>(SEO)</small></label>
-          <input
-            className={styles.input}
-            value={altText ?? ""}
-            onChange={e => onAltTextChange(e.target.value)}
-            placeholder={altPlaceholder ?? "Şəkil alt text..."}
-          />
+          <label>Şəkil Alt Text — SEO ({activeLang.toUpperCase()})</label>
+          <input className={styles.input}
+            value={altText?.[activeLang] || ""}
+            onChange={e => onAltTextChange({ ...(altText ?? {}), [activeLang]: e.target.value })}
+            placeholder={altPlaceholder ?? "Şəkil alt text..."} />
         </div>
       )}
-
-
       <input ref={inputRef} type="file" accept="image/webp" multiple style={{ display: "none" }} onChange={handleSelect} />
     </div>
   );
 }
 
-
-
-function HeroSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+// Section editorları — activeLang prop qəbul edir
+function HeroSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
   return (
     <div className={styles.sectionFields}>
-      <div className={styles.field}>
-        <label>Nömrə</label>
-        <input className={styles.input} value={data.number ?? ""} onChange={e => onChange({ ...data, number: e.target.value })} placeholder="01" />
+      <div className={styles.field}><label>Nömrə</label>
+        <input className={styles.input} value={data.number ?? ""}
+          onChange={e => onChange({ ...data, number: e.target.value })} placeholder="01" />
+      </div>
+      <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, title: v })} />
+      </div>
+      <div className={styles.field}><label>Təsvir ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.description ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, description: v })} />
       </div>
       <div className={styles.field}>
-        <label>Başlıq</label>
-        <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
-      </div>
-      <div className={styles.field}>
-        <label>Təsvir</label>
-        <RichEditor value={data.description ?? ""} onChange={v => onChange({ ...data, description: v })} />
-      </div>
-      <div className={styles.field}>
-        <label>Şəkillər <small>(birinci hero olacaq, sürüşdürüb sırala)</small></label>
+        <label>Şəkillər</label>
         <ImageUploadArea
           images={data.images ?? []}
           onChange={imgs => onChange({ ...data, images: imgs })}
-          altText={data.imagesAlt ?? ""}
+          altText={data.imagesAlt ?? {}}
           onAltTextChange={v => onChange({ ...data, imagesAlt: v })}
           altPlaceholder="Bütün şəkillər üçün alt text"
-        />
+          activeLang={activeLang} />
       </div>
     </div>
   );
 }
 
-function StepsSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function StepsSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
   const steps = data.steps ?? [];
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const addStep = () => onChange({ ...data, steps: [...steps, { number: String(steps.length + 1).padStart(2, "0"), label: "" }] });
+  const addStep = () => onChange({ ...data, steps: [...steps, { number: String(steps.length + 1).padStart(2, "0"), label: {} }] });
   const removeStep = (i: number) => onChange({ ...data, steps: steps.filter((_: any, idx: number) => idx !== i) });
-  const updateStep = (i: number, key: string, val: string) => {
-    const arr = [...steps];
-    arr[i] = { ...arr[i], [key]: val };
+  const updateStep = (i: number, key: string, val: any) => {
+    const arr = [...steps]; arr[i] = { ...arr[i], [key]: val };
     onChange({ ...data, steps: arr });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = steps.findIndex((_: any, i: number) => `step-${i}` === active.id);
-    const newIndex = steps.findIndex((_: any, i: number) => `step-${i}` === over.id);
-    onChange({ ...data, steps: arrayMove(steps, oldIndex, newIndex) });
+    const oi = steps.findIndex((_: any, i: number) => `step-${i}` === active.id);
+    const ni = steps.findIndex((_: any, i: number) => `step-${i}` === over.id);
+    onChange({ ...data, steps: arrayMove(steps, oi, ni) });
   };
 
   return (
     <div className={styles.sectionFields}>
-      <div className={styles.field}>
-        <label>Təsvir</label>
-        <RichEditor value={data.description ?? ""} onChange={v => onChange({ ...data, description: v })} />
+      <div className={styles.field}><label>Təsvir ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.description ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, description: v })} />
       </div>
       <div className={styles.field}>
-        <label>Addımlar <small>(sürüşdürüb sırala)</small></label>
+        <label>Addımlar</label>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={steps.map((_: any, i: number) => `step-${i}`)} strategy={verticalListSortingStrategy}>
             {steps.map((step: any, i: number) => (
-              <SortableStepRow
-                key={`step-${i}`}
-                id={`step-${i}`}
-                step={step}
+              <SortableStepRow key={`step-${i}`} id={`step-${i}`} step={step}
+                activeLang={activeLang}
                 onChange={(key, val) => updateStep(i, key, val)}
-                onRemove={() => removeStep(i)}
-              />
+                onRemove={() => removeStep(i)} />
             ))}
           </SortableContext>
         </DndContext>
@@ -291,79 +293,87 @@ function StepsSectionEditor({ data, onChange }: { data: any; onChange: (d: any) 
   );
 }
 
-function SortableStepRow({ id, step, onChange, onRemove }: {
-  id: string;
-  step: any;
-  onChange: (key: string, val: string) => void;
-  onRemove: () => void;
+function SortableStepRow({ id, step, activeLang, onChange, onRemove }: {
+  id: string; step: any; activeLang: Lang;
+  onChange: (key: string, val: any) => void; onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-
   return (
-    <div ref={setNodeRef} style={style} className={styles.stepRow}>
+    <div ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className={styles.stepRow}>
       <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
-      <input className={styles.inputSmall} value={step.number} onChange={e => onChange("number", e.target.value)} placeholder="01" />
-      <input className={styles.input} value={step.label} onChange={e => onChange("label", e.target.value)} placeholder="Addım adı" />
+      <input className={styles.inputSmall} value={step.number ?? ""}
+        onChange={e => onChange("number", e.target.value)} placeholder="01" />
+      <input className={styles.input}
+        value={step.label?.[activeLang] || ""}
+        onChange={e => onChange("label", { ...step.label, [activeLang]: e.target.value })}
+        placeholder="Addım adı" />
       <button type="button" className={styles.removeBtn} onClick={onRemove}>✕</button>
     </div>
   );
 }
 
-function ServiceSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function ServiceSectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
   const items = data.items ?? [];
 
-  const addItem = () => onChange({ ...data, items: [...items, { number: String(items.length + 1).padStart(2, "0"), title: "", images: [] }] });
+  const addItem = () => onChange({ ...data, items: [...items, { number: String(items.length + 1).padStart(2, "0"), title: {}, images: [] }] });
   const removeItem = (i: number) => onChange({ ...data, items: items.filter((_: any, idx: number) => idx !== i) });
   const updateItem = (i: number, key: string, val: any) => {
-    const arr = [...items];
-    arr[i] = { ...arr[i], [key]: val };
+    const arr = [...items]; arr[i] = { ...arr[i], [key]: val };
     onChange({ ...data, items: arr });
   };
-
-  const getMaxImages = (i: number) => i === 0 ? 3 : 2;
 
   return (
     <div className={styles.sectionFields}>
       <div className={styles.twoCol}>
-        <div className={styles.field}>
-          <label>Badge</label>
-          <input className={styles.input} value={data.badge ?? ""} onChange={e => onChange({ ...data, badge: e.target.value })} placeholder="Brendinq" />
+        <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+          <input className={styles.input}
+            value={data.badge?.[activeLang] || ""}
+            onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })}
+            placeholder="Brendinq" />
         </div>
-        <div className={styles.field}>
-          <label>Böyük Nömrə</label>
-          <input className={styles.input} value={data.bigNumber ?? ""} onChange={e => onChange({ ...data, bigNumber: e.target.value })} placeholder="02" />
+        <div className={styles.field}><label>Böyük Nömrə</label>
+          <input className={styles.input} value={data.bigNumber ?? ""}
+            onChange={e => onChange({ ...data, bigNumber: e.target.value })} placeholder="02" />
         </div>
       </div>
-      <div className={styles.field}>
-        <label>Başlıq</label>
-        <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+      <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, title: v })} />
       </div>
-      <div className={styles.field}>
-        <label>Təsvir 1</label>
-        <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? ""] })} />
+      <div className={styles.field}><label>Təsvir 1 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[0]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [{ ...(data.descriptions?.[0] ?? {}), [activeLang]: v[activeLang] }, data.descriptions?.[1] ?? {}] })} />
       </div>
-      <div className={styles.field}>
-        <label>Təsvir 2</label>
-        <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v] })} />
+      <div className={styles.field}><label>Təsvir 2 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[1]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? {}, { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }] })} />
       </div>
       <div className={styles.field}>
         <label>Elementlər</label>
         {items.map((item: any, i: number) => (
           <div key={i} className={styles.serviceItemBlock}>
             <div className={styles.serviceItemHeader}>
-              <input className={styles.inputSmall} value={item.number} onChange={e => updateItem(i, "number", e.target.value)} placeholder="01" />
-              <input className={styles.input} value={item.title} onChange={e => updateItem(i, "title", e.target.value)} placeholder="Element adı" />
+              <input className={styles.inputSmall} value={item.number ?? ""}
+                onChange={e => updateItem(i, "number", e.target.value)} placeholder="01" />
+              <input className={styles.input}
+                value={item.title?.[activeLang] || ""}
+                onChange={e => updateItem(i, "title", { ...item.title, [activeLang]: e.target.value })}
+                placeholder="Element adı" />
               <button type="button" className={styles.removeBtn} onClick={() => removeItem(i)}>✕</button>
             </div>
             <ImageUploadArea
               images={item.images ?? []}
               onChange={imgs => updateItem(i, "images", imgs)}
-              maxImages={getMaxImages(i)}
+              maxImages={i === 0 ? 3 : 2}
               altText={item.imagesAlt ?? ""}
               onAltTextChange={v => updateItem(i, "imagesAlt", v)}
-              altPlaceholder={i === 0 ? "3 şəkil üçün alt text" : "2 şəkil üçün alt text"}
-            />
+              altPlaceholder={i === 0 ? "3 şəkil üçün alt text" : "2 şəkil üçün alt text"} />
           </div>
         ))}
         {items.length < 2 && (
@@ -374,90 +384,98 @@ function ServiceSectionEditor({ data, onChange }: { data: any; onChange: (d: any
   );
 }
 
-function StrategySectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function StrategySectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
   return (
     <div className={styles.sectionFields}>
       <div className={styles.twoCol}>
-        <div className={styles.field}>
-          <label>Badge</label>
-          <input className={styles.input} value={data.badge ?? ""} onChange={e => onChange({ ...data, badge: e.target.value })} placeholder="Brendinq" />
+        <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+          <input className={styles.input}
+            value={data.badge?.[activeLang] || ""}
+            onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })}
+            placeholder="Brendinq" />
         </div>
       </div>
-      <div className={styles.field}>
-        <label>Başlıq</label>
-        <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+      <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, title: v })} />
       </div>
-      <div className={styles.field}>
-        <label>Sitat</label>
-        <RichEditor value={data.quote ?? ""} onChange={v => onChange({ ...data, quote: v })} />
+      <div className={styles.field}><label>Sitat ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.quote ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, quote: v })} />
       </div>
-      <div className={styles.field}>
-        <label>Təsvir 1</label>
-        <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? ""] })} />
+      <div className={styles.field}><label>Təsvir 1 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[0]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [{ ...(data.descriptions?.[0] ?? {}), [activeLang]: v[activeLang] }, data.descriptions?.[1] ?? {}] })} />
       </div>
-      <div className={styles.field}>
-        <label>Təsvir 2</label>
-        <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v] })} />
+      <div className={styles.field}><label>Təsvir 2 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[1]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? {}, { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }] })} />
       </div>
-      <div className={styles.field}>
-        <label>Sitat şəkli</label>
+      <div className={styles.field}><label>Sitat şəkli</label>
         <ImageUploadArea
-          images={data.quoteImage ? [data.quoteImage] : []}
-          onChange={imgs => onChange({ ...data, quoteImage: imgs[0] ?? "" })}
-          maxImages={1}
-          altText={data.quoteImageAlt ?? ""}
-          onAltTextChange={v => onChange({ ...data, quoteImageAlt: v })}
-          altPlaceholder="Sitat şəkli alt text"
-        />      </div>
-      <div className={styles.field}>
-        <label>Əsas şəkil</label>
-        <ImageUploadArea images={data.mainImage ? [data.mainImage] : []} onChange={imgs => onChange({ ...data, mainImage: imgs[0] ?? "" })} maxImages={1} />
+          images={data.images ?? []}
+          onChange={imgs => onChange({ ...data, images: imgs })}
+          altText={data.imagesAlt ?? {}}
+          onAltTextChange={v => onChange({ ...data, imagesAlt: v })}
+          altPlaceholder="Bütün şəkillər üçün alt text"
+          activeLang={activeLang} />
       </div>
-
-      <div className={styles.field}>
-        <label>Kiçik şəkillər</label>
+      <div className={styles.field}><label>Əsas şəkil</label>
+        <ImageUploadArea images={data.mainImage ? [data.mainImage] : []}
+          onChange={imgs => onChange({ ...data, mainImage: imgs[0] ?? "" })} maxImages={1} />
+      </div>
+      <div className={styles.field}><label>Kiçik şəkillər</label>
         <ImageUploadArea
-          images={data.smallImages ?? []}
-          onChange={imgs => onChange({ ...data, smallImages: imgs })}
-          maxImages={2}
-          altText={data.smallImagesAlt ?? ""}
-          onAltTextChange={v => onChange({ ...data, smallImagesAlt: v })}
-          altPlaceholder="Kiçik şəkillər üçün alt text"
-        />      </div>
+          images={data.images ?? []}
+          onChange={imgs => onChange({ ...data, images: imgs })}
+          altText={data.imagesAlt ?? {}}
+          onAltTextChange={v => onChange({ ...data, imagesAlt: v })}
+          altPlaceholder="Bütün şəkillər üçün alt text"
+          activeLang={activeLang} />
+      </div>
     </div>
   );
 }
 
-function OverlaySectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function OverlaySectionEditor({ data, onChange, activeLang }: { data: any; onChange: (d: any) => void; activeLang: Lang }) {
   return (
     <div className={styles.sectionFields}>
       <div className={styles.twoCol}>
-        <div className={styles.field}>
-          <label>Badge</label>
-          <input className={styles.input} value={data.badge ?? ""} onChange={e => onChange({ ...data, badge: e.target.value })} placeholder="Brendinq" />
+        <div className={styles.field}><label>Badge ({activeLang.toUpperCase()})</label>
+          <input className={styles.input}
+            value={data.badge?.[activeLang] || ""}
+            onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })}
+            placeholder="Brendinq" />
         </div>
       </div>
-      <div className={styles.field}>
-        <label>Başlıq</label>
-        <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+      <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
+          onChange={v => onChange({ ...data, title: v })} />
       </div>
-      <div className={styles.field}>
-        <label>Şəkil</label>
+      <div className={styles.field}><label>Şəkil</label>
         <ImageUploadArea
-          images={data.image ? [data.image] : []}
-          onChange={imgs => onChange({ ...data, image: imgs[0] ?? "" })}
-          maxImages={1}
-          altText={data.imageAlt ?? ""}
-          onAltTextChange={v => onChange({ ...data, imageAlt: v })}
-          altPlaceholder="Şəkil alt text"
-        />      </div>
-      <div className={styles.field}>
-        <label>Təsvir 1</label>
-        <RichEditor value={data.descriptions?.[0] ?? ""} onChange={v => onChange({ ...data, descriptions: [v, data.descriptions?.[1] ?? ""] })} />
+          images={data.images ?? []}
+          onChange={imgs => onChange({ ...data, images: imgs })}
+          altText={data.imagesAlt ?? {}}
+          onAltTextChange={v => onChange({ ...data, imagesAlt: v })}
+          altPlaceholder="Bütün şəkillər üçün alt text"
+          activeLang={activeLang} />
       </div>
-      <div className={styles.field}>
-        <label>Təsvir 2</label>
-        <RichEditor value={data.descriptions?.[1] ?? ""} onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? "", v] })} />
+      <div className={styles.field}><label>Təsvir 1 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[0]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [{ ...(data.descriptions?.[0] ?? {}), [activeLang]: v[activeLang] }, data.descriptions?.[1] ?? {}] })} />
+      </div>
+      <div className={styles.field}><label>Təsvir 2 ({activeLang.toUpperCase()})</label>
+        <LocalizedRichEditor
+          value={{ [activeLang]: data.descriptions?.[1]?.[activeLang] || "" }}
+          lang={activeLang}
+          onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? {}, { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }] })} />
       </div>
     </div>
   );
@@ -471,21 +489,19 @@ const SECTION_TYPES = [
   { type: "overlay", label: "Overlay" },
 ];
 
-function SectionEditor({ section, index, onChange, onRemove }: {
-  section: any;
-  index: number;
-  onChange: (d: any) => void;
-  onRemove: () => void;
+function SectionEditor({ section, index, activeLang, onChange, onRemove }: {
+  section: any; index: number; activeLang: Lang;
+  onChange: (d: any) => void; onRemove: () => void;
 }) {
   const [open, setOpen] = useState(true);
 
   const renderEditor = () => {
     switch (section.type) {
-      case "hero": return <HeroSectionEditor data={section} onChange={onChange} />;
-      case "steps": return <StepsSectionEditor data={section} onChange={onChange} />;
-      case "service": return <ServiceSectionEditor data={section} onChange={onChange} />;
-      case "strategy": return <StrategySectionEditor data={section} onChange={onChange} />;
-      case "overlay": return <OverlaySectionEditor data={section} onChange={onChange} />;
+      case "hero": return <HeroSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+      case "steps": return <StepsSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+      case "service": return <ServiceSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+      case "strategy": return <StrategySectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+      case "overlay": return <OverlaySectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
       default: return null;
     }
   };
@@ -510,28 +526,23 @@ function SectionEditor({ section, index, onChange, onRemove }: {
 }
 
 function SortableRow({ p, onEdit, onToggle, onToggleHomepage, onDelete }: {
-  p: any;
-  onEdit: (p: any) => void;
-  onToggle: (p: any) => void;
-  onToggleHomepage: (p: any) => void;
-  onDelete: (id: number) => void;
+  p: any; onEdit: (p: any) => void;
+  onToggle: (p: any) => void; onToggleHomepage: (p: any) => void; onDelete: (id: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const titleAz = typeof p.title === "object" ? (p.title?.az || "") : (p.title || "");
 
   return (
-    <tr ref={setNodeRef} style={style}>
+    <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
       <td className={styles.num}>
         <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
       </td>
       <td>
         <div className={styles.portfolioInfo}>
-          {p.coverImage && <img src={toAbsUrl(p.coverImage)} alt={p.title} className={styles.coverThumb} />}
+          {p.coverImage && <img src={toAbsUrl(p.coverImage)} alt="" className={styles.coverThumb} />}
           <div>
-            <div
-              className={styles.portfolioTitle}
-              dangerouslySetInnerHTML={{ __html: p.title }}
-            />            <p className={styles.portfolioSlug}>/{p.slug}</p>
+            <div className={styles.portfolioTitle} dangerouslySetInnerHTML={{ __html: titleAz }} />
+            <p className={styles.portfolioSlug}>/{p.slug}</p>
           </div>
         </div>
       </td>
@@ -551,10 +562,7 @@ function SortableRow({ p, onEdit, onToggle, onToggleHomepage, onDelete }: {
           <button className={`${styles.visBtn} ${p.isVisible ? styles.visBtnHide : styles.visBtnShow}`} onClick={() => onToggle(p)}>
             {p.isVisible ? "Gizlət" : "Göstər"}
           </button>
-          <button
-            className={`${styles.visBtn} ${p.isHomepage ? styles.visBtnHide : styles.visBtnShow}`}
-            onClick={() => onToggleHomepage(p)}
-          >
+          <button className={`${styles.visBtn} ${p.isHomepage ? styles.visBtnHide : styles.visBtnShow}`} onClick={() => onToggleHomepage(p)}>
             {p.isHomepage ? "Ana səhifədə" : "Ana səhifəyə əlavə et"}
           </button>
           <button className={styles.deleteBtn} onClick={() => onDelete(p.id)}>Sil</button>
@@ -564,7 +572,6 @@ function SortableRow({ p, onEdit, onToggle, onToggleHomepage, onDelete }: {
   );
 }
 
-// ---- Main Page ----
 export default function PortfolioPage() {
   const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -573,14 +580,16 @@ export default function PortfolioPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [reordering, setReordering] = useState(false);
-  const [coverImageAlt, setCoverImageAlt] = useState("");
-  const [title, setTitle] = useState("");
+  const [activeLang, setActiveLang] = useState<Lang>("az");
+
+  const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [slug, setSlug] = useState("");
   const [tags, setTags] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageAlt, setCoverImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sections, setSections] = useState<any[]>([]);
-  const coverInputRef = useRef<HTMLInputElement>(null);
 
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
 
   const load = async () => {
@@ -588,37 +597,40 @@ export default function PortfolioPage() {
     try {
       const data = await apiFetch("/portfolio");
       setPortfolios(data);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
   const openCreate = () => {
     setEditItem(null);
-    setCoverImageAlt("");
-    setTitle(""); setSlug(""); setTags(""); setCoverImage(""); setSections([]);
+    setTitle({ az: "", en: "", ru: "" });
+    setSlug(""); setTags(""); setCoverImage("");
+    setCoverImageAlt({ az: "", en: "", ru: "" });
+    setSections([]);
     setDrawerOpen(true);
   };
 
   const openEdit = (p: any) => {
     setEditItem(p);
-    setTitle(p.title);
-    setSlug(p.slug);
-    setCoverImageAlt(p.coverImageAlt ?? "");
+    setTitle(p.title ?? { az: "", en: "", ru: "" });
+    setSlug(p.slug ?? "");
     setTags(p.tags?.join(", ") ?? "");
     setCoverImage(p.coverImage ?? "");
+    setCoverImageAlt(
+      typeof p.coverImageAlt === "object"
+        ? (p.coverImageAlt ?? { az: "", en: "", ru: "" })
+        : { az: p.coverImageAlt ?? "", en: "", ru: "" }
+    );
     setSections(p.sections ?? []);
     setDrawerOpen(true);
   };
 
   const closeDrawer = () => { setDrawerOpen(false); setEditItem(null); };
 
-  const handleTitleChange = (val: string) => {
+  const handleTitleChange = (val: LocalizedString) => {
     setTitle(val);
-    const plain = val.replace(/<[^>]*>/g, "");
-    setSlug(generateSlug(plain));
+    setSlug(generateSlug(val.az || ""));
   };
 
   const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -629,73 +641,59 @@ export default function PortfolioPage() {
     setCoverImage(url);
   };
 
-  const addSection = (type: string) => {
-    setSections(prev => [...prev, { type }]);
-  };
-
-  const updateSection = (i: number, data: any) => {
-    setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
-  };
-
-  const removeSection = (i: number) => {
-    setSections(prev => prev.filter((_, idx) => idx !== i));
-  };
+  const addSection = (type: string) => setSections(prev => [...prev, { type }]);
+  const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
+  const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
 
   const save = async () => {
-    if (!title.trim() || !slug.trim()) return;
+    if (!title.az || !slug) return;
     setSaving(true);
     try {
-      const payload = { title, slug, tags: tags.split(",").map(t => t.trim()).filter(Boolean), coverImage, coverImageAlt, sections };
+      const payload = {
+        title, slug,
+        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+        coverImage, coverImageAlt, sections,
+      };
       if (editItem) {
         await apiFetch(`/portfolio/${editItem.id}`, { method: "PUT", body: JSON.stringify(payload) });
       } else {
         await apiFetch("/portfolio", { method: "POST", body: JSON.stringify(payload) });
       }
-      closeDrawer();
-      load();
-    } finally {
-      setSaving(false);
-    }
+      closeDrawer(); load();
+    } finally { setSaving(false); }
   };
 
   const toggleVisibility = async (p: any) => {
-    try {
-      await apiFetch(`/portfolio/${p.id}/visibility`, {
-        method: "PATCH",
-        body: JSON.stringify({ isVisible: !p.isVisible }),
-      });
-      load();
-    } catch (e) { console.error(e); }
+    await apiFetch(`/portfolio/${p.id}/visibility`, {
+      method: "PATCH", body: JSON.stringify({ isVisible: !p.isVisible }),
+    });
+    load();
+  };
+
+  const toggleHomepage = async (p: any) => {
+    await apiFetch(`/portfolio/${p.id}/homepage`, {
+      method: "PATCH", body: JSON.stringify({ isHomepage: !p.isHomepage }),
+    });
+    load();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
     await apiFetch(`/portfolio/${deleteId}`, { method: "DELETE" });
-    setDeleteId(null);
-    load();
+    setDeleteId(null); load();
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = portfolios.findIndex(p => p.id === active.id);
-    const newIndex = portfolios.findIndex(p => p.id === over.id);
-    const newList = arrayMove(portfolios, oldIndex, newIndex);
+    const oi = portfolios.findIndex(p => p.id === active.id);
+    const ni = portfolios.findIndex(p => p.id === over.id);
+    const newList = arrayMove(portfolios, oi, ni);
     setPortfolios(newList);
     setReordering(true);
     try {
       await apiFetch("/portfolio/reorder", { method: "PATCH", body: JSON.stringify({ ids: newList.map(p => p.id) }) });
     } finally { setReordering(false); }
-  };
-
-  const toggleHomepage = async (p: any) => {
-    try {
-      await apiFetch(`/portfolio/${p.id}/homepage`, {
-        method: "PATCH",
-        body: JSON.stringify({ isHomepage: !p.isHomepage }),
-      });
-      load();
-    } catch (e) { console.error(e); }
   };
 
   const usedTypes = sections.map(s => s.type);
@@ -714,37 +712,26 @@ export default function PortfolioPage() {
       </div>
 
       <div className={styles.tableWrap}>
-        {loading ? (
-          <div className={styles.empty}>Yüklənir...</div>
-        ) : portfolios.length === 0 ? (
-          <div className={styles.empty}>Hələ portfolio əlavə edilməyib</div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th>
-                </tr>
-              </thead>
-              <SortableContext items={portfolios.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                <tbody>
-                  {portfolios.map(p => (
-                    <SortableRow
-                      key={p.id}
-                      p={p}
-                      onEdit={openEdit}
-                      onToggle={toggleVisibility}
-                      onToggleHomepage={toggleHomepage}
-                      onDelete={setDeleteId}
-                    />))}
-                </tbody>
-              </SortableContext>
-            </table>
-          </DndContext>
-        )}
+        {loading ? <div className={styles.empty}>Yüklənir...</div>
+          : portfolios.length === 0 ? <div className={styles.empty}>Hələ portfolio əlavə edilməyib</div>
+            : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <table className={styles.table}>
+                  <thead><tr><th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
+                  <SortableContext items={portfolios.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                    <tbody>
+                      {portfolios.map(p => (
+                        <SortableRow key={p.id} p={p} onEdit={openEdit}
+                          onToggle={toggleVisibility} onToggleHomepage={toggleHomepage}
+                          onDelete={setDeleteId} />
+                      ))}
+                    </tbody>
+                  </SortableContext>
+                </table>
+              </DndContext>
+            )}
       </div>
 
-      {/* Full screen drawer */}
       {drawerOpen && (
         <div className={styles.fullDrawer}>
           <div className={styles.fullDrawerHeader}>
@@ -758,25 +745,27 @@ export default function PortfolioPage() {
           </div>
 
           <div className={styles.fullDrawerBody}>
+            <LangTabs active={activeLang} onChange={setActiveLang} />
+
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>Əsas Məlumatlar</h3>
               <div className={styles.twoCol}>
-                <div className={styles.field}>
-                  <label>Başlıq</label>
-                  <RichEditor value={title} onChange={handleTitleChange} />
+                <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
+                  <LocalizedRichEditor value={title} lang={activeLang}
+                    onChange={handleTitleChange} />
                 </div>
-                <div className={styles.field}>
-                  <label>Slug</label>
-                  <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} placeholder="marina-village" />
+                <div className={styles.field}><label>Slug</label>
+                  <input className={styles.input} value={slug}
+                    onChange={e => setSlug(e.target.value)} placeholder="marina-village" />
                 </div>
               </div>
-              <div className={styles.field}>
-                <label>Etiketlər <small>(vergüllə ayırın)</small></label>
-                <input className={styles.input} value={tags} onChange={e => setTags(e.target.value)} placeholder="SMM, Development" />
+              <div className={styles.field}><label>Etiketlər <small>(vergüllə ayırın)</small></label>
+                <input className={styles.input} value={tags}
+                  onChange={e => setTags(e.target.value)} placeholder="SMM, Development" />
               </div>
-              <div className={styles.field}>
-                <label>Cover şəkil</label>
-                <input ref={coverInputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleCoverSelect} />
+              <div className={styles.field}><label>Cover şəkil</label>
+                <input ref={coverInputRef} type="file" accept="image/webp"
+                  style={{ display: "none" }} onChange={handleCoverSelect} />
                 <div className={styles.coverUploadArea} onClick={() => coverInputRef.current?.click()}>
                   {coverImage ? (
                     <img src={toAbsUrl(coverImage)} alt="cover" className={styles.coverPreview} />
@@ -787,33 +776,26 @@ export default function PortfolioPage() {
                   )}
                 </div>
               </div>
-              <div className={styles.field}>
-                <label>Cover şəkil Alt Text <small>(SEO)</small></label>
-                <input
-                  className={styles.input}
-                  value={coverImageAlt}
-                  onChange={e => setCoverImageAlt(e.target.value)}
-                  placeholder="Məsələn: Marina Village layihəsi cover şəkli"
-                />
+              <div className={styles.field}><label>Cover alt text ({activeLang.toUpperCase()})</label>
+                <input className={styles.input}
+                  value={coverImageAlt[activeLang] || ""}
+                  onChange={e => setCoverImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                  placeholder="Marina Village layihəsi cover şəkli" />
               </div>
             </div>
 
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>Detail Səhifəsi Sectionları</h3>
               {sections.map((section, i) => (
-                <SectionEditor
-                  key={`section-${i}-${section.type}`}
-                  section={section}
-                  index={i}
+                <SectionEditor key={`section-${i}-${section.type}`}
+                  section={section} index={i} activeLang={activeLang}
                   onChange={data => updateSection(i, data)}
-                  onRemove={() => removeSection(i)}
-                />
+                  onRemove={() => removeSection(i)} />
               ))}
               <div className={styles.addSectionRow}>
                 {SECTION_TYPES.filter(({ type }) => !usedTypes.includes(type)).map(({ type, label }) => (
-                  <button key={type} type="button" className={styles.addSectionBtn} onClick={() => addSection(type)}>
-                    + {label}
-                  </button>
+                  <button key={type} type="button" className={styles.addSectionBtn}
+                    onClick={() => addSection(type)}>+ {label}</button>
                 ))}
               </div>
             </div>
@@ -828,9 +810,7 @@ export default function PortfolioPage() {
               <h2>Silməyi təsdiq edin</h2>
               <button className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button>
             </div>
-            <div className={styles.modalBody}>
-              <p>Bu portfolionu silmək istədiyinizə əminsiniz?</p>
-            </div>
+            <div className={styles.modalBody}><p>Bu portfolionu silmək istədiyinizə əminsiniz?</p></div>
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
               <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>

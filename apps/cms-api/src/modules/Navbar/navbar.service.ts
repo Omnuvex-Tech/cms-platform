@@ -1,4 +1,3 @@
-// navbar-settings.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { NavbarSettingsRepository } from './navbar.repository';
 import { CreateNavLinkDto } from './dto/create-nav-link.dto';

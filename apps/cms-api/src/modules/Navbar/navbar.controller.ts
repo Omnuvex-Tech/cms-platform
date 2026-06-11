@@ -1,4 +1,3 @@
-// navbar-settings.controller.ts
 import {
   Controller,
   Get,

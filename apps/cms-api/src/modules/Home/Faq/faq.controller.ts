@@ -21,6 +21,12 @@ export class FaqController {
     return this.faqService.findAll();
   }
 
+  // ⚠️ STATIC ROUTE — :id-dən ƏVVƏL olmalıdır
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderFaqDto) {
+    return this.faqService.reorder(dto);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.faqService.findOne(id);
@@ -48,9 +54,4 @@ export class FaqController {
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.faqService.delete(id);
   }
-
-  @Patch('reorder')
-reorder(@Body() dto: ReorderFaqDto) {
-  return this.faqService.reorder(dto);
-}
 }

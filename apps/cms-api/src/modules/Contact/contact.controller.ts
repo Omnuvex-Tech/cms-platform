@@ -30,6 +30,8 @@ export class ContactController {
     return this.service.updateSettings(dto);
   }
 
+  // ── Social Links ────────────────────────────────────────────────────────────
+
   @Post('social-links')
   createSocialLink(@Body() dto: CreateContactSocialLinkDto) {
     return this.service.createSocialLink(dto);
@@ -53,6 +55,8 @@ export class ContactController {
     return this.service.deleteSocialLink(id);
   }
 
+  // ── Budget Options ──────────────────────────────────────────────────────────
+
   @Post('budget-options')
   createBudgetOption(@Body() dto: CreateContactOptionDto) {
     return this.service.createBudgetOption(dto);
@@ -71,6 +75,8 @@ export class ContactController {
     return this.service.deleteBudgetOption(id);
   }
 
+  // ── Timeline Options ────────────────────────────────────────────────────────
+
   @Post('timeline-options')
   createTimelineOption(@Body() dto: CreateContactOptionDto) {
     return this.service.createTimelineOption(dto);
@@ -88,6 +94,8 @@ export class ContactController {
   deleteTimelineOption(@Param('id', ParseIntPipe) id: number) {
     return this.service.deleteTimelineOption(id);
   }
+
+  // ── Submissions ─────────────────────────────────────────────────────────────
 
   @Post('submit')
   createSubmission(@Body() dto: CreateContactSubmissionDto) {

@@ -1,72 +1,30 @@
-import { IsOptional, IsString } from 'class-validator';
+// update-vacancy-settings.dto.ts
+import { IsOptional, IsString, IsObject } from 'class-validator';
 
 export class UpdateVacancySettingsDto {
-  @IsOptional()
-  @IsString()
-  backLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  applyTitle?: string;
-
-  @IsOptional()
-  @IsString()
-  aboutRoleLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  skillsLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  responsibleLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  requirementsLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  emailHref?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  phoneHref?: string;
-
-  @IsOptional()
-  @IsString()
-  location?: string;
-
-  @IsOptional()
-  @IsString()
-  emailLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  phoneLabel?: string;
-
-  @IsOptional()
-  @IsString()
-  locationLabel?: string;
-
-
-  formNameLabel?: string;
-  formNamePlaceholder?: string;
-  formEmailLabel?: string;
-  formEmailPlaceholder?: string;
-  formPhoneLabel?: string;
-  formPhonePlaceholder?: string;
-  formMessageLabel?: string;
-  formMessagePlaceholder?: string;
-  formCvLabel?: string;
-  formCvPlaceholder?: string;
-  formSubmitLabel?: string;
+  @IsOptional() @IsObject() backLabel?: Record<string, string>;
+  @IsOptional() @IsObject() applyTitle?: Record<string, string>;
+  @IsOptional() @IsObject() aboutRoleLabel?: Record<string, string>;
+  @IsOptional() @IsObject() skillsLabel?: Record<string, string>;
+  @IsOptional() @IsObject() responsibleLabel?: Record<string, string>;
+  @IsOptional() @IsObject() requirementsLabel?: Record<string, string>;
+  @IsOptional() @IsString() email?: string;
+  @IsOptional() @IsString() emailHref?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() phoneHref?: string;
+  @IsOptional() @IsObject() location?: Record<string, string>;
+  @IsOptional() @IsObject() emailLabel?: Record<string, string>;
+  @IsOptional() @IsObject() phoneLabel?: Record<string, string>;
+  @IsOptional() @IsObject() locationLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formNameLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formNamePlaceholder?: Record<string, string>;
+  @IsOptional() @IsObject() formEmailLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formEmailPlaceholder?: Record<string, string>;
+  @IsOptional() @IsObject() formPhoneLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formPhonePlaceholder?: Record<string, string>;
+  @IsOptional() @IsObject() formMessageLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formMessagePlaceholder?: Record<string, string>;
+  @IsOptional() @IsObject() formCvLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formCvPlaceholder?: Record<string, string>;
+  @IsOptional() @IsObject() formSubmitLabel?: Record<string, string>;
 }

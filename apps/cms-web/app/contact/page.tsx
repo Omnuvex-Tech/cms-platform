@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+
 function getToken() {
     return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
 }
@@ -42,6 +43,9 @@ function toAbsUrl(path: string | null | undefined): string {
     return `${API}${path}`;
 }
 
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
+
 interface ContactSocialLink {
     id: number;
     icon: string | null;
@@ -52,41 +56,65 @@ interface ContactSocialLink {
 
 interface ContactOption {
     id: number;
-    label: string;
+    label: LocalizedString;
     order: number;
 }
 
 interface ContactSettings {
     id: number;
-    title: string;
-    description: string;
-    emailLabel: string;
-    emailValue: string;
-    phoneLabel: string;
-    phoneValue: string;
-    locationLabel: string;
-    locationValue: string;
-    hoursLabel: string;
-    hoursValue: string;
-    followUsLabel: string;
+    title: LocalizedString;
+    description: LocalizedString;
+    emailLabel: LocalizedString;
+    emailValue: LocalizedString;
+    phoneLabel: LocalizedString;
+    phoneValue: LocalizedString;
+    locationLabel: LocalizedString;
+    locationValue: LocalizedString;
+    hoursLabel: LocalizedString;
+    hoursValue: LocalizedString;
+    followUsLabel: LocalizedString;
     tags: string[];
-    formNameLabel: string;
-    formNamePlaceholder: string;
-    formEmailLabel: string;
-    formEmailPlaceholder: string;
-    formPhoneLabel: string;
-    formPhonePlaceholder: string;
-    formServiceLabel: string;
-    formBudgetLabel: string;
-    formBudgetPlaceholder: string;
-    formTimelineLabel: string;
-    formTimelinePlaceholder: string;
-    formMessageLabel: string;
-    formMessagePlaceholder: string;
-    formSubmitLabel: string;
+    formNameLabel: LocalizedString;
+    formNamePlaceholder: LocalizedString;
+    formEmailLabel: LocalizedString;
+    formEmailPlaceholder: LocalizedString;
+    formPhoneLabel: LocalizedString;
+    formPhonePlaceholder: LocalizedString;
+    formServiceLabel: LocalizedString;
+    formBudgetLabel: LocalizedString;
+    formBudgetPlaceholder: LocalizedString;
+    formTimelineLabel: LocalizedString;
+    formTimelinePlaceholder: LocalizedString;
+    formMessageLabel: LocalizedString;
+    formMessagePlaceholder: LocalizedString;
+    formSubmitLabel: LocalizedString;
     socialLinks: ContactSocialLink[];
     budgetOptions: ContactOption[];
     timelineOptions: ContactOption[];
+}
+
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+    return (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {(["az", "en", "ru"] as Lang[]).map(l => (
+                <button
+                    key={l}
+                    type="button"
+                    onClick={() => onChange(l)}
+                    style={{
+                        padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                        border: "1.5px solid",
+                        borderColor: active === l ? "#3b82f6" : "#333",
+                        background: active === l ? "#1e3a5f" : "transparent",
+                        color: active === l ? "#fff" : "#888",
+                        cursor: "pointer",
+                    }}
+                >
+                    {l.toUpperCase()}
+                </button>
+            ))}
+        </div>
+    );
 }
 
 function SocialIconUpload({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
@@ -176,18 +204,20 @@ function SortableSocialLinkRow({
 }
 
 function OptionRow({
-    option, onUpdate, onDelete,
+    option, activeLang, onUpdate, onDelete,
 }: {
     option: ContactOption;
-    onUpdate: (id: number, label: string) => void;
+    activeLang: Lang;
+    onUpdate: (id: number, lang: Lang, label: string) => void;
     onDelete: (id: number) => void;
 }) {
     return (
         <div className={styles.contentItemBlock} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                <input className={styles.input} value={option.label}
+                <input className={styles.input}
+                    value={option.label?.[activeLang] || ""}
                     placeholder="Seçim adı"
-                    onChange={e => onUpdate(option.id, e.target.value)} />
+                    onChange={e => onUpdate(option.id, activeLang, e.target.value)} />
             </div>
             <button type="button" onClick={() => onDelete(option.id)}
                 style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, flexShrink: 0 }}>✕</button>
@@ -237,7 +267,6 @@ function TagsEditor({ tags, onChange }: { tags: string[]; onChange: (t: string[]
     );
 }
 
-
 export default function ContactPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -246,6 +275,7 @@ export default function ContactPage() {
     const [socialLinks, setSocialLinks] = useState<ContactSocialLink[]>([]);
     const [budgetOptions, setBudgetOptions] = useState<ContactOption[]>([]);
     const [timelineOptions, setTimelineOptions] = useState<ContactOption[]>([]);
+    const [activeLang, setActiveLang] = useState<Lang>("az");
 
     const sensors = useSensors(useSensor(PointerSensor));
     const MAX_SOCIAL = 6;
@@ -264,6 +294,13 @@ export default function ContactPage() {
 
     const upd = (key: keyof ContactSettings, val: any) =>
         setSettings(prev => prev ? { ...prev, [key]: val } : prev);
+
+    const updL = (key: keyof ContactSettings, lang: Lang, val: string) =>
+        setSettings(prev => {
+            if (!prev) return prev;
+            const current = (prev[key] as LocalizedString) || {};
+            return { ...prev, [key]: { ...current, [lang]: val } };
+        });
 
     const updateSocialLink = (id: number, data: Partial<ContactSocialLink>) =>
         setSocialLinks(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
@@ -295,14 +332,17 @@ export default function ContactPage() {
             setSocialLinks(prev => prev.filter(l => l.id !== id));
         } catch { alert("Silinərkən xəta baş verdi"); }
     };
-    const updateBudgetOption = (id: number, label: string) =>
-        setBudgetOptions(prev => prev.map(o => o.id === id ? { ...o, label } : o));
+
+    const updateBudgetOption = (id: number, lang: Lang, label: string) =>
+        setBudgetOptions(prev => prev.map(o =>
+            o.id === id ? { ...o, label: { ...o.label, [lang]: label } } : o
+        ));
 
     const addBudgetOption = async () => {
         try {
             const newOpt = await apiFetch("/contact/budget-options", {
                 method: "POST",
-                body: JSON.stringify({ label: "Yeni seçim", order: budgetOptions.length }),
+                body: JSON.stringify({ label: { az: "Yeni seçim", en: "New option", ru: "Новый вариант" }, order: budgetOptions.length }),
             });
             setBudgetOptions(prev => [...prev, newOpt]);
         } catch { alert("Xəta baş verdi"); }
@@ -315,14 +355,16 @@ export default function ContactPage() {
         } catch { alert("Silinərkən xəta baş verdi"); }
     };
 
-    const updateTimelineOption = (id: number, label: string) =>
-        setTimelineOptions(prev => prev.map(o => o.id === id ? { ...o, label } : o));
+    const updateTimelineOption = (id: number, lang: Lang, label: string) =>
+        setTimelineOptions(prev => prev.map(o =>
+            o.id === id ? { ...o, label: { ...o.label, [lang]: label } } : o
+        ));
 
     const addTimelineOption = async () => {
         try {
             const newOpt = await apiFetch("/contact/timeline-options", {
                 method: "POST",
-                body: JSON.stringify({ label: "Yeni seçim", order: timelineOptions.length }),
+                body: JSON.stringify({ label: { az: "Yeni seçim", en: "New option", ru: "Новый вариант" }, order: timelineOptions.length }),
             });
             setTimelineOptions(prev => [...prev, newOpt]);
         } catch { alert("Xəta baş verdi"); }
@@ -431,75 +473,73 @@ export default function ContactPage() {
                 </div>
             </div>
 
+            <LangTabs active={activeLang} onChange={setActiveLang} />
+
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Ümumi</h3>
                     <div className={styles.field}>
-                        <label>Başlıq</label>
-                        <input className={styles.input} value={settings.title} placeholder="Contact us"
-                            onChange={e => upd("title", e.target.value)} />
+                        <label>Başlıq ({activeLang.toUpperCase()})</label>
+                        <input className={styles.input} value={settings.title?.[activeLang] || ""} placeholder="Contact us"
+                            onChange={e => updL("title", activeLang, e.target.value)} />
                     </div>
                     <div className={styles.field}>
-                        <label>Təsvir</label>
-                        <textarea className={styles.input} value={settings.description} rows={3}
+                        <label>Təsvir ({activeLang.toUpperCase()})</label>
+                        <textarea className={styles.input} value={settings.description?.[activeLang] || ""} rows={3}
                             style={{ resize: "vertical" }} placeholder="Ready to start a project..."
-                            onChange={e => upd("description", e.target.value)} />
+                            onChange={e => updL("description", activeLang, e.target.value)} />
                     </div>
                 </div>
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Əlaqə məlumatları</h3>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Email başlığı</label>
-                            <input className={styles.input} value={settings.emailLabel} placeholder="Email Adress"
-                                onChange={e => upd("emailLabel", e.target.value)} />
+                            <label>Email başlığı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.emailLabel?.[activeLang] || ""} placeholder="Email Adress"
+                                onChange={e => updL("emailLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Email dəyəri</label>
-                            <input className={styles.input} value={settings.emailValue} placeholder="info@trenders.az"
-                                onChange={e => upd("emailValue", e.target.value)} />
+                            <label>Email dəyəri ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.emailValue?.[activeLang] || ""} placeholder="info@trenders.az"
+                                onChange={e => updL("emailValue", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Telefon başlığı</label>
-                            <input className={styles.input} value={settings.phoneLabel} placeholder="Phone"
-                                onChange={e => upd("phoneLabel", e.target.value)} />
+                            <label>Telefon başlığı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.phoneLabel?.[activeLang] || ""} placeholder="Phone"
+                                onChange={e => updL("phoneLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Telefon nömrəsi</label>
-                            <input className={styles.input} value={settings.phoneValue} placeholder="+(994) 50..."
-                                onChange={e => upd("phoneValue", e.target.value)} />
+                            <label>Telefon nömrəsi ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.phoneValue?.[activeLang] || ""} placeholder="+(994) 50..."
+                                onChange={e => updL("phoneValue", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Ünvan başlığı</label>
-                            <input className={styles.input} value={settings.locationLabel} placeholder="Location"
-                                onChange={e => upd("locationLabel", e.target.value)} />
+                            <label>Ünvan başlığı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.locationLabel?.[activeLang] || ""} placeholder="Location"
+                                onChange={e => updL("locationLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Ünvan dəyəri</label>
-                            <input className={styles.input} value={settings.locationValue} placeholder="Baku, Sabail..."
-                                onChange={e => upd("locationValue", e.target.value)} />
+                            <label>Ünvan dəyəri ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.locationValue?.[activeLang] || ""} placeholder="Baku, Sabail..."
+                                onChange={e => updL("locationValue", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Saat başlığı</label>
-                            <input className={styles.input} value={settings.hoursLabel} placeholder="Hours"
-                                onChange={e => upd("hoursLabel", e.target.value)} />
+                            <label>Saat başlığı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.hoursLabel?.[activeLang] || ""} placeholder="Hours"
+                                onChange={e => updL("hoursLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Saat dəyəri</label>
-                            <input className={styles.input} value={settings.hoursValue} placeholder="Monday – Friday 9:00 AM – 6:00 PM"
-                                onChange={e => upd("hoursValue", e.target.value)} />
+                            <label>Saat dəyəri ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.hoursValue?.[activeLang] || ""} placeholder="Monday – Friday 9:00 AM – 6:00 PM"
+                                onChange={e => updL("hoursValue", activeLang, e.target.value)} />
                         </div>
                     </div>
                 </div>
@@ -512,15 +552,13 @@ export default function ContactPage() {
                         </span>
                     </h3>
                     <div className={styles.field}>
-                        <label>"Follow Us" yazısı</label>
-                        <input className={styles.input} value={settings.followUsLabel} placeholder="Follow Us"
-                            onChange={e => upd("followUsLabel", e.target.value)} />
+                        <label>"Follow Us" yazısı ({activeLang.toUpperCase()})</label>
+                        <input className={styles.input} value={settings.followUsLabel?.[activeLang] || ""} placeholder="Follow Us"
+                            onChange={e => updL("followUsLabel", activeLang, e.target.value)} />
                     </div>
-
                     {socialLinks.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir sosial link yoxdur</p>
                     )}
-
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSocialDragEnd}>
                         <SortableContext items={socialLinks.map(l => l.id)} strategy={verticalListSortingStrategy}>
                             {socialLinks.map(link => (
@@ -529,7 +567,6 @@ export default function ContactPage() {
                             ))}
                         </SortableContext>
                     </DndContext>
-
                     {socialLinks.length < MAX_SOCIAL ? (
                         <button type="button" className={styles.addRowBtn} onClick={addSocialLink}>
                             + Sosial link əlavə et
@@ -546,69 +583,64 @@ export default function ContactPage() {
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Form Sahələri</h3>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Ad — label</label>
-                            <input className={styles.input} value={settings.formNameLabel} placeholder="Name"
-                                onChange={e => upd("formNameLabel", e.target.value)} />
+                            <label>Ad — label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formNameLabel?.[activeLang] || ""} placeholder="Name"
+                                onChange={e => updL("formNameLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Ad — placeholder</label>
-                            <input className={styles.input} value={settings.formNamePlaceholder} placeholder="Your name*"
-                                onChange={e => upd("formNamePlaceholder", e.target.value)} />
+                            <label>Ad — placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formNamePlaceholder?.[activeLang] || ""} placeholder="Your name*"
+                                onChange={e => updL("formNamePlaceholder", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Email — label</label>
-                            <input className={styles.input} value={settings.formEmailLabel} placeholder="Email"
-                                onChange={e => upd("formEmailLabel", e.target.value)} />
+                            <label>Email — label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formEmailLabel?.[activeLang] || ""} placeholder="Email"
+                                onChange={e => updL("formEmailLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Email — placeholder</label>
-                            <input className={styles.input} value={settings.formEmailPlaceholder} placeholder="Your email*"
-                                onChange={e => upd("formEmailPlaceholder", e.target.value)} />
+                            <label>Email — placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formEmailPlaceholder?.[activeLang] || ""} placeholder="Your email*"
+                                onChange={e => updL("formEmailPlaceholder", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Telefon — label</label>
-                            <input className={styles.input} value={settings.formPhoneLabel} placeholder="Phone"
-                                onChange={e => upd("formPhoneLabel", e.target.value)} />
+                            <label>Telefon — label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formPhoneLabel?.[activeLang] || ""} placeholder="Phone"
+                                onChange={e => updL("formPhoneLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Telefon — placeholder</label>
-                            <input className={styles.input} value={settings.formPhonePlaceholder} placeholder="Your phone*"
-                                onChange={e => upd("formPhonePlaceholder", e.target.value)} />
+                            <label>Telefon — placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formPhonePlaceholder?.[activeLang] || ""} placeholder="Your phone*"
+                                onChange={e => updL("formPhonePlaceholder", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Servis — label</label>
-                            <input className={styles.input} value={settings.formServiceLabel} placeholder="Service"
-                                onChange={e => upd("formServiceLabel", e.target.value)} />
+                            <label>Servis — label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formServiceLabel?.[activeLang] || ""} placeholder="Service"
+                                onChange={e => updL("formServiceLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Mesaj — label</label>
-                            <input className={styles.input} value={settings.formMessageLabel} placeholder="Message"
-                                onChange={e => upd("formMessageLabel", e.target.value)} />
+                            <label>Mesaj — label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formMessageLabel?.[activeLang] || ""} placeholder="Message"
+                                onChange={e => updL("formMessageLabel", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Mesaj — placeholder</label>
-                            <input className={styles.input} value={settings.formMessagePlaceholder} placeholder="Your message"
-                                onChange={e => upd("formMessagePlaceholder", e.target.value)} />
+                            <label>Mesaj — placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formMessagePlaceholder?.[activeLang] || ""} placeholder="Your message"
+                                onChange={e => updL("formMessagePlaceholder", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Submit düyməsi yazısı</label>
-                            <input className={styles.input} value={settings.formSubmitLabel} placeholder="Submit Inquiry"
-                                onChange={e => upd("formSubmitLabel", e.target.value)} />
+                            <label>Submit düyməsi yazısı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formSubmitLabel?.[activeLang] || ""} placeholder="Submit Inquiry"
+                                onChange={e => updL("formSubmitLabel", activeLang, e.target.value)} />
                         </div>
                     </div>
                 </div>
@@ -617,22 +649,21 @@ export default function ContactPage() {
                     <h3 className={styles.drawerSectionTitle}>Budget Dropdown</h3>
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Label</label>
-                            <input className={styles.input} value={settings.formBudgetLabel} placeholder="Budget"
-                                onChange={e => upd("formBudgetLabel", e.target.value)} />
+                            <label>Label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formBudgetLabel?.[activeLang] || ""} placeholder="Budget"
+                                onChange={e => updL("formBudgetLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Placeholder</label>
-                            <input className={styles.input} value={settings.formBudgetPlaceholder} placeholder="Estimated Budget"
-                                onChange={e => upd("formBudgetPlaceholder", e.target.value)} />
+                            <label>Placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formBudgetPlaceholder?.[activeLang] || ""} placeholder="Estimated Budget"
+                                onChange={e => updL("formBudgetPlaceholder", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     {budgetOptions.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir seçim yoxdur</p>
                     )}
                     {budgetOptions.map(o => (
-                        <OptionRow key={o.id} option={o} onUpdate={updateBudgetOption} onDelete={deleteBudgetOption} />
+                        <OptionRow key={o.id} option={o} activeLang={activeLang} onUpdate={updateBudgetOption} onDelete={deleteBudgetOption} />
                     ))}
                     <button type="button" className={styles.addRowBtn} onClick={addBudgetOption}>
                         + Seçim əlavə et
@@ -643,22 +674,21 @@ export default function ContactPage() {
                     <h3 className={styles.drawerSectionTitle}>Project Timeline Dropdown</h3>
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
-                            <label>Label</label>
-                            <input className={styles.input} value={settings.formTimelineLabel} placeholder="Project Timeline"
-                                onChange={e => upd("formTimelineLabel", e.target.value)} />
+                            <label>Label ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formTimelineLabel?.[activeLang] || ""} placeholder="Project Timeline"
+                                onChange={e => updL("formTimelineLabel", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
-                            <label>Placeholder</label>
-                            <input className={styles.input} value={settings.formTimelinePlaceholder} placeholder="ASAP"
-                                onChange={e => upd("formTimelinePlaceholder", e.target.value)} />
+                            <label>Placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formTimelinePlaceholder?.[activeLang] || ""} placeholder="ASAP"
+                                onChange={e => updL("formTimelinePlaceholder", activeLang, e.target.value)} />
                         </div>
                     </div>
-
                     {timelineOptions.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir seçim yoxdur</p>
                     )}
                     {timelineOptions.map(o => (
-                        <OptionRow key={o.id} option={o} onUpdate={updateTimelineOption} onDelete={deleteTimelineOption} />
+                        <OptionRow key={o.id} option={o} activeLang={activeLang} onUpdate={updateTimelineOption} onDelete={deleteTimelineOption} />
                     ))}
                     <button type="button" className={styles.addRowBtn} onClick={addTimelineOption}>
                         + Seçim əlavə et

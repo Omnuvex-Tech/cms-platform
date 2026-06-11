@@ -1,36 +1,36 @@
+// create-vacancy.dto.ts
 import {
-  IsString, IsInt, IsBoolean, IsOptional,
-  IsArray, IsEnum, IsDateString, Min,
+  IsObject, IsInt, IsBoolean, IsOptional,
+  IsArray, IsEnum, IsDateString, IsString, Min,
 } from 'class-validator';
 
 export enum BulletType {
-  BULLET   = 'BULLET',
+  BULLET = 'BULLET',
   NUMBERED = 'NUMBERED',
-  DASH     = 'DASH',
+  DASH = 'DASH',
 }
 
 export class CreateVacancyDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
   @IsInt()
   categoryId: number;
 
-@IsString()
-slug: string;
+  @IsString()
+  slug: string;
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
+  tags?: Record<string, string>[];
 
   @IsOptional()
   @IsBoolean()
   isNew?: boolean;
 
   @IsOptional()
-  @IsString()
-  newLabel?: string;
+  @IsObject()
+  newLabel?: Record<string, string>;
 
   @IsOptional()
   @IsBoolean()
@@ -51,22 +51,23 @@ slug: string;
 
   @IsOptional()
   @IsDateString()
-startDate?: string;
-  
+  startDate?: string;
 
   @IsOptional()
-  @IsString()
-  aboutRole?: string;
+  @IsBoolean()
+  isStartDateVisible?: boolean;
+
+  @IsOptional()
+  @IsObject()
+  aboutRole?: Record<string, string>;
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  skills?: string[];
+  skills?: Record<string, string>[];
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  responsible?: string[];
+  responsible?: Record<string, string>[];
 
   @IsOptional()
   @IsEnum(BulletType)
@@ -74,8 +75,7 @@ startDate?: string;
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  requirements?: string[];
+  requirements?: Record<string, string>[];
 
   @IsOptional()
   @IsEnum(BulletType)

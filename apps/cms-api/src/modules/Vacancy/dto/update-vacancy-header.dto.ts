@@ -1,6 +1,7 @@
-import { IsString } from 'class-validator';
+// update-vacancy-header.dto.ts
+import { IsObject } from 'class-validator';
 
 export class UpdateVacancyHeaderDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 }

@@ -1,8 +1,8 @@
-import { IsString, IsInt, IsOptional, Min } from 'class-validator';
+import { IsObject, IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreateVacancyCategoryDto {
-  @IsString()
-  name: string;
+  @IsObject()
+  name: Record<string, string>;
 
   @IsOptional()
   @IsInt()

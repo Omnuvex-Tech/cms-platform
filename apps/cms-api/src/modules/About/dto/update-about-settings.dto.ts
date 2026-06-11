@@ -1,14 +1,20 @@
-import { IsOptional, IsString, IsArray } from 'class-validator';
+// update-about-settings.dto.ts
+import { IsOptional, IsString, IsArray, IsObject } from 'class-validator';
 
 export class UpdateAboutSettingsDto {
-  @IsOptional() @IsString() heroImage?: string;
-  @IsOptional() @IsString() heroImageAlt?: string;
-  @IsOptional() @IsString() heroBadge?: string;
-  @IsOptional() @IsString() heroTitle?: string;
-  @IsOptional() @IsArray() heroParagraphs?: string[];
-  @IsOptional() @IsArray() storyBlocks?: any[];
-  @IsOptional() @IsString() teamTitle?: string;
-  @IsOptional() @IsString() teamDescription?: string;
-  @IsOptional() @IsString() teamCtaLabel?: string;
-  @IsOptional() @IsString() teamCtaHref?: string;
+  @IsOptional() @IsString()  heroImage?: string;
+  @IsOptional() @IsObject()  heroImageAlt?: Record<string, string>;
+  @IsOptional() @IsObject()  heroBadge?: Record<string, string>;
+  @IsOptional() @IsObject()  heroTitle?: Record<string, string>;
+  @IsOptional() @IsArray()   heroParagraphs?: Record<string, string>[];
+  @IsOptional() @IsArray()   storyBlocks?: {
+    title: Record<string, string>;
+    paragraphs: Record<string, string>[];
+    image?: string;
+    imageAlt?: Record<string, string>;
+  }[];
+  @IsOptional() @IsObject()  teamTitle?: Record<string, string>;
+  @IsOptional() @IsObject()  teamDescription?: Record<string, string>;
+  @IsOptional() @IsObject()  teamCtaLabel?: Record<string, string>;
+  @IsOptional() @IsString()  teamCtaHref?: string;
 }

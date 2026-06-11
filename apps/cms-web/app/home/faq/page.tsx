@@ -18,10 +18,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/faq.module.css";
 
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
+
 interface Faq {
   id: number;
-  question: string;
-  answer: string;
+  question: LocalizedString;
+  answer: LocalizedString;
   isVisible: boolean;
   order: number;
 }
@@ -45,16 +48,41 @@ async function apiFetch(path: string, options?: RequestInit) {
   return res.json();
 }
 
-// Sortable row component
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      {(["az", "en", "ru"] as Lang[]).map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => onChange(l)}
+          style={{
+            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+            border: "1.5px solid",
+            borderColor: active === l ? "#3b82f6" : "#333",
+            background: active === l ? "#1e3a5f" : "transparent",
+            color: active === l ? "#fff" : "#888",
+            cursor: "pointer",
+          }}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SortableRow({
   faq,
   index,
+  activeLang,
   onEdit,
   onToggle,
   onDelete,
 }: {
   faq: Faq;
   index: number;
+  activeLang: Lang;
   onEdit: (faq: Faq) => void;
   onToggle: (faq: Faq) => void;
   onDelete: (id: number) => void;
@@ -69,22 +97,20 @@ function SortableRow({
     background: isDragging ? "#f0f7ff" : undefined,
   };
 
+  const question = faq.question?.[activeLang] || faq.question?.az || "";
+  const answer = faq.answer?.[activeLang] || faq.answer?.az || "";
+
   return (
     <tr ref={setNodeRef} style={style}>
       <td className={styles.num}>
-        <span
-          className={styles.dragHandle}
-          {...attributes}
-          {...listeners}
-          title="Sürüşdür"
-        >
+        <span className={styles.dragHandle} {...attributes} {...listeners} title="Sürüşdür">
           ⠿
         </span>
         {String(index + 1).padStart(2, "0")}
       </td>
-      <td className={styles.question}>{faq.question}</td>
+      <td className={styles.question}>{question}</td>
       <td className={styles.answerCell}>
-        {faq.answer.length > 80 ? faq.answer.slice(0, 80) + "..." : faq.answer}
+        {answer.length > 80 ? answer.slice(0, 80) + "..." : answer}
       </td>
       <td>
         <span className={`${styles.badge} ${faq.isVisible ? styles.badgeVisible : styles.badgeHidden}`}>
@@ -93,18 +119,14 @@ function SortableRow({
       </td>
       <td>
         <div className={styles.actions}>
-          <button className={styles.editBtn} onClick={() => onEdit(faq)}>
-            Düzəlt
-          </button>
+          <button className={styles.editBtn} onClick={() => onEdit(faq)}>Düzəlt</button>
           <button
             className={`${styles.visBtn} ${faq.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
             onClick={() => onToggle(faq)}
           >
             {faq.isVisible ? "Gizlət" : "Göstər"}
           </button>
-          <button className={styles.deleteBtn} onClick={() => onDelete(faq.id)}>
-            Sil
-          </button>
+          <button className={styles.deleteBtn} onClick={() => onDelete(faq.id)}>Sil</button>
         </div>
       </td>
     </tr>
@@ -114,10 +136,14 @@ function SortableRow({
 export default function FaqPage() {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLang, setTableLang] = useState<Lang>("az");
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalLang, setModalLang] = useState<Lang>("az");
   const [editItem, setEditItem] = useState<Faq | null>(null);
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [question, setQuestion] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [answer, setAnswer] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
@@ -139,12 +165,10 @@ export default function FaqPage() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
     const oldIndex = faqs.findIndex((f) => f.id === active.id);
     const newIndex = faqs.findIndex((f) => f.id === over.id);
     const newFaqs = arrayMove(faqs, oldIndex, newIndex);
     setFaqs(newFaqs);
-
     setReordering(true);
     try {
       await apiFetch("/faq/reorder", {
@@ -158,27 +182,27 @@ export default function FaqPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setQuestion("");
-    setAnswer("");
+    setQuestion({ az: "", en: "", ru: "" });
+    setAnswer({ az: "", en: "", ru: "" });
+    setModalLang("az");
     setModalOpen(true);
   };
 
   const openEdit = (faq: Faq) => {
     setEditItem(faq);
-    setQuestion(faq.question);
-    setAnswer(faq.answer);
+    setQuestion(faq.question || { az: "", en: "", ru: "" });
+    setAnswer(faq.answer || { az: "", en: "", ru: "" });
+    setModalLang("az");
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditItem(null);
-    setQuestion("");
-    setAnswer("");
   };
 
   const save = async () => {
-    if (!question.trim() || !answer.trim()) return;
+    if (!question.az?.trim() || !answer.az?.trim()) return;
     setSaving(true);
     try {
       if (editItem) {
@@ -214,6 +238,12 @@ export default function FaqPage() {
     load();
   };
 
+  const updL = (
+    setter: React.Dispatch<React.SetStateAction<LocalizedString>>,
+    lang: Lang,
+    val: string,
+  ) => setter((prev) => ({ ...prev, [lang]: val }));
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -227,37 +257,36 @@ export default function FaqPage() {
         </div>
       </div>
 
+      {/* Cədvəl dil seçimi */}
+      <div style={{ marginBottom: 16 }}>
+        <LangTabs active={tableLang} onChange={setTableLang} />
+      </div>
+
       <div className={styles.tableWrap}>
         {loading ? (
           <div className={styles.empty}>Yüklənir...</div>
         ) : faqs.length === 0 ? (
           <div className={styles.empty}>Hələ FAQ əlavə edilməyib</div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Sual</th>
-                  <th>Cavab</th>
+                  <th>Sual ({tableLang.toUpperCase()})</th>
+                  <th>Cavab ({tableLang.toUpperCase()})</th>
                   <th>Status</th>
                   <th>Əməliyyatlar</th>
                 </tr>
               </thead>
-              <SortableContext
-                items={faqs.map((f) => f.id)}
-                strategy={verticalListSortingStrategy}
-              >
+              <SortableContext items={faqs.map((f) => f.id)} strategy={verticalListSortingStrategy}>
                 <tbody>
                   {faqs.map((faq, index) => (
                     <SortableRow
                       key={faq.id}
                       faq={faq}
                       index={index}
+                      activeLang={tableLang}
                       onEdit={openEdit}
                       onToggle={toggleVisibility}
                       onDelete={setDeleteId}
@@ -279,21 +308,22 @@ export default function FaqPage() {
               <button className={styles.closeBtn} onClick={closeModal}>✕</button>
             </div>
             <div className={styles.modalBody}>
+              <LangTabs active={modalLang} onChange={setModalLang} />
               <div className={styles.field}>
-                <label>Sual</label>
+                <label>Sual ({modalLang.toUpperCase()})</label>
                 <input
                   className={styles.input}
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
+                  value={question[modalLang] || ""}
+                  onChange={(e) => updL(setQuestion, modalLang, e.target.value)}
                   placeholder="Sualı daxil edin"
                 />
               </div>
               <div className={styles.field}>
-                <label>Cavab</label>
+                <label>Cavab ({modalLang.toUpperCase()})</label>
                 <textarea
                   className={styles.textarea}
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
+                  value={answer[modalLang] || ""}
+                  onChange={(e) => updL(setAnswer, modalLang, e.target.value)}
                   placeholder="Cavabı daxil edin"
                   rows={5}
                 />
@@ -304,7 +334,7 @@ export default function FaqPage() {
               <button
                 className={styles.saveBtn}
                 onClick={save}
-                disabled={saving || !question.trim() || !answer.trim()}
+                disabled={saving || !question.az?.trim() || !answer.az?.trim()}
               >
                 {saving ? "Saxlanır..." : "Saxla"}
               </button>

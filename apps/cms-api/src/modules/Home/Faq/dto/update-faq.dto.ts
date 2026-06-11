@@ -1,13 +1,13 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsObject, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateFaqDto {
   @IsOptional()
-  @IsString()
-  question?: string;
+  @IsObject()
+  question?: Record<string, string>;
 
   @IsOptional()
-  @IsString()
-  answer?: string;
+  @IsObject()
+  answer?: Record<string, string>;
 
   @IsOptional()
   @IsBoolean()

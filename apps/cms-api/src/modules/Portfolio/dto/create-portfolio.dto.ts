@@ -1,8 +1,8 @@
-import { IsString, IsArray, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsObject, IsString, IsArray, IsOptional, IsInt, Min } from 'class-validator';
 
 export class CreatePortfolioDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
   @IsString()
   slug: string;
@@ -15,14 +15,14 @@ export class CreatePortfolioDto {
   coverImage: string;
 
   @IsOptional()
+  @IsObject()
+  coverImageAlt?: Record<string, string>;
+
+  @IsOptional()
   sections?: any[];
 
   @IsOptional()
   @IsInt()
   @Min(0)
   order?: number;
-
-  @IsOptional()
-    @IsString()
-    coverImageAlt?: string;  
 }

@@ -14,7 +14,7 @@ export class ContactService {
   constructor(
     private readonly repo: ContactRepository,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   async getOrCreate() {
     const existing = await this.repo.findFirst();
@@ -37,6 +37,7 @@ export class ContactService {
     return this.repo.updateSettings(existing.id, dto);
   }
 
+  // ── Social Links ────────────────────────────────────────────────────────────
 
   async createSocialLink(dto: CreateContactSocialLinkDto) {
     const contact = await this.getOrCreate();
@@ -59,6 +60,8 @@ export class ContactService {
     return this.repo.reorderSocialLinks(dto.links);
   }
 
+  // ── Budget Options ──────────────────────────────────────────────────────────
+
   async createBudgetOption(dto: CreateContactOptionDto) {
     const contact = await this.getOrCreate();
     return this.repo.createBudgetOption(contact.id, dto);
@@ -76,7 +79,7 @@ export class ContactService {
     return this.repo.deleteBudgetOption(id);
   }
 
-  // ─── Timeline Options ───────────────────────────────────────────────────────
+  // ── Timeline Options ────────────────────────────────────────────────────────
 
   async createTimelineOption(dto: CreateContactOptionDto) {
     const contact = await this.getOrCreate();
@@ -95,39 +98,23 @@ export class ContactService {
     return this.repo.deleteTimelineOption(id);
   }
 
-
-  // async createSubmission(dto: CreateContactSubmissionDto) {
-  //   const submission = await this.repo.createSubmission(dto);
-
-  //   try {
-  //     await this.mailService.sendContactSubmission({
-  //       ...dto,
-  //       submittedAt: submission.createdAt,
-  //     });
-  //   } catch (err) {
-  //     console.log('MAIL ERROR:', err);
-  //   }
-
-  //   return submission;
-  // }
+  // ── Submissions ─────────────────────────────────────────────────────────────
 
   async createSubmission(dto: CreateContactSubmissionDto) {
-  const submission = await this.repo.createSubmission(dto);
+    const submission = await this.repo.createSubmission(dto);
 
-  try {
-    await this.mailService.sendContactSubmission({
-      ...dto,
-      submittedAt: submission.createdAt,
-    });
-  } catch (err) {
-    console.error('MAIL ERROR:', err);
-    // müvəqqəti olaraq xətanı response-a əlavə et
-    return { ...submission, mailError: (err as any).message };
+    try {
+      await this.mailService.sendContactSubmission({
+        ...dto,
+        submittedAt: submission.createdAt,
+      });
+    } catch (err) {
+      console.error('MAIL ERROR:', err);
+      return { ...submission, mailError: (err as any).message };
+    }
+
+    return submission;
   }
-
-  return submission;
-}
-
 
   async findAllSubmissions() {
     return this.repo.findAllSubmissions();

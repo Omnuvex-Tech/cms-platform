@@ -1,19 +1,19 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsString, IsObject, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
 
 export class UpdateServiceDto {
   @IsOptional() @IsString() number?: string;
   @IsOptional() @IsString() slug?: string;
-  @IsOptional() @IsString() badge?: string;
-  @IsOptional() @IsString() title?: string;
-  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsObject() badge?: Record<string, string>;
+  @IsOptional() @IsObject() title?: Record<string, string>;
+  @IsOptional() @IsObject() description?: Record<string, string>;
   @IsOptional() @IsString() image?: string;
-  @IsOptional() @IsString() imageAlt?: string;
+  @IsOptional() @IsObject() imageAlt?: Record<string, string>;
   @IsOptional() @IsString() gif?: string;
   @IsOptional() features?: any[];
-  @IsOptional() @IsString() portfolioButtonText?: string;
+  @IsOptional() @IsObject() portfolioButtonText?: Record<string, string>;
   @IsOptional() @IsString() portfolioButtonLink?: string;
   @IsOptional() @IsBoolean() portfolioButtonNewTab?: boolean;
-  @IsOptional() @IsString() detailButtonText?: string;
+  @IsOptional() @IsObject() detailButtonText?: Record<string, string>;
   @IsOptional() @IsString() detailButtonLink?: string;
   @IsOptional() @IsBoolean() detailButtonNewTab?: boolean;
   @IsOptional() @IsInt() @Min(0) order?: number;

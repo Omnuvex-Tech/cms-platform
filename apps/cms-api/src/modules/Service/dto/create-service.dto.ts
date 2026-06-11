@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsInt, IsArray, Min } from 'class-validator';
+import { IsString, IsObject, IsOptional, IsBoolean, IsInt, IsArray, Min } from 'class-validator';
 
 export class CreateServiceDto {
   @IsString()
@@ -7,21 +7,21 @@ export class CreateServiceDto {
   @IsString()
   slug: string;
 
-  @IsString()
-  badge: string;
+  @IsObject()
+  badge: Record<string, string>;
 
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
-  @IsString()
-  description: string;
+  @IsObject()
+  description: Record<string, string>;
 
   @IsString()
   image: string;
 
   @IsOptional()
-  @IsString()
-  imageAlt?: string;
+  @IsObject()
+  imageAlt?: Record<string, string>;
 
   @IsOptional()
   @IsString()
@@ -31,8 +31,8 @@ export class CreateServiceDto {
   features?: any[];
 
   @IsOptional()
-  @IsString()
-  portfolioButtonText?: string;
+  @IsObject()
+  portfolioButtonText?: Record<string, string>;
 
   @IsOptional()
   @IsString()
@@ -43,8 +43,8 @@ export class CreateServiceDto {
   portfolioButtonNewTab?: boolean;
 
   @IsOptional()
-  @IsString()
-  detailButtonText?: string;
+  @IsObject()
+  detailButtonText?: Record<string, string>;
 
   @IsOptional()
   @IsString()

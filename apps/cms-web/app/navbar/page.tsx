@@ -7,6 +7,10 @@ import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
+
 function getToken() { return document.cookie.split("access_token=")[1]?.split(";")[0] ?? ""; }
 
 async function apiFetch(path: string, options?: RequestInit) {
@@ -27,7 +31,7 @@ function toAbsUrl(path: string) {
 
 interface NavLink {
     id: number;
-    label: string;
+    label: LocalizedString;
     href: string;
     order: number;
     isVisible: boolean;
@@ -36,11 +40,35 @@ interface NavLink {
 
 interface NavbarSettings {
     id: number;
-    logoText: string;
     logoImage: string | null;
+    logoImageAlt: LocalizedString;
     showSearch: boolean;
     showLang: boolean;
     links: NavLink[];
+}
+
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+    return (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {(["az", "en", "ru"] as Lang[]).map((l) => (
+                <button
+                    key={l}
+                    type="button"
+                    onClick={() => onChange(l)}
+                    style={{
+                        padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                        border: "1.5px solid",
+                        borderColor: active === l ? "#3b82f6" : "#333",
+                        background: active === l ? "#1e3a5f" : "transparent",
+                        color: active === l ? "#fff" : "#888",
+                        cursor: "pointer",
+                    }}
+                >
+                    {l.toUpperCase()}
+                </button>
+            ))}
+        </div>
+    );
 }
 
 function LogoUpload({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
@@ -50,8 +78,6 @@ function LogoUpload({ value, onChange }: { value: string | null; onChange: (v: s
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.type !== "image/webp") { alert("Yalnız WebP formatı qəbul edilir"); return; }
-        
-        // base64 yox — fayl kimi upload et, URL al
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch(`${API}/about/upload`, {
@@ -62,13 +88,12 @@ function LogoUpload({ value, onChange }: { value: string | null; onChange: (v: s
         if (!res.ok) { alert("Yükləmə uğursuz"); return; }
         const { url } = await res.json();
         onChange(url);
-
         if (inputRef.current) inputRef.current.value = "";
     };
 
     return (
         <div className={styles.field}>
-            <label>Logo şəkil (WebP)</label>
+            <label>Logo (WebP)</label>
             <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
             <div className={styles.singleUploadArea} onClick={() => inputRef.current?.click()}>
                 {value ? (
@@ -85,8 +110,13 @@ function LogoUpload({ value, onChange }: { value: string | null; onChange: (v: s
     );
 }
 
-function SortableLinkRow({ link, onUpdate }: {
+function SortableLinkRow({
+    link,
+    activeLang,
+    onUpdate,
+}: {
     link: NavLink;
+    activeLang: Lang;
     onUpdate: (id: number, data: Partial<NavLink>) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
@@ -96,6 +126,8 @@ function SortableLinkRow({ link, onUpdate }: {
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
+
+    const displayLabel = link.label?.[activeLang] || link.label?.az || "Adsız link";
 
     return (
         <div ref={setNodeRef} style={style} className={styles.contentItemBlock}>
@@ -107,7 +139,7 @@ function SortableLinkRow({ link, onUpdate }: {
                         style={{ cursor: "grab", fontSize: 18, color: "#aaa", padding: "0 4px", touchAction: "none" }}
                         title="Sürüşdür"
                     >⠿</span>
-                    <span className={styles.contentItemLabel}>{link.label || "Adsız link"}</span>
+                    <span className={styles.contentItemLabel}>{displayLabel}</span>
                 </div>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                     <input type="checkbox" checked={link.isVisible}
@@ -118,16 +150,22 @@ function SortableLinkRow({ link, onUpdate }: {
 
             <div className={styles.twoCol}>
                 <div className={styles.field}>
-                    <label>Ad</label>
-                    <input className={styles.input} value={link.label}
+                    <label>Ad ({activeLang.toUpperCase()})</label>
+                    <input
+                        className={styles.input}
+                        value={link.label?.[activeLang] || ""}
                         placeholder="Haqqımızda"
-                        onChange={e => onUpdate(link.id, { label: e.target.value })} />
+                        onChange={e => onUpdate(link.id, { label: { ...link.label, [activeLang]: e.target.value } })}
+                    />
                 </div>
                 <div className={styles.field}>
-                    <label>Link</label>
-                    <input className={styles.input} value={link.href}
+                    <label>Link (href)</label>
+                    <input
+                        className={styles.input}
+                        value={link.href}
                         placeholder="/about"
-                        onChange={e => onUpdate(link.id, { href: e.target.value })} />
+                        onChange={e => onUpdate(link.id, { href: e.target.value })}
+                    />
                 </div>
             </div>
 
@@ -146,6 +184,7 @@ export default function NavbarPage() {
     const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
     const [settings, setSettings] = useState<NavbarSettings | null>(null);
     const [links, setLinks] = useState<NavLink[]>([]);
+    const [activeLang, setActiveLang] = useState<Lang>("az");
 
     const sensors = useSensors(useSensor(PointerSensor));
     const MAX_LINKS = 6;
@@ -160,13 +199,17 @@ export default function NavbarPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    const updateSetting = (key: keyof NavbarSettings, val: any) => {
+    const updS = (key: keyof NavbarSettings, val: any) =>
         setSettings(prev => prev ? { ...prev, [key]: val } : prev);
-    };
 
-    const updateLink = (id: number, data: Partial<NavLink>) => {
+    const updL = (lang: Lang, val: string) =>
+        setSettings(prev => {
+            if (!prev) return prev;
+            return { ...prev, logoImageAlt: { ...prev.logoImageAlt, [lang]: val } };
+        });
+
+    const updateLink = (id: number, data: Partial<NavLink>) =>
         setLinks(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
-    };
 
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
@@ -184,7 +227,7 @@ export default function NavbarPage() {
             const newLink = await apiFetch("/navbar-settings/links", {
                 method: "POST",
                 body: JSON.stringify({
-                    label: "Yeni link",
+                    label: { az: "Yeni link", en: "New link", ru: "Новая ссылка" },
                     href: "/",
                     order: links.length,
                     isVisible: true,
@@ -203,8 +246,8 @@ export default function NavbarPage() {
             await apiFetch("/navbar-settings", {
                 method: "PATCH",
                 body: JSON.stringify({
-                    logoText: settings.logoText,
                     logoImage: settings.logoImage,
+                    logoImageAlt: settings.logoImageAlt,
                     showSearch: settings.showSearch,
                     showLang: settings.showLang,
                 }),
@@ -248,53 +291,51 @@ export default function NavbarPage() {
                     <p className={styles.subtitle}>Navbar məzmununu idarə edin</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {saveStatus === "success" && (
-                        <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>
-                    )}
-                    {saveStatus === "error" && (
-                        <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>
-                    )}
+                    {saveStatus === "success" && <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>}
+                    {saveStatus === "error" && <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>}
                     <button className={styles.saveBtn} onClick={save} disabled={saving}>
                         {saving ? "Saxlanır..." : "Saxla"}
                     </button>
                 </div>
             </div>
 
+            <LangTabs active={activeLang} onChange={setActiveLang} />
+
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
-                {/* Logo */}
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Logo</h3>
-                    <div className={styles.field}>
-                        <label>Logo mətn</label>
-                        <input className={styles.input} value={settings.logoText}
-                            placeholder="trenders"
-                            onChange={e => updateSetting("logoText", e.target.value)} />
-                    </div>
                     <LogoUpload
                         value={settings.logoImage}
-                        onChange={v => updateSetting("logoImage", v)}
+                        onChange={v => updS("logoImage", v)}
                     />
+                    <div className={styles.field}>
+                        <label>Logo alt text ({activeLang.toUpperCase()})</label>
+                        <input
+                            className={styles.input}
+                            value={settings.logoImageAlt?.[activeLang] || ""}
+                            placeholder="Trenders loqosu"
+                            onChange={e => updL(activeLang, e.target.value)}
+                        />
+                    </div>
                 </div>
 
-                {/* Parametrlər */}
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Parametrlər</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, cursor: "pointer" }}>
                             <input type="checkbox" checked={settings.showSearch}
-                                onChange={e => updateSetting("showSearch", e.target.checked)} />
+                                onChange={e => updS("showSearch", e.target.checked)} />
                             Axtarış ikonunu göstər
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, cursor: "pointer" }}>
                             <input type="checkbox" checked={settings.showLang}
-                                onChange={e => updateSetting("showLang", e.target.checked)} />
-                            Dil seçicisini göstər (AZ)
+                                onChange={e => updS("showLang", e.target.checked)} />
+                            Dil seçicisini göstər
                         </label>
                     </div>
                 </div>
 
-                {/* Nav Linklər */}
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>
                         Nav Linklər
@@ -310,7 +351,12 @@ export default function NavbarPage() {
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
                             {links.map(link => (
-                                <SortableLinkRow key={link.id} link={link} onUpdate={updateLink} />
+                                <SortableLinkRow
+                                    key={link.id}
+                                    link={link}
+                                    activeLang={activeLang}
+                                    onUpdate={updateLink}
+                                />
                             ))}
                         </SortableContext>
                     </DndContext>
