@@ -1,30 +1,39 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsObject, IsString, IsOptional, IsBoolean, IsArray } from 'class-validator';
 
 export class CreateBlogAuthorDto {
-  @IsString()
-  name: string;
-  
-    @IsOptional() @IsString()
-  slug?: string;
+  @IsObject()
+  name: Record<string, string>;
 
   @IsOptional() @IsString()
-  role?: string;
+  slug?: string;
+
+  @IsOptional() @IsObject()
+  role?: Record<string, string>;
 
   @IsOptional() @IsString()
   avatar?: string;
 
+  @IsOptional() @IsObject()
+  avatarAlt?: Record<string, string>;
+
   @IsOptional() @IsString()
   linkedinHref?: string;
 
-  @IsOptional() @IsString()
-  bio?: string;
+  @IsOptional() @IsObject()
+  bio?: Record<string, string>;
+
+  @IsOptional() @IsObject()
+  skillsTitle?: Record<string, string>;
+
+  @IsOptional() @IsArray()
+  skills?: Record<string, string>[];
 
   @IsOptional() @IsString()
-  skillsTitle?: string;
+  linkedinIcon?: string;
 
-  @IsOptional() @IsArray() @IsString({ each: true })
-  skills?: string[];
+  @IsOptional() @IsBoolean()
+  isVisible?: boolean;
 
-  @IsOptional() @IsString() avatarAlt?: string;
-@IsOptional() @IsString() linkedinIcon?: string;
+  @IsOptional() @IsBoolean()
+  isOurTeam?: boolean;
 }

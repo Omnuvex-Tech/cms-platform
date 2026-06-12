@@ -123,7 +123,10 @@ function SocialIconUpload({ value, onChange }: { value: string | null; onChange:
     const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.type !== "image/webp") { alert("Yalnız WebP formatı qəbul edilir"); return; }
+        if (!['image/webp', 'image/svg+xml'].includes(file.type)) {
+            alert("Yalnız WebP və ya SVG formatı qəbul edilir");
+            return;
+        }
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch(`${API}/about/upload`, {
@@ -140,7 +143,7 @@ function SocialIconUpload({ value, onChange }: { value: string | null; onChange:
     return (
         <div className={styles.field} style={{ flex: "0 0 72px" }}>
             <label>İkon</label>
-            <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
+            <input ref={inputRef} type="file" accept="image/webp,image/svg+xml" style={{ display: "none" }} onChange={handleSelect} />
             <div
                 onClick={() => inputRef.current?.click()}
                 style={{
@@ -148,7 +151,7 @@ function SocialIconUpload({ value, onChange }: { value: string | null; onChange:
                     border: "1.5px dashed #444",
                     borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", overflow: "hidden", background: "#1a1a1a",
+                    cursor: "pointer", overflow: "hidden",
                 }}
             >
                 {value ? (

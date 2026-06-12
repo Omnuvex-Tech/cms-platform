@@ -507,13 +507,20 @@ function SectionEditor({ section, index, activeLang, onChange, onRemove }: {
     };
 
     return (
-        <div className={styles.sectionBlock}>
+        <div className={styles.sectionBlock} style={{ opacity: section.isVisible === false ? 0.5 : 1 }}>
             <div className={styles.sectionBlockHeader}>
                 <div className={styles.sectionBlockLeft}>
                     <span className={styles.sectionTypeTag}>{section.type.toUpperCase()}</span>
                     <span className={styles.sectionIndex}>#{index + 1}</span>
                 </div>
                 <div className={styles.sectionBlockRight}>
+                    <button
+                        type="button"
+                        className={section.isVisible === false ? styles.inactiveToggle : styles.activeToggle}
+                        onClick={() => onChange({ ...section, isVisible: section.isVisible === false ? true : false })}
+                    >
+                        {section.isVisible === false ? "Gizli" : "Görünür"}
+                    </button>
                     <button type="button" className={styles.toggleBtn} onClick={() => setOpen(o => !o)}>
                         {open ? "Bağla" : "Aç"}
                     </button>
@@ -670,7 +677,7 @@ const openEdit = (s: any) => {
         setFeatures(prev => arrayMove(prev, oi, ni));
     };
 
-    const addSection = (type: string) => setSections(prev => [...prev, { type }]);
+const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
     const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
     const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
 

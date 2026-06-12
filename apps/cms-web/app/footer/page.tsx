@@ -127,8 +127,7 @@ function LogoUpload({ value, onChange }: { value: string | null; onChange: (v: s
     return (
         <div className={styles.field}>
             <label>Logo şəkil (WebP)</label>
-            <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
-            <div className={styles.singleUploadArea} onClick={() => inputRef.current?.click()}>
+            <input ref={inputRef} type="file" accept="image/webp,image/svg+xml" style={{ display: "none" }} onChange={handleSelect} />            <div className={styles.singleUploadArea} onClick={() => inputRef.current?.click()}>
                 {value ? (
                     <div className={styles.singleUploadPreviewWrap}>
                         <img src={toAbsUrl(value)} alt="logo" className={styles.singleUploadPreview} />
@@ -149,8 +148,10 @@ function SocialIconUpload({ value, onChange }: { value: string | null; onChange:
     const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.type !== "image/webp") { alert("Yalnız WebP formatı qəbul edilir"); return; }
-        const formData = new FormData();
+        if (file.type !== "image/webp" && file.type !== "image/svg+xml") {
+            alert("Yalnız WebP və ya SVG formatı qəbul edilir");
+            return;
+        } const formData = new FormData();
         formData.append("file", file);
         const res = await fetch(`${API}/about/upload`, {
             method: "POST",
@@ -166,14 +167,14 @@ function SocialIconUpload({ value, onChange }: { value: string | null; onChange:
     return (
         <div className={styles.field} style={{ flex: "0 0 72px" }}>
             <label>İkon</label>
-            <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
+<input ref={inputRef} type="file" accept="image/webp,image/svg+xml" style={{ display: "none" }} onChange={handleSelect} />
             <div
                 onClick={() => inputRef.current?.click()}
                 style={{
                     width: 56, height: 56,
                     border: "1.5px dashed #444", borderRadius: 10,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", overflow: "hidden", background: "#1a1a1a",
+                    cursor: "pointer", overflow: "hidden",
                 }}
             >
                 {value ? (

@@ -1,11 +1,11 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsObject, IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateBlogSettingsDto {
-  @IsOptional() @IsString() pageTitle?: string;
-  @IsOptional() @IsString() buttonText?: string;
+  @IsOptional() @IsObject() pageTitle?: Record<string, string>;
+  @IsOptional() @IsObject() buttonText?: Record<string, string>;
   @IsOptional() @IsString() buttonLink?: string;
-  @IsOptional() @IsString() quoteText?: string;
-  @IsOptional() @IsString() quoteImage?: string;
-  @IsOptional() @IsString() quoteImageAlt?: string;
-    @IsOptional() @IsBoolean() buttonNewTab?: boolean;
+  @IsOptional() @IsBoolean() buttonNewTab?: boolean;
+  @IsOptional() @IsObject() quoteText?: Record<string, string>;
+  @IsOptional() @IsObject() quoteImage?: Record<string, string>;
+  @IsOptional() @IsObject() quoteImageAlt?: Record<string, string>;
 }

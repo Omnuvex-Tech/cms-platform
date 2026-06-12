@@ -18,11 +18,10 @@ export class SearchService {
         return json[locale] || json['az'] || '';
     }
 
-    private stripHtml(html: string): string {
-        if (!html) return '';
-        return html.replace(/<[^>]*>/g, '').trim();
-    }
-
+private stripHtml(html: any): string {
+    if (!html) return '';
+    return String(html).replace(/<[^>]*>/g, '').trim();
+}
     private highlight(text: string, q: string): string {
         if (!text || !q) return text ?? '';
         const idx = text.toLowerCase().indexOf(q.toLowerCase());

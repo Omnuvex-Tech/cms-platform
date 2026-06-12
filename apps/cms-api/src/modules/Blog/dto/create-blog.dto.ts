@@ -1,74 +1,41 @@
-import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsDateString } from 'class-validator';
+import { IsObject, IsString, IsOptional, IsBoolean, IsArray, IsInt, IsDateString } from 'class-validator';
 
 export class CreateBlogDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
   @IsString()
   slug: string;
 
-  @IsString()
-  badge: string;
+  @IsObject()
+  badge: Record<string, string>;
 
-  @IsString()
-  excerpt: string;
+  @IsObject()
+  excerpt: Record<string, string>;
 
-  @IsString()
-  coverImage: string;
+  @IsObject()
+  coverImage: Record<string, string>;
 
-  @IsOptional()
-  @IsBoolean()
-  isHomeVisible?: boolean;
+  @IsOptional() @IsObject()
+  coverImageAlt?: Record<string, string>;
 
-  @IsOptional()
-  @IsString()
-  coverImageAlt?: string;
-
-  @IsOptional()
-  @IsDateString()
+  @IsOptional() @IsDateString()
   publishedAt?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  isVisible?: boolean;
+  @IsOptional() @IsBoolean() isVisible?: boolean;
+  @IsOptional() @IsBoolean() isFeaturedMain?: boolean;
+  @IsOptional() @IsBoolean() isFeaturedSide?: boolean;
+  @IsOptional() @IsBoolean() isPickOfWeek?: boolean;
+  @IsOptional() @IsBoolean() isPreview?: boolean;
+  @IsOptional() @IsBoolean() isGrid?: boolean;
+  @IsOptional() @IsBoolean() isHomeVisible?: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  isFeaturedMain?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isFeaturedSide?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isPickOfWeek?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isPreview?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  isGrid?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
+  @IsOptional() @IsArray() @IsString({ each: true })
   hashtags?: string[];
 
-  @IsOptional()
-  sections?: any[];
+  @IsOptional() sections?: any[];
 
-  @IsOptional()
-  @IsInt()
-  authorId?: number;
-
-  @IsOptional()
-  @IsInt()
-  categoryId?: number;
-
-  @IsOptional()
-  @IsInt()
-  order?: number;
+  @IsOptional() @IsInt() authorId?: number;
+  @IsOptional() @IsInt() categoryId?: number;
+  @IsOptional() @IsInt() order?: number;
 }

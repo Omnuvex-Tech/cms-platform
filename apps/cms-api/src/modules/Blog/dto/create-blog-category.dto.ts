@@ -1,8 +1,8 @@
-import { IsString } from 'class-validator';
+import { IsObject, IsString } from 'class-validator';
 
 export class CreateBlogCategoryDto {
-  @IsString()
-  label: string;
+  @IsObject()
+  label: Record<string, string>;
 
   @IsString()
   slug: string;

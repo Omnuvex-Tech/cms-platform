@@ -218,48 +218,45 @@ model Service {
   @@map("services")
 }
 
+
 model BlogAuthor {
   id           Int      @id @default(autoincrement())
-  name         String
-  role         String?
+  name         Json     @default("{}")
+  role         Json     @default("{}")
   avatar       String?
+  avatarAlt    Json     @default("{}")
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  bio          String?
+  bio          Json     @default("{}")
   linkedinHref String?
-  skills       String[]
-  skillsTitle  String?
+  skills       Json     @default("[]")
+  skillsTitle  Json     @default("{}")
   slug         String?  @unique
-  avatarAlt    String?
   linkedinIcon String?
   isOurTeam    Boolean  @default(false)
   isVisible    Boolean  @default(true)
   blogs        Blog[]
-
   @@map("blog_authors")
 }
-
 model BlogCategory {
   id        Int      @id @default(autoincrement())
-  label     String
+  label     Json     @default("{}")
   slug      String   @unique
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   blogs     Blog[]
-
   @@map("blog_categories")
 }
-
 model Blog {
   id                 Int           @id @default(autoincrement())
-  title              String
+  title              Json          @default("{}")
   slug               String        @unique
-  badge              String
-  excerpt            String
-  coverImage         String
-  coverImageAlt      String?
+  badge              Json          @default("{}")
+  excerpt            Json          @default("{}")
+  coverImage         Json @default("{}")
+  coverImageAlt      Json          @default("{}")
   publishedAt        DateTime      @default(now())
   isVisible          Boolean       @default(true)
   isFeaturedMain     Boolean       @default(false)
@@ -280,24 +277,22 @@ model Blog {
   authorListPinnedAt DateTime?
   author             BlogAuthor?   @relation(fields: [authorId], references: [id])
   category           BlogCategory? @relation(fields: [categoryId], references: [id])
-
   @@map("blogs")
 }
-
 model BlogSettings {
   id            Int      @id @default(autoincrement())
-  pageTitle     String   @default("Bloglar")
-  buttonText    String   @default("Portfolio")
+  pageTitle     Json     @default("{}")
+  buttonText    Json     @default("{}")
   buttonLink    String   @default("/portfolio")
-  quoteText     String   @default("")
-  quoteImage    String   @default("")
-  quoteImageAlt String   @default("")
+  buttonNewTab  Boolean  @default(false)
+  quoteText     Json     @default("{}")
+  quoteImage    Json  @default("{}")
+  quoteImageAlt Json     @default("{}")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  buttonNewTab  Boolean  @default(false)
-
   @@map("blog_settings")
-}
+} 
+
 
 model AboutSettings {
   id              Int      @id @default(autoincrement())
