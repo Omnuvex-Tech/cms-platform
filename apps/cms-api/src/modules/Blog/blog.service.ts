@@ -7,7 +7,8 @@ import { UpdateBlogAuthorDto } from './dto/update-blog-author.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { ReorderBlogDto } from './dto/reorder-blog.dto';
-import{UpdateBlogSettingsDto} from './dto/update-blog-settings.dto'
+import{UpdateBlogSettingsDto} from './dto/update-blog-settings.dto';
+import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 
 @Injectable()
 export class BlogService {
@@ -128,6 +129,11 @@ updateSettings(dto: UpdateBlogSettingsDto) { return this.repo.updateSettings(dto
 findOurTeamAuthors() { return this.repo.findOurTeamAuthors(); }
 findAboutTeamAuthors() { return this.repo.findAboutTeamAuthors(); }
 reorderAuthors(ids: number[]) { return this.repo.reorderAuthors(ids); }
+
+findOurTeamSettings() { return this.repo.findOurTeamSettings(); }
+updateOurTeamSettings(dto: UpdateOurTeamSettingsDto) { 
+  return this.repo.updateOurTeamSettings(dto); 
+}
 }
 
 

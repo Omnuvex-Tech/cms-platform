@@ -9,6 +9,7 @@ import { CreateBlogAuthorDto } from './dto/create-blog-author.dto';
 import { UpdateBlogAuthorDto } from './dto/update-blog-author.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
+import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 import { ReorderBlogDto } from './dto/reorder-blog.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto'
@@ -68,7 +69,13 @@ export class BlogController {
   reorderAuthors(@Body() dto: { ids: number[] }) {
     return this.service.reorderAuthors(dto.ids);
   }
+@Get('our-team-settings')
+getOurTeamSettings() { return this.service.findOurTeamSettings(); }
 
+@Put('our-team-settings')
+updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
+  return this.service.updateOurTeamSettings(dto);
+}
   @Get('authors')
   findAllAuthors() { return this.service.findAllAuthors(); }
 

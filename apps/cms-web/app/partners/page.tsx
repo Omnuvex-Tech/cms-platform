@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -18,11 +17,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/partners.module.css";
 
+type Lang = "az" | "en" | "ru";
+type LocalizedString = Record<string, string>;
+
 interface Partner {
   id: number;
   image: string;
-  altText: string;
-  name: string;
+  altText: LocalizedString;
+  name: LocalizedString;
   isHomepage: boolean;
   isVisible: boolean;
   order: number;
@@ -30,8 +32,8 @@ interface Partner {
 
 interface Section {
   id: number;
-  title: string;
-  description: string;
+  title: LocalizedString;
+  description: LocalizedString;
   partners: Partner[];
 }
 
@@ -60,12 +62,34 @@ async function apiFetch(path: string, options?: RequestInit) {
   return res.json();
 }
 
-// ─── Rich Editor (Tiptap) ─────────────────────────────────────────────────────
-function RichEditor({
-  value,
-  onChange,
-  placeholder,
-}: {
+function lv(field: any): LocalizedString {
+  if (typeof field === "object" && field !== null && !Array.isArray(field)) return field;
+  return { az: field ?? "", en: "", ru: "" };
+}
+
+// ─── Lang Tabs ────────────────────────────────────────────
+function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      {(["az", "en", "ru"] as Lang[]).map((l) => (
+        <button key={l} type="button" onClick={() => onChange(l)}
+          style={{
+            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+            border: "1.5px solid",
+            borderColor: active === l ? "#3b82f6" : "#333",
+            background: active === l ? "#1e3a5f" : "transparent",
+            color: active === l ? "#fff" : "#888",
+            cursor: "pointer",
+          }}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Rich Editor ─────────────────────────────────────────
+function RichEditor({ value, onChange, placeholder }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
@@ -76,21 +100,10 @@ function RichEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        paragraph: {
-          HTMLAttributes: {
-            class: "editor-p",
-          },
-        },
-      }),
+      StarterKit.configure({ paragraph: { HTMLAttributes: { class: "editor-p" } } }),
       Underline,
       TiptapHeading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-      TiptapLink.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          rel: "noopener noreferrer"
-        }
-      }),
+      TiptapLink.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer" } }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -106,11 +119,16 @@ function RichEditor({
     },
   });
 
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
+
   const openLinkPopup = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!editor) return;
     if (editor.state.selection.empty) { alert("Əvvəlcə bir mətn seçin"); return; }
-
     const attrs = editor.getAttributes("link");
     setLinkUrl(attrs.href ?? "");
     setOpenInNewTab(attrs.target === "_blank" || !attrs.href);
@@ -120,15 +138,8 @@ function RichEditor({
   const applyLink = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     if (editor && linkUrl.trim()) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange("link")
-        .setLink({
-          href: linkUrl.trim(),
-          target: openInNewTab ? "_blank" : "_self"
-        })
-        .run();
+      editor.chain().focus().extendMarkRange("link")
+        .setLink({ href: linkUrl.trim(), target: openInNewTab ? "_blank" : "_self" }).run();
     }
     setShowLinkPopup(false);
   };
@@ -142,33 +153,30 @@ function RichEditor({
   return (
     <div className={styles.richEditorWrap}>
       <div className={styles.richToolbar}>
-        <button type="button" title="Qalın"
+        <button type="button"
           className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}
           onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }}>
           <strong>B</strong>
         </button>
-        <button type="button" title="İtalik"
+        <button type="button"
           className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}
           onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }}>
           <em>I</em>
         </button>
         <div className={styles.toolbarDivider} />
         {([1, 2, 3, 4, 5, 6] as const).map((level) => (
-          <button key={level} type="button" title={`H${level}`}
+          <button key={level} type="button"
             className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}
             onMouseDown={(e) => {
               e.preventDefault();
-              if (editor?.isActive("heading", { level })) {
-                editor?.chain().focus().setParagraph().run();
-              } else {
-                editor?.chain().focus().toggleHeading({ level }).run();
-              }
+              if (editor?.isActive("heading", { level })) editor?.chain().focus().setParagraph().run();
+              else editor?.chain().focus().toggleHeading({ level }).run();
             }}>
             H{level}
           </button>
         ))}
         <div className={styles.toolbarDivider} />
-        <button type="button" title="Link əlavə et"
+        <button type="button"
           className={editor?.isActive("link") ? styles.toolbarBtnActive : styles.toolbarBtn}
           onMouseDown={(e) => { e.preventDefault(); openLinkPopup(e); }}>
           🔗
@@ -176,43 +184,44 @@ function RichEditor({
       </div>
 
       {showLinkPopup && (
-        <div className={styles.linkPopup} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
-          <input
-            className={styles.linkInput}
-            type="url"
-            placeholder="https://..."
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
+        <div className={styles.linkPopup} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12 }}>
+          <input className={styles.linkInput} type="url" placeholder="https://..."
+            value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") applyLink(); if (e.key === "Escape") setShowLinkPopup(false); }}
-            autoFocus
-          />
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', userSelect: 'none' }}>
-            <input
-              type="checkbox"
-              checked={openInNewTab}
-              onChange={(e) => setOpenInNewTab(e.target.checked)}
-            />
+            autoFocus />
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" checked={openInNewTab} onChange={(e) => setOpenInNewTab(e.target.checked)} />
             Yeni tabda açılsın (_blank)
           </label>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button type="button" className={styles.linkApplyBtn} onClick={(e) => applyLink(e)}>Əlavə et</button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button type="button" className={styles.linkApplyBtn} onClick={applyLink}>Əlavə et</button>
             <button type="button" className={styles.linkRemoveBtn} onClick={removeLink}>Sil</button>
-            <button type="button" className={styles.linkCancelBtn} onClick={(e) => { e.preventDefault(); setShowLinkPopup(false); }}>✕</button>
+            <button type="button" className={styles.linkCancelBtn}
+              onClick={(e) => { e.preventDefault(); setShowLinkPopup(false); }}>✕</button>
           </div>
         </div>
       )}
-
       <EditorContent editor={editor} className={styles.richEditor} />
     </div>
   );
 }
 
-// ─── Sortable Row ─────────────────────────────────────────────────────────────
-function SortableRow({
-  p, index, onEdit, onToggleHomepage, onToggleVisibility, onDelete,
-}: {
-  p: Partner;
-  index: number;
+function LocalizedRichEditor({ value, lang, onChange, placeholder }: {
+  value: LocalizedString; lang: Lang;
+  onChange: (v: LocalizedString) => void; placeholder?: string;
+}) {
+  return (
+    <RichEditor
+      value={value?.[lang] || ""}
+      onChange={(v) => onChange({ ...value, [lang]: v })}
+      placeholder={placeholder}
+    />
+  );
+}
+
+// ─── Sortable Row ─────────────────────────────────────────
+function SortableRow({ p, index, onEdit, onToggleHomepage, onToggleVisibility, onDelete }: {
+  p: Partner; index: number;
   onEdit: (p: Partner) => void;
   onToggleHomepage: (p: Partner) => void;
   onToggleVisibility: (p: Partner) => void;
@@ -221,44 +230,31 @@ function SortableRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: p.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    background: isDragging ? "#f0f7ff" : undefined,
-  };
+  const nameAz = lv(p.name).az || "";
 
   return (
-    <tr ref={setNodeRef} style={style}>
+    <tr ref={setNodeRef} style={{
+      transform: CSS.Transform.toString(transform), transition,
+      opacity: isDragging ? 0.5 : 1, background: isDragging ? "#f0f7ff" : undefined,
+    }}>
       <td className={styles.num}>
         <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
         {String(index + 1).padStart(2, "0")}
       </td>
       <td>
         <div className={styles.authorCell}>
-          <img src={toAbsoluteUrl(p.image)} alt={p.altText || p.name} className={styles.avatar} />
+          <img src={toAbsoluteUrl(p.image)} alt={lv(p.altText).az || nameAz} className={styles.avatar} />
           <div>
-            {/* YENİLİK: data-admin-preview vasitəsilə daxili CSS qaydası tətbiq etdik.
-              Bununla brauzerin H1-H6 teqlərinə verdiyi nəhəng ölçülər cədvəl daxilində sıfırlanır,
-              mətn düz xətt üzrə səliqəli şəkildə CSS-dəki öz sabit ölçüsünü götürür.
-            */}
             <div className={styles.authorName} data-admin-preview="true">
               <style dangerouslySetInnerHTML={{
-                __html: `
-                [data-admin-preview="true"] h1, [data-admin-preview="true"] h2, 
-                [data-admin-preview="true"] h3, [data-admin-preview="true"] h4, 
-                [data-admin-preview="true"] h5, [data-admin-preview="true"] h6,
-                [data-admin-preview="true"] p {
-                  font-size: inherit !important;
-                  font-weight: inherit !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  display: inline !important;
-                }
-              `}} />
-              <span dangerouslySetInnerHTML={{ __html: p.name }} />
+                __html: `[data-admin-preview="true"] h1,[data-admin-preview="true"] h2,
+                [data-admin-preview="true"] h3,[data-admin-preview="true"] h4,
+                [data-admin-preview="true"] h5,[data-admin-preview="true"] h6,
+                [data-admin-preview="true"] p{font-size:inherit!important;font-weight:inherit!important;margin:0!important;padding:0!important;display:inline!important;}`
+              }} />
+              <span dangerouslySetInnerHTML={{ __html: nameAz }} />
             </div>
-            {p.altText && <p className={styles.authorRole}>{p.altText}</p>}
+            {lv(p.altText).az && <p className={styles.authorRole}>{lv(p.altText).az}</p>}
           </div>
         </div>
       </td>
@@ -274,40 +270,40 @@ function SortableRow({
       </td>
       <td>
         <div className={styles.actions}>
-          <button type="button" className={styles.editBtn} onClick={(e) => { e.preventDefault(); onEdit(p); }}>Düzəlt</button>
+          <button type="button" className={styles.editBtn} onClick={() => onEdit(p)}>Düzəlt</button>
           <button type="button"
             className={`${styles.visBtn} ${p.isHomepage ? styles.visBtnHide : styles.visBtnShow}`}
-            onClick={(e) => { e.preventDefault(); onToggleHomepage(p); }}
-          >
+            onClick={() => onToggleHomepage(p)}>
             {p.isHomepage ? "Ana səhifən çıxar" : "Ana səhifəyə əlavə et"}
           </button>
-          <button
-            type="button" className={`${styles.visBtn} ${p.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
-            onClick={(e) => { e.preventDefault(); onToggleVisibility(p); }}
-          >
+          <button type="button"
+            className={`${styles.visBtn} ${p.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
+            onClick={() => onToggleVisibility(p)}>
             {p.isVisible ? "Gizlət" : "Göstər"}
           </button>
-          <button type="button" className={styles.deleteBtn} onClick={(e) => { e.preventDefault(); onDelete(p.id); }}>Sil</button>
+          <button type="button" className={styles.deleteBtn} onClick={() => onDelete(p.id)}>Sil</button>
         </div>
       </td>
     </tr>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────
 export default function PartnersPage() {
   const [section, setSection] = useState<Section | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeLang, setActiveLang] = useState<Lang>("az");
 
-  const [sectionTitle, setSectionTitle] = useState("");
-  const [sectionDesc, setSectionDesc] = useState("");
+  const [sectionTitle, setSectionTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [sectionDesc, setSectionDesc] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sectionSaving, setSectionSaving] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalLang, setModalLang] = useState<Lang>("az");
   const [editItem, setEditItem] = useState<Partner | null>(null);
-  const [name, setName] = useState("");
-  const [altText, setAltText] = useState("");
+  const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [altText, setAltText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [image, setImage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -318,27 +314,16 @@ export default function PartnersPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
 
-  // YENİLİK: Sürüşdürmə zamanı klikləmə hərəkətlərinin və scroll-un yuxarı qaçmasının
-  // qarşısını almaq üçün activationConstraint (8px hərəkət limiti) əlavə olundu.
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  // YENİLİK: isSilent parametri əlavə edildi. 
-  // Səhifə daxilindəki gizlət/göstər əməliyyatlarında bütün komponentin sıfırlanıb scroll-un 
-  // ən yuxarıya qaçmasının qarşısını alır (arxa fonda sakit yeniləmə edir).
   const load = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
       const data: Section = await apiFetch("/partners");
       if (data) {
         setSection(data);
-        setSectionTitle(data.title);
-        setSectionDesc(data.description);
+        setSectionTitle(lv(data.title));
+        setSectionDesc(lv(data.description));
         setPartners(data.partners);
       }
     } catch {
@@ -352,16 +337,19 @@ export default function PartnersPage() {
 
   const saveSection = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!sectionTitle.trim()) return;
+    if (!sectionTitle.az?.trim()) return;
     setSectionSaving(true);
     try {
-      const payload = { title: sectionTitle, description: sectionDesc };
+    const payload = {
+  title: sectionTitle,
+  description: sectionDesc,
+};
       if (section) {
         await apiFetch(`/partners/section/${section.id}`, { method: "PUT", body: JSON.stringify(payload) });
       } else {
         await apiFetch("/partners/section", { method: "POST", body: JSON.stringify(payload) });
       }
-      load(true); // Sakit yeniləmə
+      load(true);
     } finally {
       setSectionSaving(false);
     }
@@ -373,13 +361,10 @@ export default function PartnersPage() {
     const oldIndex = partners.findIndex((p) => p.id === active.id);
     const newIndex = partners.findIndex((p) => p.id === over.id);
     const newList = arrayMove(partners, oldIndex, newIndex);
-    setPartners(newList);
-    setReordering(true);
+    setPartners(newList); setReordering(true);
     try {
       await apiFetch("/partners/reorder", { method: "PATCH", body: JSON.stringify({ ids: newList.map((p) => p.id) }) });
-    } finally {
-      setReordering(false);
-    }
+    } finally { setReordering(false); }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -408,43 +393,37 @@ export default function PartnersPage() {
       if (!res.ok) throw new Error("Şəkil yükləmə uğursuz oldu");
       const data = await res.json();
       return data.url as string;
-    } finally {
-      setImageUploading(false);
-    }
+    } finally { setImageUploading(false); }
   };
 
   const resetImageState = () => {
-    setImageFile(null);
-    setImagePreview("");
-    setImage("");
+    setImageFile(null); setImagePreview(""); setImage("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const openCreate = (e: React.MouseEvent) => {
     e.preventDefault();
     setEditItem(null);
-    setName("");
-    setAltText("");
+    setName({ az: "", en: "", ru: "" });
+    setAltText({ az: "", en: "", ru: "" });
     resetImageState();
+    setModalLang("az");
     setModalOpen(true);
   };
 
   const openEdit = (p: Partner) => {
     setEditItem(p);
-    setName(p.name);
-    setAltText(p.altText ?? "");
+    setName(lv(p.name));
+    setAltText(lv(p.altText));
     setImage(p.image);
     setImageFile(null);
     setImagePreview(p.image);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setModalLang("az");
     setModalOpen(true);
   };
 
-  const closeModal = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    setModalOpen(false);
-    setEditItem(null);
-  };
+  const closeModal = () => { setModalOpen(false); setEditItem(null); };
 
   const savePartner = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -463,23 +442,21 @@ export default function PartnersPage() {
         });
       }
       closeModal();
-      load(true); // Sakit yeniləmə
-    } finally {
-      setSaving(false);
-    }
+      load(true);
+    } finally { setSaving(false); }
   };
 
   const toggleHomepage = async (p: Partner) => {
     try {
       await apiFetch(`/partners/${p.id}/homepage`, { method: "PATCH", body: JSON.stringify({ isHomepage: !p.isHomepage }) });
-      load(true); // YENİLİK: load(true) ilə scroll-un yuxarı qaçması tamamilə bloklandı
+      load(true);
     } catch (e) { console.error(e); }
   };
 
   const toggleVisibility = async (p: Partner) => {
     try {
       await apiFetch(`/partners/${p.id}/visibility`, { method: "PATCH", body: JSON.stringify({ isVisible: !p.isVisible }) });
-      load(true); // YENİLİK: load(true) ilə scroll-un yuxarı qaçması tamamilə bloklandı
+      load(true);
     } catch (e) { console.error(e); }
   };
 
@@ -487,8 +464,7 @@ export default function PartnersPage() {
     e.preventDefault();
     if (!deleteId) return;
     await apiFetch(`/partners/${deleteId}`, { method: "DELETE" });
-    setDeleteId(null);
-    load(true); // Sakit yeniləmə
+    setDeleteId(null); load(true);
   };
 
   if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
@@ -511,26 +487,24 @@ export default function PartnersPage() {
       {/* ── Section məlumatları ── */}
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionCardTitle}>Home Tərəfdaşlarımız</h2>
+        <LangTabs active={activeLang} onChange={setActiveLang} />
         <div className={styles.sectionFields}>
           <div className={styles.field}>
-            <label>Başlıq</label>
-            <input
-              className={styles.input}
-              value={sectionTitle}
-              onChange={(e) => setSectionTitle(e.target.value)}
-              placeholder="Tərəfdaşlarımız"
-            />
+            <label>Başlıq ({activeLang.toUpperCase()})</label>
+            <LocalizedRichEditor
+              value={sectionTitle} lang={activeLang}
+              onChange={setSectionTitle} placeholder="Tərəfdaşlarımız" />
           </div>
           <div className={styles.field}>
-            <label>Təsvir <small>(Dizaynda mətnin bir hissəsi mavidir, mavi etmək üçün,istədiyiniz hissəni seçib B(bold)a click etməyiniz kifayətdir.)</small></label>
-            {!loading && (
-              <RichEditor
-                value={sectionDesc}
-                onChange={setSectionDesc}
-                placeholder="Bölmə təsviri..."
-              />
-            )}
+            <label>
+              Təsvir ({activeLang.toUpperCase()})
+              <small> (Dizaynda mavi hissə üçün seçib B-yə klik edin)</small>
+            </label>
+            <LocalizedRichEditor
+              value={sectionDesc} lang={activeLang}
+              onChange={setSectionDesc} placeholder="Bölmə təsviri..." />
           </div>
+         
         </div>
         <div className={styles.sectionFooter}>
           <button type="button" className={styles.saveBtn} onClick={saveSection} disabled={sectionSaving}>
@@ -539,7 +513,6 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      {/* ── Partners cədvəli ── */}
       {section && (
         <div className={styles.tableWrap}>
           {partners.length === 0 ? (
@@ -548,25 +521,14 @@ export default function PartnersPage() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Partnyор</th>
-                    <th>Status</th>
-                    <th>Əməliyyatlar</th>
-                  </tr>
+                  <tr><th>#</th><th>Partnyор</th><th>Status</th><th>Əməliyyatlar</th></tr>
                 </thead>
                 <SortableContext items={partners.map((p) => p.id)} strategy={verticalListSortingStrategy}>
                   <tbody>
                     {partners.map((p, i) => (
-                      <SortableRow
-                        key={p.id}
-                        p={p}
-                        index={i}
-                        onEdit={openEdit}
-                        onToggleHomepage={toggleHomepage}
-                        onToggleVisibility={toggleVisibility}
-                        onDelete={setDeleteId}
-                      />
+                      <SortableRow key={p.id} p={p} index={i}
+                        onEdit={openEdit} onToggleHomepage={toggleHomepage}
+                        onToggleVisibility={toggleVisibility} onDelete={setDeleteId} />
                     ))}
                   </tbody>
                 </SortableContext>
@@ -576,32 +538,25 @@ export default function PartnersPage() {
         </div>
       )}
 
-      {/* ── Partner Modal ── */}
       {modalOpen && (
-        <div className={styles.overlay} onClick={() => closeModal()}>
+        <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{editItem ? "Partnyoru Düzəlt" : "Yeni Partnyор"}</h2>
-              <button type="button" className={styles.closeBtn} onClick={() => closeModal()}>✕</button>
+              <button type="button" className={styles.closeBtn} onClick={closeModal}>✕</button>
             </div>
             <div className={styles.modalBody}>
+              <LangTabs active={modalLang} onChange={setModalLang} />
               <div className={styles.field}>
-                <label>Təsvir <small>(H1–H6, B, I, 🔗 dəstəklənir)</small></label>
-                <RichEditor
-                  value={name}
-                  onChange={setName}
-                  placeholder="Partnyorun adı və ya təsviri..."
-                />
+                <label>Ad / Təsvir ({modalLang.toUpperCase()}) <small>(H1–H6, B, I, 🔗 dəstəklənir)</small></label>
+                <LocalizedRichEditor
+                  value={name} lang={modalLang} onChange={setName}
+                  placeholder="Partnyorun adı və ya təsviri..." />
               </div>
               <div className={styles.field}>
                 <label>Şəkil</label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/webp"
-                  style={{ display: "none" }}
-                  onChange={handleImageSelect}
-                />
+                <input ref={fileInputRef} type="file" accept="image/webp"
+                  style={{ display: "none" }} onChange={handleImageSelect} />
                 <div className={styles.imageUploadArea} onClick={() => fileInputRef.current?.click()}>
                   {imagePreview ? (
                     <>
@@ -610,27 +565,23 @@ export default function PartnersPage() {
                     </>
                   ) : (
                     <div className={styles.imagePlaceholder}>
-                      <span>🖼️</span>
-                      <span>Şəkil seçin</span>
-                      <small>WebP • maks 2MB</small>
+                      <span>🖼️</span><span>Şəkil seçin</span><small>WebP • maks 2MB</small>
                     </div>
                   )}
                 </div>
                 {imageUploading && <p className={styles.uploadingText}>Şəkil yüklənir...</p>}
               </div>
               <div className={styles.field}>
-                <label>Şəkil Alt Text <small>(SEO)</small></label>
-                <input
-                  className={styles.input}
-                  value={altText}
-                  onChange={(e) => setAltText(e.target.value)}
-                  placeholder="Məsələn: Kapital Bank logosu"
-                />
+                <label>Şəkil Alt Text ({modalLang.toUpperCase()}) <small>(SEO)</small></label>
+                <input className={styles.input} value={altText[modalLang] || ""}
+                  onChange={(e) => setAltText(prev => ({ ...prev, [modalLang]: e.target.value }))}
+                  placeholder="Məsələn: Kapital Bank logosu" />
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.cancelBtn} onClick={() => closeModal()}>Ləğv et</button>
-              <button type="button" className={styles.saveBtn} onClick={savePartner} disabled={saving || imageUploading}>
+              <button type="button" className={styles.cancelBtn} onClick={closeModal}>Ləğv et</button>
+              <button type="button" className={styles.saveBtn} onClick={savePartner}
+                disabled={saving || imageUploading}>
                 {saving ? "Saxlanır..." : imageUploading ? "Şəkil yüklənir..." : "Saxla"}
               </button>
             </div>
@@ -638,7 +589,6 @@ export default function PartnersPage() {
         </div>
       )}
 
-      {/* ── Silmə təsdiq modalı ── */}
       {deleteId && (
         <div className={styles.overlay} onClick={() => setDeleteId(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -646,9 +596,7 @@ export default function PartnersPage() {
               <h2>Silməyi təsdiq edin</h2>
               <button type="button" className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button>
             </div>
-            <div className={styles.modalBody}>
-              <p>Bu partnyoru silmək istədiyinizə əminsiniz?</p>
-            </div>
+            <div className={styles.modalBody}><p>Bu partnyoru silmək istədiyinizə əminsiniz?</p></div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
               <button type="button" className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>

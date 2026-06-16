@@ -237,59 +237,55 @@ function LocalizedImageUpload({ value, lang, onChange, label }: {
     );
 }
 
-function AvatarUpload({ value, onChange, label }: { value: string; onChange: (url: string) => void; label?: string }) {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const url = await uploadFile(file);
-        onChange(url);
-    };
-    return (
-        <div className={styles.field}>
-            {label && <label>{label}</label>}
-            <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
-            <div className={styles.avatarUpload} onClick={() => inputRef.current?.click()}>
-                {value ? <img src={toAbsUrl(value)} alt="" className={styles.avatarPreview} /> : <span>+</span>}
-            </div>
-        </div>
-    );
-}
+function HeroSectionEditor({ data, onChange, activeLang }: {
+    data: any; onChange: (d: any) => void; activeLang: Lang
+}) {
+    const lv = (field: any) => (typeof field === "object" && field !== null ? field : { az: field ?? "", en: "", ru: "" });
+    const setL = (key: string, val: string) => onChange({ ...data, [key]: { ...lv(data[key]), [activeLang]: val } });
 
-
-function HeroSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
     return (
         <div className={styles.sectionFields}>
             <SingleImageUpload label="Hero şəkil" value={data.heroImage ?? ""} onChange={v => onChange({ ...data, heroImage: v })} />
-            <div className={styles.field}><label>Hero şəkil alt mətn</label>
-                <input className={styles.input} value={data.heroImageAlt ?? ""} onChange={e => onChange({ ...data, heroImageAlt: e.target.value })} />
+            <div className={styles.field}>
+                <label>Hero şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input} value={lv(data.heroImageAlt)[activeLang] ?? ""} onChange={e => setL("heroImageAlt", e.target.value)} />
             </div>
-            <div className={styles.field}><label>Hashtag</label>
-                <input className={styles.input} value={data.hashtag ?? ""} placeholder="Design" onChange={e => onChange({ ...data, hashtag: e.target.value })} />
+            <div className={styles.field}>
+                <label>Hashtag ({activeLang.toUpperCase()})</label>
+                <input className={styles.input} value={lv(data.hashtag)[activeLang] ?? ""} placeholder="Design" onChange={e => setL("hashtag", e.target.value)} />
             </div>
-            <div className={styles.field}><label>Başlıq</label>
-                <RichEditor value={data.title ?? ""} onChange={v => onChange({ ...data, title: v })} />
+            <div className={styles.field}>
+                <label>Başlıq ({activeLang.toUpperCase()})</label>
+                <RichEditor value={lv(data.title)[activeLang] ?? ""} onChange={v => setL("title", v)} />
             </div>
-            {(data.paragraphs ?? [""]).map((p: string, i: number) => (
-                <div key={i} className={styles.field}>
-                    <label>Paraqraf {i + 1}</label>
-                    <RichEditor value={p} onChange={v => {
-                        const arr = [...(data.paragraphs ?? [])]; arr[i] = v;
-                        onChange({ ...data, paragraphs: arr });
-                    }} />
-                </div>
-            ))}
+            {(data.paragraphs ?? [""]).map((p: any, i: number) => {
+                const pVal = typeof p === "object" && p !== null ? p : { az: p ?? "", en: "", ru: "" };
+                return (
+                    <div key={i} className={styles.field}>
+                        <label>Paraqraf {i + 1} ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={pVal[activeLang] ?? ""} onChange={v => {
+                            const arr = [...(data.paragraphs ?? [])];
+                            arr[i] = { ...pVal, [activeLang]: v };
+                            onChange({ ...data, paragraphs: arr });
+                        }} />
+                    </div>
+                );
+            })}
             <button type="button" className={styles.addRowBtn}
-                onClick={() => onChange({ ...data, paragraphs: [...(data.paragraphs ?? []), ""] })}>
+                onClick={() => onChange({ ...data, paragraphs: [...(data.paragraphs ?? []), { az: "", en: "", ru: "" }] })}>
                 + Paraqraf əlavə et
             </button>
         </div>
     );
 }
 
-function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function ContentSectionEditor({ data, onChange, activeLang }: {
+    data: any; onChange: (d: any) => void; activeLang: Lang
+}) {
+    const lv = (field: any) => (typeof field === "object" && field !== null && !Array.isArray(field) ? field : { az: field ?? "", en: "", ru: "" });
+    const setL = (key: string, val: string) => onChange({ ...data, [key]: { ...lv(data[key]), [activeLang]: val } });
     const sections = data.sections ?? [];
-    const addSection = () => onChange({ ...data, sections: [...sections, { title: "", paragraphs: [""] }] });
+    const addSection = () => onChange({ ...data, sections: [...sections, { title: { az: "", en: "", ru: "" }, paragraphs: [{ az: "", en: "", ru: "" }] }] });
     const removeSection = (i: number) => onChange({ ...data, sections: sections.filter((_: any, idx: number) => idx !== i) });
     const updateSection = (i: number, key: string, val: any) => {
         const arr = [...sections]; arr[i] = { ...arr[i], [key]: val };
@@ -299,65 +295,81 @@ function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any
     return (
         <div className={styles.sectionFields}>
             <SingleImageUpload label="Hero şəkil" value={data.heroImage ?? ""} onChange={v => onChange({ ...data, heroImage: v })} />
-            <div className={styles.field}><label>Hero şəkil alt mətn</label>
-                <input className={styles.input} value={data.heroImageAlt ?? ""} onChange={e => onChange({ ...data, heroImageAlt: e.target.value })} />
+            <div className={styles.field}>
+                <label>Hero şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                <input className={styles.input} value={lv(data.heroImageAlt)[activeLang] ?? ""} onChange={e => setL("heroImageAlt", e.target.value)} />
             </div>
-            <div className={styles.field}><label>Overlap başlıq</label>
-                <RichEditor value={data.overlapTitle ?? ""} onChange={v => onChange({ ...data, overlapTitle: v })} />
+            <div className={styles.field}>
+                <label>Overlap başlıq ({activeLang.toUpperCase()})</label>
+                <RichEditor value={lv(data.overlapTitle)[activeLang] ?? ""} onChange={v => setL("overlapTitle", v)} />
             </div>
-            {(data.introParagraphs ?? [""]).map((p: string, i: number) => (
-                <div key={i} className={styles.field}>
-                    <label>Paraqraf {i + 1}</label>
-                    <RichEditor value={p} onChange={v => {
-                        const arr = [...(data.introParagraphs ?? [])]; arr[i] = v;
-                        onChange({ ...data, introParagraphs: arr });
-                    }} />
-                </div>
-            ))}
+            {(data.introParagraphs ?? [{ az: "", en: "", ru: "" }]).map((p: any, i: number) => {
+                const pVal = typeof p === "object" && p !== null && !Array.isArray(p) ? p : { az: p ?? "", en: "", ru: "" };
+                return (
+                    <div key={i} className={styles.field}>
+                        <label>Paraqraf {i + 1} ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={pVal[activeLang] ?? ""} onChange={v => {
+                            const arr = [...(data.introParagraphs ?? [])]; arr[i] = { ...pVal, [activeLang]: v };
+                            onChange({ ...data, introParagraphs: arr });
+                        }} />
+                    </div>
+                );
+            })}
             <button type="button" className={styles.addRowBtn}
-                onClick={() => onChange({ ...data, introParagraphs: [...(data.introParagraphs ?? []), ""] })}>
+                onClick={() => onChange({ ...data, introParagraphs: [...(data.introParagraphs ?? []), { az: "", en: "", ru: "" }] })}>
                 + Paraqraf əlavə et
             </button>
             <div className={styles.sectionDivider} />
             <label className={styles.sectionGroupLabel}>Alt bölmələr</label>
-            {sections.map((sec: any, i: number) => (
-                <div key={i} className={styles.contentItemBlock}>
-                    <div className={styles.contentItemHeader}>
-                        <span className={styles.contentItemLabel}>Bölmə #{i + 1}</span>
-                        <button type="button" className={styles.removeBtn} onClick={() => removeSection(i)}>✕</button>
-                    </div>
-                    <div className={styles.field}><label>Başlıq</label>
-                        <RichEditor value={sec.title ?? ""} onChange={v => updateSection(i, "title", v)} />
-                    </div>
-                    {(sec.paragraphs ?? [""]).map((p: string, j: number) => (
-                        <div key={j} className={styles.field}>
-                            <label>Paraqraf {j + 1}</label>
-                            <RichEditor value={p} onChange={v => {
-                                const arr = [...(sec.paragraphs ?? [])]; arr[j] = v;
-                                updateSection(i, "paragraphs", arr);
-                            }} />
+            {sections.map((sec: any, i: number) => {
+                const secTitle = typeof sec.title === "object" && sec.title !== null ? sec.title : { az: sec.title ?? "", en: "", ru: "" };
+                return (
+                    <div key={i} className={styles.contentItemBlock}>
+                        <div className={styles.contentItemHeader}>
+                            <span className={styles.contentItemLabel}>Bölmə #{i + 1}</span>
+                            <button type="button" className={styles.removeBtn} onClick={() => removeSection(i)}>✕</button>
                         </div>
-                    ))}
-                    <button type="button" className={styles.addRowBtn}
-                        onClick={() => updateSection(i, "paragraphs", [...(sec.paragraphs ?? []), ""])}>
-                        + Paraqraf əlavə et
-                    </button>
-                </div>
-            ))}
+                        <div className={styles.field}>
+                            <label>Başlıq ({activeLang.toUpperCase()})</label>
+                            <RichEditor value={secTitle[activeLang] ?? ""} onChange={v => updateSection(i, "title", { ...secTitle, [activeLang]: v })} />
+                        </div>
+                        {(sec.paragraphs ?? [{ az: "", en: "", ru: "" }]).map((p: any, j: number) => {
+                            const pVal = typeof p === "object" && p !== null && !Array.isArray(p) ? p : { az: p ?? "", en: "", ru: "" };
+                            return (
+                                <div key={j} className={styles.field}>
+                                    <label>Paraqraf {j + 1} ({activeLang.toUpperCase()})</label>
+                                    <RichEditor value={pVal[activeLang] ?? ""} onChange={v => {
+                                        const arr = [...(sec.paragraphs ?? [])]; arr[j] = { ...pVal, [activeLang]: v };
+                                        updateSection(i, "paragraphs", arr);
+                                    }} />
+                                </div>
+                            );
+                        })}
+                        <button type="button" className={styles.addRowBtn}
+                            onClick={() => updateSection(i, "paragraphs", [...(sec.paragraphs ?? []), { az: "", en: "", ru: "" }])}>
+                            + Paraqraf əlavə et
+                        </button>
+                    </div>
+                );
+            })}
             <button type="button" className={styles.addRowBtn} onClick={addSection}>+ Bölmə əlavə et</button>
             <div className={styles.sectionDivider} />
             <label className={styles.sectionGroupLabel}>Alt şəkillər</label>
             <div className={styles.twoCol}>
                 <div>
                     <SingleImageUpload label="Sol şəkil" value={data.bottomImages?.left ?? ""} onChange={v => onChange({ ...data, bottomImages: { ...data.bottomImages, left: v } })} />
-                    <div className={styles.field}><label>Sol şəkil alt mətn</label>
-                        <input className={styles.input} value={data.bottomImages?.leftAlt ?? ""} onChange={e => onChange({ ...data, bottomImages: { ...data.bottomImages, leftAlt: e.target.value } })} />
+                    <div className={styles.field}>
+                        <label>Sol şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                        <input className={styles.input} value={lv(data.bottomImages?.leftAlt)[activeLang] ?? ""}
+                            onChange={e => onChange({ ...data, bottomImages: { ...data.bottomImages, leftAlt: { ...lv(data.bottomImages?.leftAlt), [activeLang]: e.target.value } } })} />
                     </div>
                 </div>
                 <div>
                     <SingleImageUpload label="Sağ şəkil" value={data.bottomImages?.right ?? ""} onChange={v => onChange({ ...data, bottomImages: { ...data.bottomImages, right: v } })} />
-                    <div className={styles.field}><label>Sağ şəkil alt mətn</label>
-                        <input className={styles.input} value={data.bottomImages?.rightAlt ?? ""} onChange={e => onChange({ ...data, bottomImages: { ...data.bottomImages, rightAlt: e.target.value } })} />
+                    <div className={styles.field}>
+                        <label>Sağ şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                        <input className={styles.input} value={lv(data.bottomImages?.rightAlt)[activeLang] ?? ""}
+                            onChange={e => onChange({ ...data, bottomImages: { ...data.bottomImages, rightAlt: { ...lv(data.bottomImages?.rightAlt), [activeLang]: e.target.value } } })} />
                     </div>
                 </div>
             </div>
@@ -365,20 +377,24 @@ function ContentSectionEditor({ data, onChange }: { data: any; onChange: (d: any
     );
 }
 
-function ArticleSectionEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+function ArticleSectionEditor({ data, onChange, activeLang }: {
+    data: any; onChange: (d: any) => void; activeLang: Lang
+}) {
+    const lv = (field: any) => (typeof field === "object" && field !== null && !Array.isArray(field) ? field : { az: field ?? "", en: "", ru: "" });
     const sections = data.sections ?? [];
 
     const normalizeSection = (sec: any) => {
         if (sec.blocks) return sec;
         const blocks: any[] = [];
-        if (sec.heading) blocks.push({ type: "heading", content: sec.heading });
-        for (const p of sec.paragraphs ?? [""]) blocks.push({ type: "paragraph", content: p });
-        return { ...sec, blocks: blocks.length > 0 ? blocks : [{ type: "paragraph", content: "" }], heading: undefined, paragraphs: undefined };
+        if (sec.heading) blocks.push({ type: "heading", content: { az: sec.heading, en: "", ru: "" } });
+        for (const p of sec.paragraphs ?? [""])
+            blocks.push({ type: "paragraph", content: typeof p === "object" ? p : { az: p ?? "", en: "", ru: "" } });
+        return { ...sec, blocks: blocks.length > 0 ? blocks : [{ type: "paragraph", content: { az: "", en: "", ru: "" } }], heading: undefined, paragraphs: undefined };
     };
 
     const addSection = () => onChange({
         ...data,
-        sections: [...sections, { blocks: [{ type: "paragraph", content: "" }], hashSections: [], hashHeading: "", sideImage: "", sideImageAlt: "" }],
+        sections: [...sections, { blocks: [{ type: "paragraph", content: { az: "", en: "", ru: "" } }], hashSections: [], hashHeading: { az: "", en: "", ru: "" }, sideImage: "", sideImageAlt: { az: "", en: "", ru: "" } }],
     });
 
     const removeSection = (i: number) => onChange({ ...data, sections: sections.filter((_: any, idx: number) => idx !== i) });
@@ -392,11 +408,11 @@ function ArticleSectionEditor({ data, onChange }: { data: any; onChange: (d: any
         <div className={styles.sectionFields}>
             {sections.map((secRaw: any, i: number) => {
                 const sec = normalizeSection(secRaw);
-                const blocks: any[] = sec.blocks ?? [{ type: "paragraph", content: "" }];
+                const blocks: any[] = sec.blocks ?? [{ type: "paragraph", content: { az: "", en: "", ru: "" } }];
+                const hashHeading = lv(sec.hashHeading);
+                const sideImageAlt = lv(sec.sideImageAlt);
 
-                const updateBlock = (j: number, key: string, val: any) => {
-                    updateSection(i, "blocks", blocks.map((b: any, idx: number) => idx === j ? { ...b, [key]: val } : b));
-                };
+                const updateBlock = (j: number, key: string, val: any) => updateSection(i, "blocks", blocks.map((b: any, idx: number) => idx === j ? { ...b, [key]: val } : b));
                 const removeBlock = (j: number) => updateSection(i, "blocks", blocks.filter((_: any, idx: number) => idx !== j));
 
                 return (
@@ -405,75 +421,83 @@ function ArticleSectionEditor({ data, onChange }: { data: any; onChange: (d: any
                             <span className={styles.contentItemLabel}>Bölmə #{i + 1}</span>
                             <button type="button" className={styles.removeBtn} onClick={() => removeSection(i)}>✕</button>
                         </div>
-                        {blocks.map((block: any, j: number) => (
-                            <div key={j} className={styles.field} style={{ position: "relative" }}>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                    <label>{block.type === "heading" ? "Başlıq" : "Paraqraf"}</label>
-                                    {blocks.length > 1 && (
-                                        <button type="button" className={styles.removeBtn} style={{ fontSize: 11 }} onClick={() => removeBlock(j)}>✕</button>
-                                    )}
+                        {blocks.map((block: any, j: number) => {
+                            const contentVal = lv(block.content);
+                            return (
+                                <div key={j} className={styles.field} style={{ position: "relative" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                        <label>{block.type === "heading" ? "Başlıq" : "Paraqraf"} ({activeLang.toUpperCase()})</label>
+                                        {blocks.length > 1 && (
+                                            <button type="button" className={styles.removeBtn} style={{ fontSize: 11 }} onClick={() => removeBlock(j)}>✕</button>
+                                        )}
+                                    </div>
+                                    <RichEditor value={contentVal[activeLang] ?? ""} onChange={v => updateBlock(j, "content", { ...contentVal, [activeLang]: v })} />
                                 </div>
-                                <RichEditor value={block.content ?? ""} onChange={v => updateBlock(j, "content", v)} />
-                            </div>
-                        ))}
+                            );
+                        })}
                         <button type="button" className={styles.addRowBtn}
-                            onClick={() => updateSection(i, "blocks", [...blocks, { type: "paragraph", content: "" }])}>
+                            onClick={() => updateSection(i, "blocks", [...blocks, { type: "paragraph", content: { az: "", en: "", ru: "" } }])}>
                             + Paraqraf əlavə et
                         </button>
                         <button type="button" className={styles.addRowBtn} style={{ marginLeft: 8 }}
-                            onClick={() => updateSection(i, "blocks", [...blocks, { type: "heading", content: "" }, { type: "paragraph", content: "" }])}>
+                            onClick={() => updateSection(i, "blocks", [...blocks, { type: "heading", content: { az: "", en: "", ru: "" } }, { type: "paragraph", content: { az: "", en: "", ru: "" } }])}>
                             + Başlıq və Paraqraf əlavə et
                         </button>
                         <div className={styles.sectionDivider} />
                         <label className={styles.sectionGroupLabel}>Hash bölmələri</label>
                         <div className={styles.field}>
-                            <label>Hash bölmə başlığı</label>
-                            <RichEditor value={sec.hashHeading ?? ""} onChange={v => updateSection(i, "hashHeading", v)} />
+                            <label>Hash bölmə başlığı ({activeLang.toUpperCase()})</label>
+                            <RichEditor value={hashHeading[activeLang] ?? ""} onChange={v => updateSection(i, "hashHeading", { ...hashHeading, [activeLang]: v })} />
                         </div>
-                        {(sec.hashSections ?? []).map((hs: any, k: number) => (
-                            <div key={k} className={styles.hashBlock}>
-                                <div className={styles.field}>
-                                    <label>Tag</label>
-                                    <input className={styles.input} value={hs.tag ?? ""} placeholder="Dizayn kateqoriyası"
-                                        onChange={e => {
-                                            const arr = [...(sec.hashSections ?? [])];
-                                            arr[k] = { ...arr[k], tag: e.target.value };
-                                            updateSection(i, "hashSections", arr);
-                                        }} />
-                                </div>
-                                {(hs.paragraphs ?? [""]).map((p: string, m: number) => (
-                                    <div key={m} className={styles.field}>
-                                        <label>Paraqraf {m + 1}</label>
-                                        <RichEditor value={p} onChange={v => {
-                                            const hsArr = [...(sec.hashSections ?? [])];
-                                            const pArr = [...(hs.paragraphs ?? [])];
-                                            pArr[m] = v;
-                                            hsArr[k] = { ...hsArr[k], paragraphs: pArr };
-                                            updateSection(i, "hashSections", hsArr);
-                                        }} />
+                        {(sec.hashSections ?? []).map((hs: any, k: number) => {
+                            const tagVal = lv(hs.tag);
+                            return (
+                                <div key={k} className={styles.hashBlock}>
+                                    <div className={styles.field}>
+                                        <label>Tag ({activeLang.toUpperCase()})</label>
+                                        <input className={styles.input} value={tagVal[activeLang] ?? ""} placeholder="Dizayn kateqoriyası"
+                                            onChange={e => {
+                                                const arr = [...(sec.hashSections ?? [])];
+                                                arr[k] = { ...arr[k], tag: { ...tagVal, [activeLang]: e.target.value } };
+                                                updateSection(i, "hashSections", arr);
+                                            }} />
                                     </div>
-                                ))}
-                                <button type="button" className={styles.addRowBtn}
-                                    onClick={() => {
+                                    {(hs.paragraphs ?? [{ az: "", en: "", ru: "" }]).map((p: any, m: number) => {
+                                        const pVal = lv(p);
+                                        return (
+                                            <div key={m} className={styles.field}>
+                                                <label>Paraqraf {m + 1} ({activeLang.toUpperCase()})</label>
+                                                <RichEditor value={pVal[activeLang] ?? ""} onChange={v => {
+                                                    const hsArr = [...(sec.hashSections ?? [])];
+                                                    const pArr = [...(hs.paragraphs ?? [])]; pArr[m] = { ...pVal, [activeLang]: v };
+                                                    hsArr[k] = { ...hsArr[k], paragraphs: pArr };
+                                                    updateSection(i, "hashSections", hsArr);
+                                                }} />
+                                            </div>
+                                        );
+                                    })}
+                                    <button type="button" className={styles.addRowBtn} onClick={() => {
                                         const hsArr = [...(sec.hashSections ?? [])];
-                                        hsArr[k] = { ...hsArr[k], paragraphs: [...(hs.paragraphs ?? []), ""] };
+                                        hsArr[k] = { ...hsArr[k], paragraphs: [...(hs.paragraphs ?? []), { az: "", en: "", ru: "" }] };
                                         updateSection(i, "hashSections", hsArr);
                                     }}>+ Paraqraf əlavə et</button>
-                                <button type="button" className={styles.removeBtn} style={{ marginTop: 8 }}
-                                    onClick={() => updateSection(i, "hashSections", sec.hashSections.filter((_: any, idx: number) => idx !== k))}>
-                                    Hash bölməni sil
-                                </button>
-                            </div>
-                        ))}
+                                    <button type="button" className={styles.removeBtn} style={{ marginTop: 8 }}
+                                        onClick={() => updateSection(i, "hashSections", sec.hashSections.filter((_: any, idx: number) => idx !== k))}>
+                                        Hash bölməni sil
+                                    </button>
+                                </div>
+                            );
+                        })}
                         <button type="button" className={styles.addRowBtn}
-                            onClick={() => updateSection(i, "hashSections", [...(sec.hashSections ?? []), { tag: "", paragraphs: [""] }])}>
+                            onClick={() => updateSection(i, "hashSections", [...(sec.hashSections ?? []), { tag: { az: "", en: "", ru: "" }, paragraphs: [{ az: "", en: "", ru: "" }] }])}>
                             + Hash bölmə əlavə et
                         </button>
                         <div className={styles.sectionDivider} />
                         <SingleImageUpload label="Yan şəkil (optional)" value={sec.sideImage ?? ""} onChange={v => updateSection(i, "sideImage", v)} />
                         <div className={styles.field}>
-                            <label>Yan şəkil alt mətn</label>
-                            <input className={styles.input} value={sec.sideImageAlt ?? ""} onChange={e => updateSection(i, "sideImageAlt", e.target.value)} />
+                            <label>Yan şəkil alt mətn ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={sideImageAlt[activeLang] ?? ""}
+                                onChange={e => updateSection(i, "sideImageAlt", { ...sideImageAlt, [activeLang]: e.target.value })} />
                         </div>
                     </div>
                 );
@@ -498,15 +522,15 @@ const SECTION_TYPES = [
     { type: "article", label: "Article" },
 ];
 
-function SectionEditor({ section, index, onChange, onRemove }: {
-    section: any; index: number; onChange: (d: any) => void; onRemove: () => void;
+function SectionEditor({ section, index, onChange, onRemove, activeLang }: {
+    section: any; index: number; onChange: (d: any) => void; onRemove: () => void; activeLang: Lang;
 }) {
     const [open, setOpen] = useState(true);
     const renderEditor = () => {
         switch (section.type) {
-            case "hero": return <HeroSectionEditor data={section} onChange={onChange} />;
-            case "content": return <ContentSectionEditor data={section} onChange={onChange} />;
-            case "article": return <ArticleSectionEditor data={section} onChange={onChange} />;
+            case "hero": return <HeroSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+            case "content": return <ContentSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
+            case "article": return <ArticleSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
             default: return null;
         }
     };
@@ -518,11 +542,9 @@ function SectionEditor({ section, index, onChange, onRemove }: {
                     <span className={styles.sectionIndex}>#{index + 1}</span>
                 </div>
                 <div className={styles.sectionBlockRight}>
-                    <button
-                        type="button"
+                    <button type="button"
                         className={section.isVisible === false ? styles.inactiveToggle : styles.activeToggle}
-                        onClick={() => onChange({ ...section, isVisible: section.isVisible === false ? true : false })}
-                    >
+                        onClick={() => onChange({ ...section, isVisible: section.isVisible === false ? true : false })}>
                         {section.isVisible === false ? "Gizli" : "Görünür"}
                     </button>
                     <button type="button" className={styles.toggleBtn} onClick={() => setOpen(o => !o)}>{open ? "Bağla" : "Aç"}</button>
@@ -533,7 +555,6 @@ function SectionEditor({ section, index, onChange, onRemove }: {
         </div>
     );
 }
-
 
 function SortableBlogRow({ b, onEdit, onToggle, onDelete }: {
     b: any; onEdit: (b: any) => void; onToggle: (b: any) => void; onDelete: (id: number) => void;
@@ -588,331 +609,6 @@ function SortableBlogRow({ b, onEdit, onToggle, onDelete }: {
     );
 }
 
-function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOurTeam }: {
-    a: any; onEdit: (a: any) => void; onDelete: (id: number) => void;
-    onToggleVisibility: (a: any) => void; onToggleOurTeam: (a: any) => void;
-}) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: a.id });
-    const nameAz = typeof a.name === "object" ? (a.name?.az || "") : (a.name || "");
-    const roleAz = typeof a.role === "object" ? (a.role?.az || "") : (a.role || "");
-
-    return (
-        <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
-            <td className={styles.num}><span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span></td>
-            <td>{a.avatar && <img src={toAbsUrl(a.avatar)} alt="" className={styles.authorAvatar} />}</td>
-            <td>{nameAz}</td>
-            <td>{roleAz || "—"}</td>
-            <td>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <button type="button" className={a.isVisible ? styles.activeToggle : styles.inactiveToggle} onClick={() => onToggleVisibility(a)}>
-                        {a.isVisible ? "Görünür" : "Gizli"}
-                    </button>
-                    <button type="button" className={a.isOurTeam ? styles.activeToggle : styles.inactiveToggle} onClick={() => onToggleOurTeam(a)}>
-                        {a.isOurTeam ? "Team ✓" : "Team"}
-                    </button>
-                </div>
-            </td>
-            <td>
-                <div className={styles.actions}>
-                    <button className={styles.editBtn} onClick={() => onEdit(a)}>Düzəlt</button>
-                    <button className={styles.deleteBtn} onClick={() => onDelete(a.id)}>Sil</button>
-                </div>
-            </td>
-        </tr>
-    );
-}
-
-
-function AuthorsTab() {
-    const [authors, setAuthors] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editItem, setEditItem] = useState<any | null>(null);
-    const [activeLang, setActiveLang] = useState<Lang>("az");
-
-    const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [avatar, setAvatar] = useState("");
-    const [avatarAlt, setAvatarAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [linkedinHref, setLinkedinHref] = useState("");
-    const [bio, setBio] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [skillsTitle, setSkillsTitle] = useState<LocalizedString>({ az: "SKILLS", en: "SKILLS", ru: "SKILLS" });
-    const [skills, setSkills] = useState<Record<string, string>[]>([]);
-    const [linkedinIcon, setLinkedinIcon] = useState("");
-    const [slug, setSlug] = useState("");
-    const [isVisible, setIsVisible] = useState(true);
-    const [isOurTeam, setIsOurTeam] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [reordering, setReordering] = useState(false);
-
-    const sensors = useSensors(useSensor(PointerSensor));
-
-    const load = async () => {
-        setLoading(true);
-        try { setAuthors(await apiFetch("/blog/authors")); } finally { setLoading(false); }
-    };
-
-    useEffect(() => { load(); }, []);
-
-    const openCreate = () => {
-        setEditItem(null);
-        setActiveLang("az");
-        setName({ az: "", en: "", ru: "" });
-        setRole({ az: "", en: "", ru: "" });
-        setAvatar(""); setAvatarAlt({ az: "", en: "", ru: "" });
-        setLinkedinHref(""); setBio({ az: "", en: "", ru: "" });
-        setSkillsTitle({ az: "SKILLS", en: "SKILLS", ru: "SKILLS" });
-        setSkills([]); setLinkedinIcon(""); setSlug("");
-        setIsVisible(true); setIsOurTeam(false);
-        setModalOpen(true);
-    };
-
-    const openEdit = (a: any) => {
-        setEditItem(a);
-        setActiveLang("az");
-        setName(typeof a.name === "object" ? a.name : { az: a.name ?? "", en: "", ru: "" });
-        setRole(typeof a.role === "object" ? a.role : { az: a.role ?? "", en: "", ru: "" });
-        setAvatar(a.avatar ?? "");
-        setAvatarAlt(typeof a.avatarAlt === "object" ? a.avatarAlt : { az: a.avatarAlt ?? "", en: "", ru: "" });
-        setLinkedinHref(a.linkedinHref ?? "");
-        setBio(typeof a.bio === "object" ? a.bio : { az: a.bio ?? "", en: "", ru: "" });
-        setSkillsTitle(typeof a.skillsTitle === "object" ? a.skillsTitle : { az: a.skillsTitle ?? "SKILLS", en: "SKILLS", ru: "SKILLS" });
-        // skills normalize — köhnə string[] → {az, en, ru}[]
-        const normalizedSkills = (a.skills ?? []).map((s: any) =>
-            typeof s === "string" ? { az: s, en: "", ru: "" } : s
-        );
-        setSkills(normalizedSkills);
-        setLinkedinIcon(a.linkedinIcon ?? "");
-        setSlug(a.slug ?? "");
-        setIsVisible(a.isVisible ?? true);
-        setIsOurTeam(a.isOurTeam ?? false);
-        setModalOpen(true);
-    };
-
-    const save = async () => {
-        if (!name.az?.trim()) return;
-        setSaving(true);
-        try {
-            const body = {
-                name, slug: slug || null, role, avatar: avatar || null,
-                avatarAlt, linkedinHref: linkedinHref || null,
-                bio, skillsTitle, skills,
-                linkedinIcon: linkedinIcon || null,
-                isVisible, isOurTeam,
-            };
-            if (editItem) await apiFetch(`/blog/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
-            else await apiFetch("/blog/authors", { method: "POST", body: JSON.stringify(body) });
-            setModalOpen(false); load();
-        } finally { setSaving(false); }
-    };
-
-    const handleDelete = async () => {
-        if (!deleteId) return;
-        await apiFetch(`/blog/authors/${deleteId}`, { method: "DELETE" });
-        setDeleteId(null); load();
-    };
-
-    const handleDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event;
-        if (!over || active.id === over.id) return;
-        const oi = authors.findIndex(a => a.id === active.id);
-        const ni = authors.findIndex(a => a.id === over.id);
-        const newList = arrayMove(authors, oi, ni);
-        setAuthors(newList);
-        setReordering(true);
-        try {
-            await apiFetch("/blog/authors/reorder", { method: "PATCH", body: JSON.stringify({ ids: newList.map(a => a.id) }) });
-        } finally { setReordering(false); }
-    };
-
-    const handleToggleVisibility = async (a: any) => {
-        await apiFetch(`/blog/authors/${a.id}`, { method: "PUT", body: JSON.stringify({ isVisible: !a.isVisible }) });
-        setAuthors(prev => prev.map(x => x.id === a.id ? { ...x, isVisible: !a.isVisible } : x));
-    };
-
-    const handleToggleOurTeam = async (a: any) => {
-        await apiFetch(`/blog/authors/${a.id}`, { method: "PUT", body: JSON.stringify({ isOurTeam: !a.isOurTeam }) });
-        setAuthors(prev => prev.map(x => x.id === a.id ? { ...x, isOurTeam: !a.isOurTeam } : x));
-    };
-
-    const addSkill = () => setSkills(prev => [...prev, { az: "", en: "", ru: "" }]);
-    const updateSkill = (i: number, lang: Lang, val: string) =>
-        setSkills(prev => prev.map((s, idx) => idx === i ? { ...s, [lang]: val } : s));
-    const removeSkill = (i: number) => setSkills(prev => prev.filter((_, idx) => idx !== i));
-
-    return (
-        <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>Authorlar</h2>
-                <div className={styles.headerRight}>
-                    {reordering && <span className={styles.reorderingText}>Saxlanır...</span>}
-                    <button className={styles.addBtn} onClick={openCreate}>+ Yeni Author</button>
-                </div>
-            </div>
-
-            {loading ? <div className={styles.empty}>Yüklənir...</div>
-                : authors.length === 0 ? <div className={styles.empty}>Hələ author yoxdur</div>
-                    : (
-                        <div className={styles.tableWrap}>
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <SortableContext items={authors.map(a => a.id)} strategy={verticalListSortingStrategy}>
-                                    <table className={styles.table}>
-                                        <thead>
-                                            <tr><th></th><th>Avatar</th><th>Ad (AZ)</th><th>Vəzifə (AZ)</th><th>Placement</th><th>Əməliyyatlar</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            {authors.map(a => (
-                                                <SortableAuthorRow key={a.id} a={a} onEdit={openEdit}
-                                                    onDelete={setDeleteId} onToggleVisibility={handleToggleVisibility}
-                                                    onToggleOurTeam={handleToggleOurTeam} />
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </SortableContext>
-                            </DndContext>
-                        </div>
-                    )}
-
-            {modalOpen && (
-                <div className={styles.overlay} onClick={() => setModalOpen(false)}>
-                    <div className={styles.modal} style={{ maxWidth: 720, width: "95%" }} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h2>{editItem ? "Author Düzəlt" : "Yeni Author"}</h2>
-                            <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
-                        </div>
-                        <div className={styles.modalBody}>
-
-                            <LangTabs active={activeLang} onChange={setActiveLang} />
-
-                            <div className={styles.twoCol}>
-                                <div className={styles.field}>
-                                    <label>Görünürlük</label>
-                                    <button type="button"
-                                        className={isVisible ? styles.activeToggle : styles.inactiveToggle}
-                                        onClick={() => setIsVisible(v => !v)}>
-                                        {isVisible ? "Görünür" : "Gizli"}
-                                    </button>
-                                </div>
-                                <div className={styles.field}>
-                                    <label>Our Team səhifəsi</label>
-                                    <button type="button"
-                                        className={isOurTeam ? styles.activeToggle : styles.inactiveToggle}
-                                        onClick={() => setIsOurTeam(v => !v)}>
-                                        {isOurTeam ? "Aktiv" : "Deaktiv"}
-                                    </button>
-                                    <small style={{ color: "#94a3b8" }}>İlk 6-sı About Us-da da görünür</small>
-                                </div>
-                            </div>
-
-                            <div className={styles.twoCol}>
-                                <AvatarUpload label="Avatar" value={avatar} onChange={setAvatar} />
-                                <div className={styles.field}>
-                                    <label>Avatar Alt Text ({activeLang.toUpperCase()})</label>
-                                    <input className={styles.input}
-                                        value={avatarAlt[activeLang] || ""}
-                                        onChange={e => setAvatarAlt(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                                        placeholder="Almaz Abdullayeva şəkli" />
-                                </div>
-                            </div>
-
-                            <div className={styles.twoCol}>
-                                <div className={styles.field}>
-                                    <label>Ad Soyad * ({activeLang.toUpperCase()})</label>
-                                    <input className={styles.input}
-                                        value={name[activeLang] || ""}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            setName(prev => ({ ...prev, [activeLang]: val }));
-                                            if (activeLang === "az") setSlug(generateSlug(val));
-                                        }}
-                                        placeholder="Almaz Abdullayeva" />
-                                </div>
-                                <div className={styles.field}>
-                                    <label>Slug</label>
-                                    <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} placeholder="almaz-abdullayeva" />
-                                </div>
-                            </div>
-
-                            <div className={styles.field}>
-                                <label>Vəzifə ({activeLang.toUpperCase()})</label>
-                                <input className={styles.input}
-                                    value={role[activeLang] || ""}
-                                    onChange={e => setRole(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                                    placeholder="Baş İcarçı Direktor" />
-                            </div>
-
-                            <div className={styles.field}>
-                                <label>Bio ({activeLang.toUpperCase()})</label>
-                                <textarea className={styles.input}
-                                    value={bio[activeLang] || ""}
-                                    onChange={e => setBio(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                                    rows={4} placeholder="Author haqqında qısa məlumat..."
-                                    style={{ resize: "vertical", minHeight: 100 }} />
-                            </div>
-
-                            <div className={styles.twoCol}>
-                                <div className={styles.field}>
-                                    <label>LinkedIn URL</label>
-                                    <input className={styles.input} value={linkedinHref}
-                                        onChange={e => setLinkedinHref(e.target.value)} placeholder="https://linkedin.com/in/..." />
-                                </div>
-                                <div className={styles.field}>
-                                    <label>LinkedIn İkon</label>
-                                    <SingleImageUpload value={linkedinIcon} onChange={setLinkedinIcon} accept="image/webp,image/svg+xml" />
-                                </div>
-                            </div>
-
-                            <div className={styles.field}>
-                                <label>Skills başlığı ({activeLang.toUpperCase()})</label>
-                                <input className={styles.input}
-                                    value={skillsTitle[activeLang] || ""}
-                                    onChange={e => setSkillsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                                    placeholder="SKILLS" />
-                            </div>
-
-                            <div className={styles.field}>
-                                <label>Skills ({activeLang.toUpperCase()})</label>
-                                {skills.map((skill, i) => (
-                                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-                                        <input className={styles.input}
-                                            value={skill[activeLang] || ""}
-                                            onChange={e => updateSkill(i, activeLang, e.target.value)}
-                                            placeholder="Management" />
-                                        <button type="button" onClick={() => removeSkill(i)}
-                                            style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>✕</button>
-                                    </div>
-                                ))}
-                                <button type="button" className={styles.addRowBtn} onClick={addSkill}>+ Skill əlavə et</button>
-                            </div>
-
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setModalOpen(false)}>Ləğv et</button>
-                            <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {deleteId && (
-                <div className={styles.overlay} onClick={() => setDeleteId(null)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}><h2>Silməyi təsdiq edin</h2>
-                            <button className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button></div>
-                        <div className={styles.modalBody}><p>Bu authoru silmək istədiyinizə əminsiniz?</p></div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
-                            <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-
 function CategoriesTab() {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -931,10 +627,7 @@ function CategoriesTab() {
 
     useEffect(() => { load(); }, []);
 
-    const openCreate = () => {
-        setEditItem(null); setActiveLang("az");
-        setLabel({ az: "", en: "", ru: "" }); setSlug(""); setModalOpen(true);
-    };
+    const openCreate = () => { setEditItem(null); setActiveLang("az"); setLabel({ az: "", en: "", ru: "" }); setSlug(""); setModalOpen(true); };
 
     const openEdit = (c: any) => {
         setEditItem(c); setActiveLang("az");
@@ -1002,14 +695,12 @@ function CategoriesTab() {
                             <LangTabs active={activeLang} onChange={setActiveLang} />
                             <div className={styles.field}>
                                 <label>Ad * ({activeLang.toUpperCase()})</label>
-                                <input className={styles.input}
-                                    value={label[activeLang] || ""}
+                                <input className={styles.input} value={label[activeLang] || ""}
                                     onChange={e => {
                                         const val = e.target.value;
                                         setLabel(prev => ({ ...prev, [activeLang]: val }));
                                         if (activeLang === "az" && !editItem) setSlug(generateSlug(val));
-                                    }}
-                                    placeholder="Design" />
+                                    }} placeholder="Design" />
                             </div>
                             <div className={styles.field}>
                                 <label>Slug *</label>
@@ -1023,7 +714,6 @@ function CategoriesTab() {
                     </div>
                 </div>
             )}
-
             {deleteId && (
                 <div className={styles.overlay} onClick={() => setDeleteId(null)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -1079,10 +769,7 @@ function SettingsTab() {
             });
             setSaveStatus("success");
         } catch { setSaveStatus("error"); }
-        finally {
-            setSaving(false);
-            setTimeout(() => setSaveStatus("idle"), 3000);
-        }
+        finally { setSaving(false); setTimeout(() => setSaveStatus("idle"), 3000); }
     };
 
     if (loading) return <div className={styles.empty}>Yüklənir...</div>;
@@ -1097,43 +784,35 @@ function SettingsTab() {
                     <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
                 </div>
             </div>
-
             <LangTabs active={activeLang} onChange={setActiveLang} />
-
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Səhifə başlığı və button</h3>
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
                         <label>Səhifə başlığı ({activeLang.toUpperCase()})</label>
                         <input className={styles.input} value={pageTitle[activeLang] || ""}
-                            onChange={e => setPageTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                            placeholder="Bloglar" />
+                            onChange={e => setPageTitle(prev => ({ ...prev, [activeLang]: e.target.value }))} placeholder="Bloglar" />
                     </div>
                     <div className={styles.field}>
                         <label>Button mətni ({activeLang.toUpperCase()})</label>
                         <input className={styles.input} value={buttonText[activeLang] || ""}
-                            onChange={e => setButtonText(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                            placeholder="Portfolio" />
+                            onChange={e => setButtonText(prev => ({ ...prev, [activeLang]: e.target.value }))} placeholder="Portfolio" />
                     </div>
                 </div>
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
                         <label>Button linki</label>
-                        <input className={styles.input} value={buttonLink}
-                            onChange={e => setButtonLink(e.target.value)} placeholder="/portfolio" />
+                        <input className={styles.input} value={buttonLink} onChange={e => setButtonLink(e.target.value)} placeholder="/portfolio" />
                     </div>
                     <div className={styles.field}>
                         <label>Button açılış rejimi</label>
                         <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                            <button type="button" className={!buttonNewTab ? styles.activeToggle : styles.inactiveToggle}
-                                onClick={() => setButtonNewTab(false)}>Mövcud tab</button>
-                            <button type="button" className={buttonNewTab ? styles.activeToggle : styles.inactiveToggle}
-                                onClick={() => setButtonNewTab(true)}>Yeni tab</button>
+                            <button type="button" className={!buttonNewTab ? styles.activeToggle : styles.inactiveToggle} onClick={() => setButtonNewTab(false)}>Mövcud tab</button>
+                            <button type="button" className={buttonNewTab ? styles.activeToggle : styles.inactiveToggle} onClick={() => setButtonNewTab(true)}>Yeni tab</button>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Quote bölməsi</h3>
                 <div className={styles.field}>
@@ -1164,7 +843,7 @@ const PLACEMENT_CONFIG = [
 type PlacementKey = "isFeaturedMain" | "isPickOfWeek" | "isPreview" | "isGrid" | "isAuthorPreview" | "isAuthorList" | "isHomeVisible";
 
 export default function BlogPage() {
-    const [activeTab, setActiveTab] = useState<"blogs" | "authors" | "categories" | "settings">("blogs");
+    const [activeTab, setActiveTab] = useState<"blogs" | "categories" | "settings">("blogs");
     const [blogs, setBlogs] = useState<any[]>([]);
     const [authors, setAuthors] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -1248,27 +927,17 @@ export default function BlogPage() {
     const handlePlacementToggle = async (key: PlacementKey) => {
         const newVal = !placements[key];
         const config = PLACEMENT_CONFIG.find(c => c.key === key);
-
         if (newVal && config?.max && config.max > 1) {
             const activeCount = blogs.filter(b => b[key] && b.id !== editItem?.id).length;
-            if (activeCount >= config.max) {
-                alert(`Maksimum ${config.max} blog aktiv ola bilər.`);
-                return;
-            }
+            if (activeCount >= config.max) { alert(`Maksimum ${config.max} blog aktiv ola bilər.`); return; }
         }
-
         setPlacements(prev => ({ ...prev, [key]: newVal }));
-
         if (key === "isAuthorList" && editItem) {
             try {
-                await apiFetch(`/blog/${editItem.id}`, {
-                    method: "PUT",
-                    body: JSON.stringify({ isAuthorList: newVal, authorListPinnedAt: newVal ? new Date().toISOString() : null }),
-                });
+                await apiFetch(`/blog/${editItem.id}`, { method: "PUT", body: JSON.stringify({ isAuthorList: newVal, authorListPinnedAt: newVal ? new Date().toISOString() : null }) });
             } catch (e) { console.error(e); }
             return;
         }
-
         if (newVal && config?.max === 1) {
             const oldActive = blogs.find(b => b[key] && b.id !== editItem?.id);
             if (oldActive) {
@@ -1337,15 +1006,14 @@ export default function BlogPage() {
             </div>
 
             <div className={styles.tabs}>
-                {(["blogs", "authors", "categories", "settings"] as const).map(tab => (
+                {(["blogs", "categories", "settings"] as const).map(tab => (
                     <button key={tab} className={activeTab === tab ? styles.tabActive : styles.tabInactive}
                         onClick={() => setActiveTab(tab)}>
-                        {tab === "blogs" ? "Bloglar" : tab === "authors" ? "Authorlar" : tab === "categories" ? "Kateqoriyalar" : "Parametrlər"}
+                        {tab === "blogs" ? "Bloglar" : tab === "categories" ? "Kateqoriyalar" : "Parametrlər"}
                     </button>
                 ))}
             </div>
 
-            {activeTab === "authors" && <AuthorsTab />}
             {activeTab === "categories" && <CategoriesTab />}
             {activeTab === "settings" && <SettingsTab />}
 
@@ -1384,50 +1052,37 @@ export default function BlogPage() {
                         <h2>{editItem ? "Blog Düzəlt" : "Yeni Blog"}</h2>
                         <div className={styles.fullDrawerHeaderRight}>
                             <button className={styles.cancelBtn} onClick={closeDrawer}>Ləğv et</button>
-                            <button className={styles.saveBtn} onClick={save} disabled={saving}>
-                                {saving ? "Saxlanır..." : "Saxla"}
-                            </button>
+                            <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
                         </div>
                     </div>
-
                     <div className={styles.fullDrawerBody}>
                         <LangTabs active={activeLang} onChange={setActiveLang} />
-
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Əsas Məlumatlar</h3>
-
                             <div className={styles.field}>
                                 <label>Başlıq * ({activeLang.toUpperCase()})</label>
                                 <LocalizedRichEditor value={title} lang={activeLang} onChange={handleTitleChange} />
                             </div>
-
                             <div className={styles.twoCol}>
                                 <div className={styles.field}><label>Slug</label>
                                     <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} />
                                 </div>
                                 <div className={styles.field}>
                                     <label>Badge ({activeLang.toUpperCase()})</label>
-                                    <input className={styles.input}
-                                        value={badge[activeLang] || ""}
-                                        onChange={e => setBadge(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                                        placeholder="Design" />
+                                    <input className={styles.input} value={badge[activeLang] || ""}
+                                        onChange={e => setBadge(prev => ({ ...prev, [activeLang]: e.target.value }))} placeholder="Design" />
                                 </div>
                             </div>
-
                             <div className={styles.field}>
                                 <label>Qısa təsvir ({activeLang.toUpperCase()})</label>
                                 <LocalizedRichEditor value={excerpt} lang={activeLang} onChange={setExcerpt} />
                             </div>
-
                             <LocalizedImageUpload value={coverImage} lang={activeLang} onChange={setCoverImage} label="Cover şəkil" />
-
                             <div className={styles.field}>
                                 <label>Cover şəkil alt mətn ({activeLang.toUpperCase()})</label>
-                                <input className={styles.input}
-                                    value={coverImageAlt[activeLang] || ""}
+                                <input className={styles.input} value={coverImageAlt[activeLang] || ""}
                                     onChange={e => setCoverImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))} />
                             </div>
-
                             <div className={styles.twoCol}>
                                 <div className={styles.field}><label>Author</label>
                                     <select className={styles.input} value={authorId} onChange={e => setAuthorId(Number(e.target.value))}>
@@ -1448,7 +1103,6 @@ export default function BlogPage() {
                                     </select>
                                 </div>
                             </div>
-
                             <div className={styles.twoCol}>
                                 <div className={styles.field}><label>Yayımlanma tarixi</label>
                                     <input type="date" className={styles.input} value={publishedAt} onChange={e => setPublishedAt(e.target.value)} />
@@ -1458,16 +1112,13 @@ export default function BlogPage() {
                                 </div>
                             </div>
                         </div>
-
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Placement</h3>
                             <p className={styles.placementInfo}>Blogun saytda harada görünəcəyini seçin</p>
                             <div className={styles.placementGrid}>
                                 {PLACEMENT_CONFIG.map((config) => {
                                     const val = placements[config.key];
-                                    const activeCount = config.max !== null
-                                        ? blogs.filter(b => b[config.key] && b.id !== editItem?.id).length
-                                        : null;
+                                    const activeCount = config.max !== null ? blogs.filter(b => b[config.key] && b.id !== editItem?.id).length : null;
                                     return (
                                         <div key={config.key} className={styles.placementCard}>
                                             <div className={styles.placementCardTop}>
@@ -1479,21 +1130,21 @@ export default function BlogPage() {
                                             </div>
                                             <p className={styles.placementDesc}>{config.desc}</p>
                                             {activeCount !== null && (
-                                                <p className={styles.placementCount}>
-                                                    Hal-hazırda aktiv: <strong>{activeCount}</strong> / {config.max}
-                                                </p>
+                                                <p className={styles.placementCount}>Hal-hazırda aktiv: <strong>{activeCount}</strong> / {config.max}</p>
                                             )}
                                         </div>
                                     );
                                 })}
                             </div>
                         </div>
-
                         <div className={styles.fullDrawerSection}>
                             <h3 className={styles.drawerSectionTitle}>Detail Səhifəsi Sectionları</h3>
                             {sections.map((section, i) => (
                                 <SectionEditor key={`section-${i}-${section.type}`} section={section} index={i}
-                                    onChange={data => updateSection(i, data)} onRemove={() => removeSection(i)} />
+                                    onChange={data => updateSection(i, data)}
+                                    onRemove={() => removeSection(i)}
+                                    activeLang={activeLang}
+                                />
                             ))}
                             <div className={styles.addSectionRow}>
                                 {SECTION_TYPES.filter(({ type }) => !usedTypes.includes(type)).map(({ type, label }) => (

@@ -165,22 +165,19 @@ model Portfolio {
 
 model PartnerSection {
   id          Int       @id @default(autoincrement())
-  title       String
-  description String
-  linkText    String    @default("")
-  linkHref    String    @default("")
+  title       Json      @default("{}")
+  description Json      @default("{}")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   partners    Partner[]
 
   @@map("partner_sections")
 }
-
 model Partner {
   id         Int            @id @default(autoincrement())
   image      String
-  altText    String         @default("")
-  name       String
+  altText    Json           @default("{}")
+  name       Json           @default("{}")
   order      Int            @default(0)
   isHomepage Boolean        @default(false)
   sectionId  Int
@@ -293,6 +290,15 @@ model BlogSettings {
   @@map("blog_settings")
 } 
 
+model OurTeamSettings {
+  id          Int      @id @default(autoincrement())
+  title       Json     @default("{}")
+  description Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("our_team_settings")
+}
 
 model AboutSettings {
   id              Int      @id @default(autoincrement())

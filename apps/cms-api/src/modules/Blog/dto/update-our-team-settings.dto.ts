@@ -1,6 +1,6 @@
 import { IsObject, IsOptional } from 'class-validator';
 
-export class UpdatePartnerSectionDto {
+export class UpdateOurTeamSettingsDto {
   @IsOptional() @IsObject()
   title?: Record<string, string>;
 

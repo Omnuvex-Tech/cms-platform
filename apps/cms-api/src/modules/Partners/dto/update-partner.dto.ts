@@ -1,19 +1,15 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsObject, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdatePartnerDto {
-  @IsOptional()
-  @IsString()
+  @IsOptional() @IsString()
   image?: string;
 
-  @IsOptional()
-  @IsString()
-  altText?: string;
+  @IsOptional() @IsObject()
+  altText?: Record<string, string>;
 
-  @IsOptional()
-  @IsString()
-  name?: string;
-  
-    @IsOptional()  
-  @IsBoolean()
+  @IsOptional() @IsObject()
+  name?: Record<string, string>;
+
+  @IsOptional() @IsBoolean()
   isVisible?: boolean;
 }

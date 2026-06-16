@@ -1,17 +1,9 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsObject, IsOptional } from 'class-validator';
 
 export class CreatePartnerSectionDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
-  @IsString()
-  description: string;
-
-  @IsOptional()
-  @IsString()
-  linkText?: string;
-
-  @IsOptional()
-  @IsString()
-  linkHref?: string;
+  @IsObject()
+  description: Record<string, string>;
 }

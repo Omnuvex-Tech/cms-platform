@@ -7,6 +7,7 @@ import { UpdateBlogAuthorDto } from './dto/update-blog-author.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto'
+import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 
 @Injectable()
 export class BlogRepository {
@@ -213,5 +214,17 @@ async reorderAuthors(ids: number[]) {
   return this.prisma.$transaction(updates);
 }
 
+async findOurTeamSettings() {
+  let s = await this.prisma.ourTeamSettings.findFirst();
+  if (!s) s = await this.prisma.ourTeamSettings.create({ data: {} });
+  return s;
+}
 
+async updateOurTeamSettings(dto: UpdateOurTeamSettingsDto) {
+  const s = await this.findOurTeamSettings();
+  return this.prisma.ourTeamSettings.update({
+    where: { id: s.id },
+    data: dto,
+  });
+}
 }
