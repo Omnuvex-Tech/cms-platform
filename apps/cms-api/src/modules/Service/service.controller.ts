@@ -13,7 +13,7 @@ import * as fs from 'fs';
 
 @Controller('services')
 export class ServiceController {
-  constructor(private readonly service: ServiceService) {}
+  constructor(private readonly service: ServiceService) { }
 
   @Get('public')
   findAllVisible() { return this.service.findAllVisible(); }
@@ -50,12 +50,12 @@ export class ServiceController {
       },
     }),
     fileFilter: (req, file, cb) => {
-  if (!['image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype)) {
-    return cb(new Error('Yalnız WebP, GIF və SVG formatları qəbul edilir'), false);
-  }
-  cb(null, true);
-},
-    limits: { fileSize: 10 * 1024 * 1024 },
+      if (!['image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype)) {
+        return cb(new Error('Yalnız WebP, GIF və SVG formatları qəbul edilir'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 50 * 1024 * 1024 },
   }))
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/services/${file.filename}` };
