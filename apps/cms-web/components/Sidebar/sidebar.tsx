@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "@/styles/sidebar.module.css";
 
 import {
@@ -89,6 +89,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const [openItems, setOpenItems] = useState<string[]>(["Home"]);
 
     const toggleItem = (label: string) => {
@@ -97,6 +98,12 @@ export function Sidebar() {
                 ? prev.filter((i) => i !== label)
                 : [...prev, label]
         );
+    };
+
+    const handleLogout = () => {
+        document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+        router.replace("/login");
+        router.refresh();
     };
 
     return (
@@ -115,7 +122,7 @@ export function Sidebar() {
                                     onClick={() => toggleItem(item.label)}
                                 >
                                     <span className={styles.navIcon}>{item.icon}</span>
-                                    <span className={styles.navLabel}>{item.label}</span>  {/* ← əlavə et */}
+                                    <span className={styles.navLabel}>{item.label}</span>
                                     <ChevronDown
                                         size={14}
                                         className={`${styles.chevron} ${openItems.includes(item.label) ? styles.chevronOpen : ""}`}
@@ -149,7 +156,7 @@ export function Sidebar() {
             </nav>
 
             <div className={styles.logoutWrap}>
-                <button className={styles.logoutBtn}>
+                <button className={styles.logoutBtn} onClick={handleLogout}>
                     <LogOut size={16} />
                     <span>Çıxış</span>
                 </button>

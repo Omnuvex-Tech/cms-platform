@@ -1,10 +1,10 @@
 .page { padding: 32px; max-width: 1200px; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-.title { font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+.header { display: flex; justify-content: space-between; margin-bottom: 24px; }
+.title { font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 4px; padding-top: 26px; }
 .subtitle { font-size: 14px; color: #64748b; margin: 0; }
 .headerRight { display: flex; align-items: center; gap: 12px; }
 .reorderingText { font-size: 13px; color: #64748b; }
-.addBtn { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.addBtn { margin-top: 35px; background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .addBtn:hover { background: #1d4ed8; }
 
 .tableWrap { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }

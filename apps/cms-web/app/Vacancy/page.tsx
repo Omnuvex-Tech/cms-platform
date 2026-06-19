@@ -68,7 +68,13 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...options?.headers,
     },
   });
-  if (!res.ok) throw new Error("Xəta baş verdi");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message =
+      (Array.isArray(body?.message) ? body.message.join(", ") : body?.message) ??
+      `Xəta baş verdi (${res.status})`;
+    throw new Error(message);
+  }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
@@ -234,6 +240,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
   const [tab, setTab] = useState<"main" | "detail">("main");
   const [lang, setLang] = useState<Lang>("az");
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [title, setTitle] = useState<LocalizedString>({ ...EMPTY_L });
   const [slug, setSlug] = useState("");
@@ -256,6 +263,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
     if (!open) return;
     setTab("main");
     setLang("az");
+    setFormError(null);
     if (editVac) {
       setTitle(editVac.title ?? { ...EMPTY_L });
       setSlug(editVac.slug ?? "");
@@ -290,8 +298,20 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
     if (lang === "az") setSlug(generateSlug(val));
   };
 
+  const validate = (): string | null => {
+    if (!title.az?.trim()) return "Başlıq (AZ) boş ola bilməz";
+    if (!slug.trim()) return "Slug boş ola bilməz";
+    if (!categoryId) return "Kateqoriya seçilməlidir";
+    return null;
+  };
+
   const save = async () => {
-    if (!title.az?.trim() || !categoryId) return;
+    setFormError(null);
+    const validationError = validate();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setSaving(true);
     try {
       const body = {
@@ -313,6 +333,8 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
       }
       onSaved();
       onClose();
+    } catch (err: any) {
+      setFormError(err.message ?? "Vakansiya saxlanılarkən xəta baş verdi");
     } finally {
       setSaving(false);
     }
@@ -346,6 +368,12 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
         </div>
 
         <div className={styles.modalBody}>
+          {formError && (
+            <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+              ⚠ {formError}
+            </p>
+          )}
+
           {tab === "main" && (
             <>
               <div className={styles.twoCol}>
@@ -457,8 +485,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
 
         <div className={styles.modalFooter}>
           <button className={styles.cancelBtn} onClick={onClose}>Ləğv et</button>
-          <button className={styles.saveBtn} onClick={save}
-            disabled={saving || !title.az?.trim() || !categoryId}>
+          <button className={styles.saveBtn} onClick={save} disabled={saving}>
             {saving ? "Saxlanır..." : "Saxla"}
           </button>
         </div>
@@ -470,21 +497,26 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
 // ─── Main Page ────────────────────────────────────────────
 export default function VacancyPage() {
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("az");
   const [headerTitle, setHeaderTitle] = useState<LocalizedString>({ ...EMPTY_L });
   const [headerSaving, setHeaderSaving] = useState(false);
+  const [headerError, setHeaderError] = useState<string | null>(null);
   const [categories, setCategories] = useState<VacancyCategory[]>([]);
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [editCat, setEditCat] = useState<VacancyCategory | null>(null);
   const [catName, setCatName] = useState<LocalizedString>({ ...EMPTY_L });
   const [catLang, setCatLang] = useState<Lang>("az");
   const [catSaving, setCatSaving] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
   const [deleteCatId, setDeleteCatId] = useState<number | null>(null);
+  const [deleteCatError, setDeleteCatError] = useState<string | null>(null);
   const [catReordering, setCatReordering] = useState(false);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [vacModalOpen, setVacModalOpen] = useState(false);
   const [editVac, setEditVac] = useState<Vacancy | null>(null);
   const [deleteVacId, setDeleteVacId] = useState<number | null>(null);
+  const [deleteVacError, setDeleteVacError] = useState<string | null>(null);
   const [vacReordering, setVacReordering] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -500,16 +532,25 @@ export default function VacancyPage() {
       setHeaderTitle(headerData?.title ?? { ...EMPTY_L });
       setCategories(catsData ?? []);
       setVacancies(vacsData ?? []);
+      setListError(null);
+    } catch (err: any) {
+      setListError(err.message ?? "Məlumatlar yüklənərkən xəta baş verdi");
     } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
   const saveHeader = async () => {
-    if (!headerTitle.az?.trim()) return;
+    setHeaderError(null);
+    if (!headerTitle.az?.trim()) {
+      setHeaderError("Başlıq (AZ) boş ola bilməz");
+      return;
+    }
     setHeaderSaving(true);
     try {
       await apiFetch("/vacancy/header", { method: "PUT", body: JSON.stringify({ title: headerTitle }) });
+    } catch (err: any) {
+      setHeaderError(err.message ?? "Başlıq saxlanılarkən xəta baş verdi");
     } finally { setHeaderSaving(false); }
   };
 
@@ -526,6 +567,9 @@ export default function VacancyPage() {
         method: "PUT",
         body: JSON.stringify({ items: newList.map((c, i) => ({ id: c.id, order: i })) }),
       });
+    } catch (err: any) {
+      alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+      load();
     } finally { setCatReordering(false); }
   };
 
@@ -542,11 +586,18 @@ export default function VacancyPage() {
         method: "PUT",
         body: JSON.stringify({ items: newList.map((v, i) => ({ id: v.id, order: i })) }),
       });
+    } catch (err: any) {
+      alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+      load();
     } finally { setVacReordering(false); }
   };
 
   const saveCat = async () => {
-    if (!catName.az?.trim()) return;
+    setCatError(null);
+    if (!catName.az?.trim()) {
+      setCatError("Ad (AZ) boş ola bilməz");
+      return;
+    }
     setCatSaving(true);
     try {
       if (editCat) {
@@ -556,24 +607,44 @@ export default function VacancyPage() {
       }
       setCatModalOpen(false);
       load();
+    } catch (err: any) {
+      setCatError(err.message ?? "Kateqoriya saxlanılarkən xəta baş verdi");
     } finally { setCatSaving(false); }
   };
 
   const handleDeleteCat = async () => {
     if (!deleteCatId) return;
-    await apiFetch(`/vacancy/categories/${deleteCatId}`, { method: "DELETE" });
-    setDeleteCatId(null); load();
+    setDeleteCatError(null);
+    try {
+      await apiFetch(`/vacancy/categories/${deleteCatId}`, { method: "DELETE" });
+      setDeleteCatId(null);
+      load();
+    } catch (err: any) {
+      setDeleteCatError(err.message ?? "Silinərkən xəta baş verdi");
+    }
   };
 
   const handleDeleteVac = async () => {
     if (!deleteVacId) return;
-    await apiFetch(`/vacancy/${deleteVacId}`, { method: "DELETE" });
-    setDeleteVacId(null); load();
+    setDeleteVacError(null);
+    try {
+      await apiFetch(`/vacancy/${deleteVacId}`, { method: "DELETE" });
+      setDeleteVacId(null);
+      load();
+    } catch (err: any) {
+      setDeleteVacError(err.message ?? "Silinərkən xəta baş verdi");
+    }
   };
 
   const toggleVisibility = async (id: number, val: boolean) => {
+    const prevVacancies = vacancies;
     setVacancies((prev) => prev.map((v) => v.id === id ? { ...v, isVisible: val } : v));
-    await apiFetch(`/vacancy/${id}/visibility`, { method: "PATCH", body: JSON.stringify({ isVisible: val }) });
+    try {
+      await apiFetch(`/vacancy/${id}/visibility`, { method: "PATCH", body: JSON.stringify({ isVisible: val }) });
+    } catch (err: any) {
+      alert(err.message ?? "Status dəyişdirilərkən xəta baş verdi");
+      setVacancies(prevVacancies);
+    }
   };
 
   if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
@@ -590,6 +661,12 @@ export default function VacancyPage() {
         </div>
       </div>
 
+      {listError && (
+        <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>
+          ⚠ {listError}
+        </p>
+      )}
+
       {/* Səhifə Başlığı */}
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionCardTitle}>Səhifə Başlığı</h2>
@@ -599,6 +676,11 @@ export default function VacancyPage() {
             onChange={(e) => setHeaderTitle((prev) => ({ ...prev, [lang]: e.target.value }))}
             placeholder="Vakansiyalar" />
         </div>
+        {headerError && (
+          <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
+            ⚠ {headerError}
+          </p>
+        )}
         <div className={styles.sectionFooter}>
           <button className={styles.saveBtn} onClick={saveHeader} disabled={headerSaving}>
             {headerSaving ? "Saxlanır..." : "Yadda saxla"}
@@ -613,7 +695,7 @@ export default function VacancyPage() {
           <div className={styles.headerRight}>
             {catReordering && <span className={styles.reorderingText}>Saxlanır...</span>}
             <button className={styles.addBtn}
-              onClick={() => { setEditCat(null); setCatName({ ...EMPTY_L }); setCatLang("az"); setCatModalOpen(true); }}>
+              onClick={() => { setEditCat(null); setCatName({ ...EMPTY_L }); setCatLang("az"); setCatError(null); setCatModalOpen(true); }}>
               + Yeni Kateqoriya
             </button>
           </div>
@@ -629,7 +711,7 @@ export default function VacancyPage() {
                   <tbody>
                     {categories.map((cat, i) => (
                       <SortableCategoryRow key={cat.id} cat={cat} index={i} lang={lang}
-                        onEdit={(c) => { setEditCat(c); setCatName(c.name ?? { ...EMPTY_L }); setCatLang("az"); setCatModalOpen(true); }}
+                        onEdit={(c) => { setEditCat(c); setCatName(c.name ?? { ...EMPTY_L }); setCatLang("az"); setCatError(null); setCatModalOpen(true); }}
                         onDelete={setDeleteCatId} />
                     ))}
                   </tbody>
@@ -692,6 +774,13 @@ export default function VacancyPage() {
             </div>
             <div className={styles.modalBody}>
               <LangTabs active={catLang} onChange={setCatLang} />
+
+              {catError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                  ⚠ {catError}
+                </p>
+              )}
+
               <div className={styles.field}>
                 <label>Ad ({catLang.toUpperCase()})</label>
                 <input className={styles.input} value={catName[catLang] ?? ""}
@@ -701,7 +790,7 @@ export default function VacancyPage() {
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setCatModalOpen(false)}>Ləğv et</button>
-              <button className={styles.saveBtn} onClick={saveCat} disabled={catSaving || !catName.az?.trim()}>
+              <button className={styles.saveBtn} onClick={saveCat} disabled={catSaving}>
                 {catSaving ? "Saxlanır..." : "Saxla"}
               </button>
             </div>
@@ -711,15 +800,22 @@ export default function VacancyPage() {
 
       {/* Delete Modals */}
       {deleteCatId && (
-        <div className={styles.overlay} onClick={() => setDeleteCatId(null)}>
+        <div className={styles.overlay} onClick={() => { setDeleteCatId(null); setDeleteCatError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Kateqoriyanı sil</h2>
-              <button className={styles.closeBtn} onClick={() => setDeleteCatId(null)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => { setDeleteCatId(null); setDeleteCatError(null); }}>✕</button>
             </div>
-            <div className={styles.modalBody}><p>Bu kateqoriyanı silmək istədiyinizə əminsiniz?</p></div>
+            <div className={styles.modalBody}>
+              <p>Bu kateqoriyanı silmək istədiyinizə əminsiniz?</p>
+              {deleteCatError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                  ⚠ {deleteCatError}
+                </p>
+              )}
+            </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setDeleteCatId(null)}>Ləğv et</button>
+              <button className={styles.cancelBtn} onClick={() => { setDeleteCatId(null); setDeleteCatError(null); }}>Ləğv et</button>
               <button className={styles.deleteConfirmBtn} onClick={handleDeleteCat}>Sil</button>
             </div>
           </div>
@@ -727,15 +823,22 @@ export default function VacancyPage() {
       )}
 
       {deleteVacId && (
-        <div className={styles.overlay} onClick={() => setDeleteVacId(null)}>
+        <div className={styles.overlay} onClick={() => { setDeleteVacId(null); setDeleteVacError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Vakansiyanı sil</h2>
-              <button className={styles.closeBtn} onClick={() => setDeleteVacId(null)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => { setDeleteVacId(null); setDeleteVacError(null); }}>✕</button>
             </div>
-            <div className={styles.modalBody}><p>Bu vakansiyanı silmək istədiyinizə əminsiniz?</p></div>
+            <div className={styles.modalBody}>
+              <p>Bu vakansiyanı silmək istədiyinizə əminsiniz?</p>
+              {deleteVacError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                  ⚠ {deleteVacError}
+                </p>
+              )}
+            </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setDeleteVacId(null)}>Ləğv et</button>
+              <button className={styles.cancelBtn} onClick={() => { setDeleteVacId(null); setDeleteVacError(null); }}>Ləğv et</button>
               <button className={styles.deleteConfirmBtn} onClick={handleDeleteVac}>Sil</button>
             </div>
           </div>

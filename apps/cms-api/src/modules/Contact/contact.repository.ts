@@ -10,7 +10,7 @@ import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto'
 
 @Injectable()
 export class ContactRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findFirst() {
     return this.prisma.contactSettings.findFirst({
@@ -63,6 +63,8 @@ export class ContactRepository {
         ...(dto.formMessageLabel !== undefined && { formMessageLabel: dto.formMessageLabel }),
         ...(dto.formMessagePlaceholder !== undefined && { formMessagePlaceholder: dto.formMessagePlaceholder }),
         ...(dto.formSubmitLabel !== undefined && { formSubmitLabel: dto.formSubmitLabel }),
+        ...(dto.image !== undefined && { image: dto.image }),
+        ...(dto.imageAlt !== undefined && { imageAlt: dto.imageAlt }),
       },
       include: {
         socialLinks: { orderBy: { order: 'asc' } },
@@ -71,8 +73,6 @@ export class ContactRepository {
       },
     });
   }
-
-  // ── Social Links ────────────────────────────────────────────────────────────
 
   async createSocialLink(contactId: number, dto: CreateContactSocialLinkDto) {
     return this.prisma.contactSocialLink.create({
@@ -180,4 +180,7 @@ export class ContactRepository {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+
+
 }

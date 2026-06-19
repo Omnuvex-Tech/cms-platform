@@ -236,6 +236,11 @@ function OurTeamSettingsPanel() {
   const [activeLang, setActiveLang] = useState<Lang>("az");
   const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [description, setDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [moreBtn, setMoreBtn] = useState<LocalizedString>({
+    az: "",
+    en: "",
+    ru: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -246,6 +251,11 @@ function OurTeamSettingsPanel() {
         const data = await apiFetch("/blog/our-team-settings");
         setTitle(typeof data.title === "object" ? data.title : { az: data.title ?? "", en: "", ru: "" });
         setDescription(typeof data.description === "object" ? data.description : { az: data.description ?? "", en: "", ru: "" });
+        setMoreBtn(
+          typeof data.moreBtn === "object"
+            ? data.moreBtn
+            : { az: data.moreBtn ?? "", en: "", ru: "" }
+        );
       } finally {
         setLoading(false);
       }
@@ -258,7 +268,11 @@ function OurTeamSettingsPanel() {
     try {
       await apiFetch("/blog/our-team-settings", {
         method: "PUT",
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({
+          title,
+          description,
+          moreBtn,
+        }),
       });
       setSaveStatus("success");
     } catch {
@@ -273,9 +287,6 @@ function OurTeamSettingsPanel() {
 
   return (
     <div className={styles.settingsCard} style={{ marginBottom: 32 }}>
-      {/* ← Bu kart səhifədə görünən iki mətn sahəsini idarə edir:
-           1) Sol tərəf — böyük başlıq (məs. "Komandamız")
-           2) Sağ tərəf — yarısı rəngli açıqlama mətni              */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <h3 className={styles.settingsGroupTitle} style={{ margin: 0 }}>
           Our Team Səhifəsi — Başlıq və Açıqlama
@@ -304,15 +315,31 @@ function OurTeamSettingsPanel() {
 
       <div className={styles.field} style={{ marginTop: 16 }}>
         <label>
-          Sağ açıqlama mətni — yarısı rəngli ({activeLang.toUpperCase()})
+          Sağ açıqlama mətni(italic seçmək = mavi rəng) ({activeLang.toUpperCase()})
         </label>
         <LocalizedRichEditor value={description} lang={activeLang} onChange={setDescription} />
+      </div>
+
+      <div className={styles.field} style={{ marginTop: 16 }}>
+        <label>
+          More Button ({activeLang.toUpperCase()})
+        </label>
+        <input
+          className={styles.input}
+          value={moreBtn[activeLang] || ""}
+          onChange={(e) =>
+            setMoreBtn((prev) => ({
+              ...prev,
+              [activeLang]: e.target.value,
+            }))
+          }
+          placeholder="Daha çox"
+        />
       </div>
     </div>
   );
 }
 
-// ─── Sortable Author Row ──────────────────────────────────
 function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOurTeam }: {
   a: any; onEdit: (a: any) => void; onDelete: (id: number) => void;
   onToggleVisibility: (a: any) => void; onToggleOurTeam: (a: any) => void;

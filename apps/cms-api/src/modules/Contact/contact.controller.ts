@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete,
   Body, Param, ParseIntPipe,
+  UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { UpdateContactSettingsDto } from './dto/update-contact-settings.dto';
@@ -10,6 +11,10 @@ import { CreateContactOptionDto } from './dto/create-contact-option.dto';
 import { UpdateContactOptionDto } from './dto/update-contact-option.dto';
 import { ReorderContactLinksDto } from './dto/reorder-contact-links.dto';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import * as fs from 'fs';
 
 @Controller('contact')
 export class ContactController {
@@ -30,7 +35,33 @@ export class ContactController {
     return this.service.updateSettings(dto);
   }
 
-  // ── Social Links ────────────────────────────────────────────────────────────
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadPath = './public/uploads/contact';
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + extname(file.originalname));
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png|webp|svg\+xml)$/)) {
+        return cb(new Error('Yalnız şəkil faylları qəbul edilir'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 2 * 1024 * 1024 },
+  }))
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    return { url: `/uploads/contact/${file.filename}` };
+  }
+
 
   @Post('social-links')
   createSocialLink(@Body() dto: CreateContactSocialLinkDto) {
@@ -55,7 +86,6 @@ export class ContactController {
     return this.service.deleteSocialLink(id);
   }
 
-  // ── Budget Options ──────────────────────────────────────────────────────────
 
   @Post('budget-options')
   createBudgetOption(@Body() dto: CreateContactOptionDto) {
@@ -75,7 +105,6 @@ export class ContactController {
     return this.service.deleteBudgetOption(id);
   }
 
-  // ── Timeline Options ────────────────────────────────────────────────────────
 
   @Post('timeline-options')
   createTimelineOption(@Body() dto: CreateContactOptionDto) {
@@ -95,7 +124,6 @@ export class ContactController {
     return this.service.deleteTimelineOption(id);
   }
 
-  // ── Submissions ─────────────────────────────────────────────────────────────
 
   @Post('submit')
   createSubmission(@Body() dto: CreateContactSubmissionDto) {

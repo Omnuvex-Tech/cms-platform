@@ -743,6 +743,10 @@ function SettingsTab() {
     const [quoteText, setQuoteText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [quoteImage, setQuoteImage] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [quoteImageAlt, setQuoteImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [searchPlaceholder, setSearchPlaceholder] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [categoriesLabel, setCategoriesLabel] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [pickOfWeekLabel, setPickOfWeekLabel] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [moreBlogsButtonText, setMoreBlogsButtonText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
 
     const load = async () => {
         setLoading(true);
@@ -755,6 +759,29 @@ function SettingsTab() {
             setQuoteText(typeof data.quoteText === "object" ? data.quoteText : { az: data.quoteText ?? "", en: "", ru: "" });
             setQuoteImage(typeof data.quoteImage === "object" ? data.quoteImage : { az: data.quoteImage ?? "", en: "", ru: "" });
             setQuoteImageAlt(typeof data.quoteImageAlt === "object" ? data.quoteImageAlt : { az: data.quoteImageAlt ?? "", en: "", ru: "" });
+            setSearchPlaceholder(
+                typeof data.searchPlaceholder === "object"
+                    ? data.searchPlaceholder
+                    : { az: data.searchPlaceholder ?? "", en: "", ru: "" }
+            );
+
+            setCategoriesLabel(
+                typeof data.categoriesLabel === "object"
+                    ? data.categoriesLabel
+                    : { az: data.categoriesLabel ?? "", en: "", ru: "" }
+            );
+
+            setPickOfWeekLabel(
+                typeof data.pickOfWeekLabel === "object"
+                    ? data.pickOfWeekLabel
+                    : { az: data.pickOfWeekLabel ?? "", en: "", ru: "" }
+            );
+
+            setMoreBlogsButtonText(
+                typeof data.moreBlogsButtonText === "object"
+                    ? data.moreBlogsButtonText
+                    : { az: data.moreBlogsButtonText ?? "", en: "", ru: "" }
+            );
         } finally { setLoading(false); }
     };
 
@@ -765,7 +792,19 @@ function SettingsTab() {
         try {
             await apiFetch("/blog/settings", {
                 method: "PUT",
-                body: JSON.stringify({ pageTitle, buttonText, buttonLink, buttonNewTab, quoteText, quoteImage, quoteImageAlt }),
+                body: JSON.stringify({
+                    pageTitle,
+                    buttonText,
+                    buttonLink,
+                    buttonNewTab,
+                    quoteText,
+                    quoteImage,
+                    quoteImageAlt,
+                    searchPlaceholder,
+                    categoriesLabel,
+                    pickOfWeekLabel,
+                    moreBlogsButtonText,
+                })
             });
             setSaveStatus("success");
         } catch { setSaveStatus("error"); }
@@ -824,6 +863,66 @@ function SettingsTab() {
                     <label>Quote şəkil alt mətn ({activeLang.toUpperCase()})</label>
                     <input className={styles.input} value={quoteImageAlt[activeLang] || ""}
                         onChange={e => setQuoteImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))} />
+                </div>
+            </div>
+
+            <div className={styles.settingsCard}>
+                <h3 className={styles.settingsGroupTitle}>Search mətnləri</h3>
+
+                <div className={styles.field}>
+                    <label>Search placeholder ({activeLang.toUpperCase()})</label>
+                    <input
+                        className={styles.input}
+                        value={searchPlaceholder[activeLang] || ""}
+                        onChange={(e) =>
+                            setSearchPlaceholder((prev) => ({
+                                ...prev,
+                                [activeLang]: e.target.value,
+                            }))
+                        }
+                    />
+                </div>
+
+                <div className={styles.field}>
+                    <label>Categories label ({activeLang.toUpperCase()})</label>
+                    <input
+                        className={styles.input}
+                        value={categoriesLabel[activeLang] || ""}
+                        onChange={(e) =>
+                            setCategoriesLabel((prev) => ({
+                                ...prev,
+                                [activeLang]: e.target.value,
+                            }))
+                        }
+                    />
+                </div>
+
+                <div className={styles.field}>
+                    <label>Pick of week label ({activeLang.toUpperCase()})</label>
+                    <input
+                        className={styles.input}
+                        value={pickOfWeekLabel[activeLang] || ""}
+                        onChange={(e) =>
+                            setPickOfWeekLabel((prev) => ({
+                                ...prev,
+                                [activeLang]: e.target.value,
+                            }))
+                        }
+                    />
+                </div>
+
+                <div className={styles.field}>
+                    <label>More blogs button ({activeLang.toUpperCase()})</label>
+                    <input
+                        className={styles.input}
+                        value={moreBlogsButtonText[activeLang] || ""}
+                        onChange={(e) =>
+                            setMoreBlogsButtonText((prev) => ({
+                                ...prev,
+                                [activeLang]: e.target.value,
+                            }))
+                        }
+                    />
                 </div>
             </div>
         </div>

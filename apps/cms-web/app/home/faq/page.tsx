@@ -44,7 +44,13 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...options?.headers,
     },
   });
-  if (!res.ok) throw new Error("Xəta baş verdi");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message =
+      (Array.isArray(body?.message) ? body.message.join(", ") : body?.message) ??
+      `Xəta baş verdi (${res.status})`;
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -145,8 +151,11 @@ export default function FaqPage() {
   const [answer, setAnswer] = useState<LocalizedString>({ az: "", en: "", ru: "" });
 
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -155,6 +164,8 @@ export default function FaqPage() {
     try {
       const data = await apiFetch("/faq");
       setFaqs(data);
+    } catch (err: any) {
+      setListError(err.message ?? "FAQ-lar yüklənərkən xəta baş verdi");
     } finally {
       setLoading(false);
     }
@@ -175,6 +186,9 @@ export default function FaqPage() {
         method: "PATCH",
         body: JSON.stringify({ ids: newFaqs.map((f) => f.id) }),
       });
+    } catch (err: any) {
+      alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+      load();
     } finally {
       setReordering(false);
     }
@@ -185,6 +199,7 @@ export default function FaqPage() {
     setQuestion({ az: "", en: "", ru: "" });
     setAnswer({ az: "", en: "", ru: "" });
     setModalLang("az");
+    setFormError(null);
     setModalOpen(true);
   };
 
@@ -193,16 +208,29 @@ export default function FaqPage() {
     setQuestion(faq.question || { az: "", en: "", ru: "" });
     setAnswer(faq.answer || { az: "", en: "", ru: "" });
     setModalLang("az");
+    setFormError(null);
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditItem(null);
+    setFormError(null);
+  };
+
+  const validateFaq = (): string | null => {
+    if (!question.az?.trim()) return "Sual (AZ) boş ola bilməz";
+    if (!answer.az?.trim()) return "Cavab (AZ) boş ola bilməz";
+    return null;
   };
 
   const save = async () => {
-    if (!question.az?.trim() || !answer.az?.trim()) return;
+    setFormError(null);
+    const validationError = validateFaq();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setSaving(true);
     try {
       if (editItem) {
@@ -218,24 +246,35 @@ export default function FaqPage() {
       }
       closeModal();
       load();
+    } catch (err: any) {
+      setFormError(err.message ?? "FAQ saxlanılarkən xəta baş verdi");
     } finally {
       setSaving(false);
     }
   };
 
   const toggleVisibility = async (faq: Faq) => {
-    await apiFetch(`/faq/${faq.id}/visibility`, {
-      method: "PATCH",
-      body: JSON.stringify({ isVisible: !faq.isVisible }),
-    });
-    load();
+    try {
+      await apiFetch(`/faq/${faq.id}/visibility`, {
+        method: "PATCH",
+        body: JSON.stringify({ isVisible: !faq.isVisible }),
+      });
+      load();
+    } catch (err: any) {
+      alert(err.message ?? "Status dəyişdirilərkən xəta baş verdi");
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await apiFetch(`/faq/${deleteId}`, { method: "DELETE" });
-    setDeleteId(null);
-    load();
+    setDeleteError(null);
+    try {
+      await apiFetch(`/faq/${deleteId}`, { method: "DELETE" });
+      setDeleteId(null);
+      load();
+    } catch (err: any) {
+      setDeleteError(err.message ?? "Silinərkən xəta baş verdi");
+    }
   };
 
   const updL = (
@@ -261,6 +300,12 @@ export default function FaqPage() {
       <div style={{ marginBottom: 16 }}>
         <LangTabs active={tableLang} onChange={setTableLang} />
       </div>
+
+      {listError && (
+        <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>
+          ⚠ {listError}
+        </p>
+      )}
 
       <div className={styles.tableWrap}>
         {loading ? (
@@ -309,6 +354,13 @@ export default function FaqPage() {
             </div>
             <div className={styles.modalBody}>
               <LangTabs active={modalLang} onChange={setModalLang} />
+
+              {formError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                  ⚠ {formError}
+                </p>
+              )}
+
               <div className={styles.field}>
                 <label>Sual ({modalLang.toUpperCase()})</label>
                 <input
@@ -334,7 +386,7 @@ export default function FaqPage() {
               <button
                 className={styles.saveBtn}
                 onClick={save}
-                disabled={saving || !question.az?.trim() || !answer.az?.trim()}
+                disabled={saving}
               >
                 {saving ? "Saxlanır..." : "Saxla"}
               </button>
@@ -345,17 +397,22 @@ export default function FaqPage() {
 
       {/* Delete Confirm Modal */}
       {deleteId && (
-        <div className={styles.overlay} onClick={() => setDeleteId(null)}>
+        <div className={styles.overlay} onClick={() => { setDeleteId(null); setDeleteError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Silməyi təsdiq edin</h2>
-              <button className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button>
+              <button className={styles.closeBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>✕</button>
             </div>
             <div className={styles.modalBody}>
               <p>Bu FAQ-ı silmək istədiyinizə əminsiniz?</p>
+              {deleteError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                  ⚠ {deleteError}
+                </p>
+              )}
             </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
+              <button className={styles.cancelBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>Ləğv et</button>
               <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>
             </div>
           </div>

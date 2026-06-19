@@ -265,19 +265,7 @@ function HeroSectionEditor({ data, onChange, activeLang }: { data: any; onChange
                 <LocalizedRichEditor value={data.quoteText ?? {}} lang={activeLang}
                     onChange={v => onChange({ ...data, quoteText: v })} />
             </div>
-            <div className={styles.field}>
-                <label>Statistikalar</label>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleStatDragEnd}>
-                    <SortableContext items={stats.map((_: any, i: number) => `stat-${i}`)} strategy={verticalListSortingStrategy}>
-                        {stats.map((stat: any, i: number) => (
-                            <SortableStatRow key={`stat-${i}`} id={`stat-${i}`} stat={stat}
-                                onChange={(key, val) => updateStat(i, key, val)}
-                                onRemove={() => removeStat(i)} />
-                        ))}
-                    </SortableContext>
-                </DndContext>
-                <button type="button" className={styles.addRowBtn} onClick={addStat}>+ Stat əlavə et</button>
-            </div>
+
         </div>
     );
 }
@@ -393,7 +381,15 @@ function ContentSectionEditor({ data, onChange, activeLang }: { data: any; onCha
                                 value={item.imageAlt?.[activeLang] || ""}
                                 onChange={e => updateItem(i, "imageAlt", { ...item.imageAlt, [activeLang]: e.target.value })} />
                         </div>
-                    </>}
+                        <div className={styles.field}><label>Button Yazısı ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input}
+                                value={item.contactLabel?.[activeLang] || ""}
+                                onChange={e => updateItem(i, "contactLabel", { ...item.contactLabel, [activeLang]: e.target.value })}
+                                placeholder="Sorğu göndər" />
+                        </div>
+                    </>
+
+                    }
                 </div>
             ))}
             <button type="button" className={styles.addRowBtn} onClick={addItem}>+ Item əlavə et</button>
@@ -626,35 +622,35 @@ export default function ServicePage() {
 
     const openCreate = () => { setEditItem(null); resetForm(); setDrawerOpen(true); };
 
-const openEdit = (s: any) => {
-    setEditItem(s);
-    setNumber(s.number ?? "");
-    setTitle(s.title ?? { az: "", en: "", ru: "" });
-    setSlug(s.slug ?? "");
-    setBadge(s.badge ?? { az: "", en: "", ru: "" });
-    setDescription(s.description ?? { az: "", en: "", ru: "" });
-    setImage(s.image ?? "");
-    setImageAlt(s.imageAlt ?? { az: "", en: "", ru: "" });
-    setGif(s.gif ?? "");
+    const openEdit = (s: any) => {
+        setEditItem(s);
+        setNumber(s.number ?? "");
+        setTitle(s.title ?? { az: "", en: "", ru: "" });
+        setSlug(s.slug ?? "");
+        setBadge(s.badge ?? { az: "", en: "", ru: "" });
+        setDescription(s.description ?? { az: "", en: "", ru: "" });
+        setImage(s.image ?? "");
+        setImageAlt(s.imageAlt ?? { az: "", en: "", ru: "" });
+        setGif(s.gif ?? "");
 
-    // features normalize — köhnə string label → {az: label, en: "", ru: ""}
-    const normalizedFeatures = (s.features ?? []).map((f: any) => ({
-        ...f,
-        label: typeof f.label === "string"
-            ? { az: f.label, en: "", ru: "" }
-            : (f.label ?? { az: "", en: "", ru: "" }),
-    }));
-    setFeatures(normalizedFeatures);
+        // features normalize — köhnə string label → {az: label, en: "", ru: ""}
+        const normalizedFeatures = (s.features ?? []).map((f: any) => ({
+            ...f,
+            label: typeof f.label === "string"
+                ? { az: f.label, en: "", ru: "" }
+                : (f.label ?? { az: "", en: "", ru: "" }),
+        }));
+        setFeatures(normalizedFeatures);
 
-    setPortfolioButtonText(s.portfolioButtonText ?? { az: "", en: "", ru: "" });
-    setPortfolioButtonLink(s.portfolioButtonLink ?? "");
-    setPortfolioButtonNewTab(s.portfolioButtonNewTab ?? false);
-    setDetailButtonText(s.detailButtonText ?? { az: "", en: "", ru: "" });
-    setDetailButtonLink(s.detailButtonLink ?? "");
-    setDetailButtonNewTab(s.detailButtonNewTab ?? false);
-    setSections(s.sections ?? []);
-    setDrawerOpen(true);
-};
+        setPortfolioButtonText(s.portfolioButtonText ?? { az: "", en: "", ru: "" });
+        setPortfolioButtonLink(s.portfolioButtonLink ?? "");
+        setPortfolioButtonNewTab(s.portfolioButtonNewTab ?? false);
+        setDetailButtonText(s.detailButtonText ?? { az: "", en: "", ru: "" });
+        setDetailButtonLink(s.detailButtonLink ?? "");
+        setDetailButtonNewTab(s.detailButtonNewTab ?? false);
+        setSections(s.sections ?? []);
+        setDrawerOpen(true);
+    };
 
     const closeDrawer = () => { setDrawerOpen(false); setEditItem(null); };
 
@@ -677,7 +673,7 @@ const openEdit = (s: any) => {
         setFeatures(prev => arrayMove(prev, oi, ni));
     };
 
-const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
+    const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
     const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
     const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
 

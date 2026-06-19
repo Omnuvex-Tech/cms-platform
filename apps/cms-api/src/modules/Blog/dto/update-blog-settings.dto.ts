@@ -8,4 +8,19 @@ export class UpdateBlogSettingsDto {
   @IsOptional() @IsObject() quoteText?: Record<string, string>;
   @IsOptional() @IsObject() quoteImage?: Record<string, string>;
   @IsOptional() @IsObject() quoteImageAlt?: Record<string, string>;
+  @IsOptional()
+  @IsObject()
+  searchPlaceholder?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  categoriesLabel?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  pickOfWeekLabel?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  moreBlogsButtonText?: Record<string, string>;
 }

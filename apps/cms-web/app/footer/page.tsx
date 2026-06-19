@@ -301,7 +301,7 @@ export default function FooterPage() {
     const [activeLang, setActiveLang] = useState<Lang>("az");
 
     const sensors = useSensors(useSensor(PointerSensor));
-    const MAX_NAV_LINKS = 8;
+    const MAX_NAV_LINKS = 6;
     const MAX_SOCIAL_LINKS = 6;
 
     useEffect(() => {

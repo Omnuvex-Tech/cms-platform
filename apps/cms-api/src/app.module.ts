@@ -15,10 +15,12 @@ import { NavbarSettingsModule } from './modules/Navbar/navbar.module';
 import { FooterModule } from './modules/Footer/footer.module';
 import { ContactModule } from './modules/Contact/contact.module';
 import { SearchModule } from './modules/search/search.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
-           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule
+           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
+           DashboardModule
   ],
   controllers: [AppController],
   providers: [AppService],

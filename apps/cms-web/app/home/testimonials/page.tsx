@@ -59,7 +59,13 @@ async function apiFetch(path: string, options?: RequestInit) {
             ...options?.headers,
         },
     });
-    if (!res.ok) throw new Error("Xəta baş verdi");
+    if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const message =
+            (Array.isArray(body?.message) ? body.message.join(", ") : body?.message) ??
+            `Xəta baş verdi (${res.status})`;
+        throw new Error(message);
+    }
     return res.json();
 }
 
@@ -130,17 +136,18 @@ export default function TestimonialsPage() {
     const [sectionTitle, setSectionTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [sectionDesc, setSectionDesc] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [sectionSaving, setSectionSaving] = useState(false);
+    const [sectionError, setSectionError] = useState<string | null>(null);
 
     // Testimonial modal
     const [modalOpen, setModalOpen] = useState(false);
     const [modalActiveLang, setModalActiveLang] = useState<Lang>("az");
     const [editItem, setEditItem] = useState<Testimonial | null>(null);
-    
+
     const [company, setCompany] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [quote, setQuote] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    
+
     const [image, setImage] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState("");
@@ -149,7 +156,9 @@ export default function TestimonialsPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
     const [reordering, setReordering] = useState(false);
 
     const sensors = useSensors(useSensor(PointerSensor));
@@ -173,7 +182,18 @@ export default function TestimonialsPage() {
 
     useEffect(() => { load(); }, []);
 
+    const validateSection = (): string | null => {
+        if (!sectionTitle.az?.trim()) return "Başlıq (AZ) boş ola bilməz";
+        return null;
+    };
+
     const saveSection = async () => {
+        setSectionError(null);
+        const validationError = validateSection();
+        if (validationError) {
+            setSectionError(validationError);
+            return;
+        }
         setSectionSaving(true);
         try {
             const body = {
@@ -191,7 +211,9 @@ export default function TestimonialsPage() {
                     body: JSON.stringify(body),
                 });
             }
-            load();
+            await load();
+        } catch (err: any) {
+            setSectionError(err.message ?? "Bölmə saxlanılarkən xəta baş verdi");
         } finally {
             setSectionSaving(false);
         }
@@ -210,6 +232,9 @@ export default function TestimonialsPage() {
                 method: "PATCH",
                 body: JSON.stringify({ ids: newList.map((t) => t.id) }),
             });
+        } catch (err: any) {
+            alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+            load();
         } finally {
             setReordering(false);
         }
@@ -245,7 +270,10 @@ export default function TestimonialsPage() {
                 headers: { Authorization: `Bearer ${getToken()}` },
                 body: formData,
             });
-            if (!res.ok) throw new Error("Şəkil yükləmə uğursuz oldu");
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                throw new Error(body?.message ?? "Şəkil yükləmə uğursuz oldu");
+            }
             const data = await res.json();
             return data.url as string;
         } finally {
@@ -267,6 +295,7 @@ export default function TestimonialsPage() {
         setName({ az: "", en: "", ru: "" });
         setRole({ az: "", en: "", ru: "" });
         setAltText("");
+        setFormError(null);
         resetImageState();
         setModalOpen(true);
     };
@@ -281,6 +310,7 @@ export default function TestimonialsPage() {
         setImageFile(null);
         setImagePreview(t.image);
         setAltText(t.altText ?? "");
+        setFormError(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
         setModalOpen(true);
     };
@@ -288,9 +318,25 @@ export default function TestimonialsPage() {
     const closeModal = () => {
         setModalOpen(false);
         setEditItem(null);
+        setFormError(null);
+    };
+
+    const validateTestimonial = (): string | null => {
+        if (!company.az?.trim()) return "Şirkət (AZ) boş ola bilməz";
+        if (!quote.az?.trim()) return "Sitat (AZ) boş ola bilməz";
+        if (!name.az?.trim()) return "Ad Soyad (AZ) boş ola bilməz";
+        if (!role.az?.trim()) return "Vəzifə (AZ) boş ola bilməz";
+        if (!imageFile && !image) return "Şəkil seçilməlidir";
+        return null;
     };
 
     const saveTestimonial = async () => {
+        setFormError(null);
+        const validationError = validateTestimonial();
+        if (validationError) {
+            setFormError(validationError);
+            return;
+        }
         setSaving(true);
         try {
             const imageUrl = await uploadImageIfNeeded();
@@ -318,6 +364,8 @@ export default function TestimonialsPage() {
             }
             closeModal();
             load();
+        } catch (err: any) {
+            setFormError(err.message ?? "Testimonial saxlanılarkən xəta baş verdi");
         } finally {
             setSaving(false);
         }
@@ -325,9 +373,14 @@ export default function TestimonialsPage() {
 
     const handleDelete = async () => {
         if (!deleteId) return;
-        await apiFetch(`/testimonials/${deleteId}`, { method: "DELETE" });
-        setDeleteId(null);
-        load();
+        setDeleteError(null);
+        try {
+            await apiFetch(`/testimonials/${deleteId}`, { method: "DELETE" });
+            setDeleteId(null);
+            load();
+        } catch (err: any) {
+            setDeleteError(err.message ?? "Silinərkən xəta baş verdi");
+        }
     };
 
     const LangTabs = ({ active, onChange }: { active: Lang, onChange: (l: Lang) => void }) => (
@@ -366,24 +419,29 @@ export default function TestimonialsPage() {
                 <div className={styles.sectionFields}>
                     <div className={styles.field}>
                         <label>Başlıq ({sectionActiveLang.toUpperCase()})</label>
-                        <input 
-                            className={styles.input} 
-                            value={sectionTitle[sectionActiveLang] || ""} 
-                            onChange={(e) => updateLocalizedField(setSectionTitle, sectionActiveLang, e.target.value)} 
-                            placeholder="Müştəri Rəyləri" 
+                        <input
+                            className={styles.input}
+                            value={sectionTitle[sectionActiveLang] || ""}
+                            onChange={(e) => updateLocalizedField(setSectionTitle, sectionActiveLang, e.target.value)}
+                            placeholder="Müştəri Rəyləri"
                         />
                     </div>
                     <div className={styles.field}>
                         <label>Təsvir ({sectionActiveLang.toUpperCase()})</label>
-                        <textarea 
-                            className={styles.textarea} 
-                            value={sectionDesc[sectionActiveLang] || ""} 
-                            onChange={(e) => updateLocalizedField(setSectionDesc, sectionActiveLang, e.target.value)} 
-                            placeholder="Bölmə təsviri..." 
-                            rows={3} 
+                        <textarea
+                            className={styles.textarea}
+                            value={sectionDesc[sectionActiveLang] || ""}
+                            onChange={(e) => updateLocalizedField(setSectionDesc, sectionActiveLang, e.target.value)}
+                            placeholder="Bölmə təsviri..."
+                            rows={3}
                         />
                     </div>
                 </div>
+                {sectionError && (
+                    <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
+                        ⚠ {sectionError}
+                    </p>
+                )}
                 <div className={styles.sectionFooter}>
                     <button
                         className={styles.saveBtn}
@@ -436,44 +494,50 @@ export default function TestimonialsPage() {
                         <div className={styles.modalBody}>
                             <LangTabs active={modalActiveLang} onChange={setModalActiveLang} />
 
+                            {formError && (
+                                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                                    ⚠ {formError}
+                                </p>
+                            )}
+
                             <div className={styles.field}>
                                 <label>Şirkət ({modalActiveLang.toUpperCase()})</label>
-                                <input 
-                                    className={styles.input} 
-                                    value={company[modalActiveLang] || ""} 
-                                    onChange={(e) => updateLocalizedField(setCompany, modalActiveLang, e.target.value)} 
-                                    placeholder="MAZDA" 
+                                <input
+                                    className={styles.input}
+                                    value={company[modalActiveLang] || ""}
+                                    onChange={(e) => updateLocalizedField(setCompany, modalActiveLang, e.target.value)}
+                                    placeholder="MAZDA"
                                 />
                             </div>
 
                             <div className={styles.field}>
                                 <label>Sitat ({modalActiveLang.toUpperCase()})</label>
-                                <textarea 
-                                    className={styles.textarea} 
-                                    value={quote[modalActiveLang] || ""} 
-                                    onChange={(e) => updateLocalizedField(setQuote, modalActiveLang, e.target.value)} 
-                                    placeholder="Rəy mətni..." 
-                                    rows={3} 
+                                <textarea
+                                    className={styles.textarea}
+                                    value={quote[modalActiveLang] || ""}
+                                    onChange={(e) => updateLocalizedField(setQuote, modalActiveLang, e.target.value)}
+                                    placeholder="Rəy mətni..."
+                                    rows={3}
                                 />
                             </div>
-                            
+
                             <div className={styles.twoCol}>
                                 <div className={styles.field}>
                                     <label>Ad Soyad ({modalActiveLang.toUpperCase()})</label>
-                                    <input 
-                                        className={styles.input} 
-                                        value={name[modalActiveLang] || ""} 
-                                        onChange={(e) => updateLocalizedField(setName, modalActiveLang, e.target.value)} 
-                                        placeholder="Aşur Cəbiyev" 
+                                    <input
+                                        className={styles.input}
+                                        value={name[modalActiveLang] || ""}
+                                        onChange={(e) => updateLocalizedField(setName, modalActiveLang, e.target.value)}
+                                        placeholder="Aşur Cəbiyev"
                                     />
                                 </div>
                                 <div className={styles.field}>
                                     <label>Vəzifə ({modalActiveLang.toUpperCase()})</label>
-                                    <input 
-                                        className={styles.input} 
-                                        value={role[modalActiveLang] || ""} 
-                                        onChange={(e) => updateLocalizedField(setRole, modalActiveLang, e.target.value)} 
-                                        placeholder="CEO @ Company" 
+                                    <input
+                                        className={styles.input}
+                                        value={role[modalActiveLang] || ""}
+                                        onChange={(e) => updateLocalizedField(setRole, modalActiveLang, e.target.value)}
+                                        placeholder="CEO @ Company"
                                     />
                                 </div>
                             </div>
@@ -514,17 +578,22 @@ export default function TestimonialsPage() {
 
             {/* Silmə təsdiq modalı */}
             {deleteId && (
-                <div className={styles.overlay} onClick={() => setDeleteId(null)}>
+                <div className={styles.overlay} onClick={() => { setDeleteId(null); setDeleteError(null); }}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h2>Silməyi təsdiq edin</h2>
-                            <button className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button>
+                            <button className={styles.closeBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>✕</button>
                         </div>
                         <div className={styles.modalBody}>
                             <p>Bu testimonialı silmək istədiyinizə əminsiniz?</p>
+                            {deleteError && (
+                                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                                    ⚠ {deleteError}
+                                </p>
+                            )}
                         </div>
                         <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
+                            <button className={styles.cancelBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>Ləğv et</button>
                             <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>
                         </div>
                     </div>

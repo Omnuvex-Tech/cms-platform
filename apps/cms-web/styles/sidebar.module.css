@@ -1,6 +1,6 @@
 .sidebar {
     width: 260px;
-    min-height: 100vh;
+    height: 100vh;
     background: #fff;
     border-right: 1px solid rgba(0, 0, 0, 0.06);
     display: flex;
@@ -14,6 +14,7 @@
 .logoWrap {
     padding: 28px 24px 20px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
 }
 
 .logo {
@@ -22,13 +23,19 @@
 
 .nav {
     flex: 1;
+    min-height: 0;
     padding: 16px 12px;
     display: flex;
     flex-direction: column;
     gap: 2px;
     overflow-y: auto;
+    scrollbar-width: none;     
+    -ms-overflow-style: none; 
 }
 
+.nav::-webkit-scrollbar {
+    display: none;     
+}
 .navItem {
     display: flex;
     align-items: center;
@@ -117,6 +124,7 @@
 .logoutWrap {
     padding: 16px 12px 24px;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
 }
 
 .logoutBtn {

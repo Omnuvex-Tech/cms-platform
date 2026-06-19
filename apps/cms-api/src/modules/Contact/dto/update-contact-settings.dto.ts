@@ -1,8 +1,10 @@
-import { IsObject, IsOptional, IsArray } from 'class-validator';
+import { IsObject, IsOptional, IsArray, IsString } from 'class-validator';
 
 export class UpdateContactSettingsDto {
   @IsOptional() @IsObject() title?: Record<string, string>;
   @IsOptional() @IsObject() description?: Record<string, string>;
+  @IsOptional() @IsString() image?: string;
+  @IsOptional() @IsObject() imageAlt?: Record<string, string>;
   @IsOptional() @IsObject() emailLabel?: Record<string, string>;
   @IsOptional() @IsObject() emailValue?: Record<string, string>;
   @IsOptional() @IsObject() phoneLabel?: Record<string, string>;

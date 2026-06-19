@@ -12,6 +12,12 @@ import styles from "@/styles/blog.module.css";
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
 
+interface HeroStat {
+  icon?: string;
+  label: LocalizedString;
+  value: string;
+}
+
 interface StoryBlock {
   title: LocalizedString;
   paragraphs: LocalizedString[];
@@ -25,6 +31,7 @@ interface AboutData {
   heroBadge: LocalizedString;
   heroTitle: LocalizedString;
   heroParagraphs: LocalizedString[];
+  heroStats: HeroStat[];
   storyBlocks: StoryBlock[];
   teamTitle: LocalizedString;
   teamDescription: LocalizedString;
@@ -40,6 +47,7 @@ const DEFAULT_DATA: AboutData = {
   heroBadge: { ...EMPTY_LOCALIZED },
   heroTitle: { ...EMPTY_LOCALIZED },
   heroParagraphs: [{ ...EMPTY_LOCALIZED }],
+  heroStats: [],
   storyBlocks: [],
   teamTitle: { ...EMPTY_LOCALIZED },
   teamDescription: { ...EMPTY_LOCALIZED },
@@ -85,15 +93,11 @@ function toAbsUrl(path: string) {
   return `${API}${path}`;
 }
 
-// ─── Lang Tabs ────────────────────────────────────────────────────────────────
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
       {(["az", "en", "ru"] as Lang[]).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => onChange(l)}
+        <button key={l} type="button" onClick={() => onChange(l)}
           style={{
             padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
             border: "1.5px solid",
@@ -101,8 +105,7 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
             background: active === l ? "#1e3a5f" : "transparent",
             color: active === l ? "#fff" : "#888",
             cursor: "pointer",
-          }}
-        >
+          }}>
           {l.toUpperCase()}
         </button>
       ))}
@@ -110,7 +113,6 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
-// ─── Rich Editor ──────────────────────────────────────────────────────────────
 function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [showLinkPopup, setShowLinkPopup] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -183,7 +185,6 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
           className={editor?.isActive("link") ? styles.toolbarBtnActive : styles.toolbarBtn}
           onClick={openLinkPopup}>🔗</button>
       </div>
-
       {showLinkPopup && (
         <div className={styles.linkPopup}>
           <input className={styles.linkInput} type="url" placeholder="https://..."
@@ -204,9 +205,8 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
-// ─── Single Image Upload ──────────────────────────────────────────────────────
-function SingleImageUpload({ value, onChange, label }: {
-  value: string; onChange: (url: string) => void; label?: string;
+function SingleImageUpload({ value, onChange, label, accept = "image/webp,image/svg+xml" }: {
+  value: string; onChange: (url: string) => void; label?: string; accept?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,7 +219,7 @@ function SingleImageUpload({ value, onChange, label }: {
   return (
     <div className={styles.field}>
       {label && <label>{label}</label>}
-      <input ref={inputRef} type="file" accept="image/webp" style={{ display: "none" }} onChange={handleSelect} />
+      <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }} onChange={handleSelect} />
       <div className={styles.singleUploadArea} onClick={() => inputRef.current?.click()}>
         {value ? (
           <div className={styles.singleUploadPreviewWrap}>
@@ -229,7 +229,7 @@ function SingleImageUpload({ value, onChange, label }: {
           </div>
         ) : (
           <div className={styles.imagePlaceholder}>
-            <span>🖼️</span><span>{label ?? "Şəkil seçin"}</span><small>WebP</small>
+            <span>🖼️</span><span>{label ?? "Şəkil seçin"}</span><small>WebP / SVG</small>
           </div>
         )}
       </div>
@@ -237,24 +237,35 @@ function SingleImageUpload({ value, onChange, label }: {
   );
 }
 
-// ─── Hero Section ─────────────────────────────────────────────────────────────
-function HeroSection({
-  data, onChange, lang,
-}: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
+function HeroSection({ data, onChange, lang }: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
   const paragraphs = data.heroParagraphs;
+  const stats = data.heroStats;
 
   const updL = (field: keyof AboutData, val: string) =>
     onChange({ ...data, [field]: { ...(data[field] as LocalizedString), [lang]: val } });
+
+  const addStat = () => onChange({
+    ...data,
+    heroStats: [...stats, { icon: "", label: { ...EMPTY_LOCALIZED }, value: "" }],
+  });
+
+  const removeStat = (i: number) => onChange({
+    ...data,
+    heroStats: stats.filter((_, idx) => idx !== i),
+  });
+
+  const updateStat = (i: number, key: keyof HeroStat, val: any) => {
+    const arr = [...stats];
+    arr[i] = { ...arr[i], [key]: val } as HeroStat;
+    onChange({ ...data, heroStats: arr });
+  };
 
   return (
     <div className={styles.fullDrawerSection}>
       <h3 className={styles.drawerSectionTitle}>Hero Bölməsi</h3>
 
-      <SingleImageUpload
-        label="Hero şəkil"
-        value={data.heroImage}
-        onChange={v => onChange({ ...data, heroImage: v })}
-      />
+      <SingleImageUpload label="Hero şəkil" accept="image/webp"
+        value={data.heroImage} onChange={v => onChange({ ...data, heroImage: v })} />
 
       <div className={styles.field}>
         <label>Hero şəkil alt mətn ({lang.toUpperCase()})</label>
@@ -266,14 +277,12 @@ function HeroSection({
         <div className={styles.field}>
           <label>Badge ({lang.toUpperCase()})</label>
           <input className={styles.input} value={data.heroBadge[lang] ?? ""}
-            placeholder="Haqqımızda"
-            onChange={e => updL("heroBadge", e.target.value)} />
+            placeholder="Haqqımızda" onChange={e => updL("heroBadge", e.target.value)} />
         </div>
         <div className={styles.field}>
           <label>Başlıq ({lang.toUpperCase()})</label>
           <input className={styles.input} value={data.heroTitle[lang] ?? ""}
-            placeholder="SİZİN RƏQƏMSAL KOMANDANIZ"
-            onChange={e => updL("heroTitle", e.target.value)} />
+            placeholder="SİZİN RƏQƏMSAL KOMANDANIZ" onChange={e => updL("heroTitle", e.target.value)} />
         </div>
       </div>
 
@@ -286,77 +295,90 @@ function HeroSection({
             <span className={styles.contentItemLabel}>Paraqraf {i + 1}</span>
             {paragraphs.length > 1 && (
               <button type="button" className={styles.removeBtn}
-                onClick={() => onChange({
-                  ...data,
-                  heroParagraphs: paragraphs.filter((_, idx) => idx !== i),
-                })}>✕</button>
+                onClick={() => onChange({ ...data, heroParagraphs: paragraphs.filter((_, idx) => idx !== i) })}>✕</button>
             )}
           </div>
-          <RichEditor
-            value={p[lang] ?? ""}
+          <RichEditor value={p[lang] ?? ""}
             onChange={v => {
               const arr = [...paragraphs];
               arr[i] = { ...arr[i], [lang]: v };
               onChange({ ...data, heroParagraphs: arr });
-            }}
-          />
+            }} />
         </div>
       ))}
       <button type="button" className={styles.addRowBtn}
         onClick={() => onChange({ ...data, heroParagraphs: [...paragraphs, { ...EMPTY_LOCALIZED }] })}>
         + Paraqraf əlavə et
       </button>
+
+      <div className={styles.sectionDivider} />
+      <label className={styles.sectionGroupLabel}>Statistikalar</label>
+
+      {stats.map((stat, i) => (
+        <div key={i} className={styles.contentItemBlock}>
+          <div className={styles.contentItemHeader}>
+            <span className={styles.contentItemLabel}>Stat #{i + 1}</span>
+            <button type="button" className={styles.removeBtn} onClick={() => removeStat(i)}>✕</button>
+          </div>
+          <div className={styles.twoCol}>
+            <div className={styles.field}>
+              <label>Label ({lang.toUpperCase()})</label>
+              <input className={styles.input}
+                value={stat.label?.[lang] ?? ""}
+                placeholder="TƏƏSSÜRATlAR"
+                onChange={e => updateStat(i, "label", { ...stat.label, [lang]: e.target.value })} />
+            </div>
+            <div className={styles.field}>
+              <label>Dəyər</label>
+              <input className={styles.input}
+                value={stat.value ?? ""}
+                placeholder="2.3M"
+                onChange={e => updateStat(i, "value", e.target.value)} />
+            </div>
+          </div>
+          <SingleImageUpload
+            label="Icon (WebP / SVG)"
+            value={stat.icon ?? ""}
+            onChange={v => updateStat(i, "icon", v)} />
+        </div>
+      ))}
+      <button type="button" className={styles.addRowBtn} onClick={addStat}>
+        + Stat əlavə et
+      </button>
     </div>
   );
 }
 
-// ─── Story Section ────────────────────────────────────────────────────────────
-function StorySection({
-  data, onChange, lang,
-}: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
+function StorySection({ data, onChange, lang }: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
   const blocks = data.storyBlocks;
 
   const addBlock = () => onChange({
     ...data,
-    storyBlocks: [
-      ...blocks,
-      {
-        title: { ...EMPTY_LOCALIZED },
-        paragraphs: [{ ...EMPTY_LOCALIZED }],
-        image: "",
-        imageAlt: { ...EMPTY_LOCALIZED },
-      },
-    ],
+    storyBlocks: [...blocks, { title: { ...EMPTY_LOCALIZED }, paragraphs: [{ ...EMPTY_LOCALIZED }], image: "", imageAlt: { ...EMPTY_LOCALIZED } }],
   });
 
-  const removeBlock = (i: number) => onChange({
-    ...data,
-    storyBlocks: blocks.filter((_, idx) => idx !== i),
-  });
+  const removeBlock = (i: number) => onChange({ ...data, storyBlocks: blocks.filter((_, idx) => idx !== i) });
 
-const updateBlock = (i: number, key: keyof StoryBlock, val: any) => {
-  const arr = [...blocks];
-  arr[i] = { ...arr[i], [key]: val } as StoryBlock;
-  onChange({ ...data, storyBlocks: arr });
-};
+  const updateBlock = (i: number, key: keyof StoryBlock, val: any) => {
+    const arr = [...blocks];
+    arr[i] = { ...arr[i], [key]: val } as StoryBlock;
+    onChange({ ...data, storyBlocks: arr });
+  };
 
   return (
     <div className={styles.fullDrawerSection}>
       <h3 className={styles.drawerSectionTitle}>Story Bölməsi</h3>
-
       {blocks.map((block, i) => (
         <div key={i} className={styles.contentItemBlock}>
           <div className={styles.contentItemHeader}>
             <span className={styles.contentItemLabel}>Blok #{i + 1}</span>
             <button type="button" className={styles.removeBtn} onClick={() => removeBlock(i)}>✕</button>
           </div>
-
           <div className={styles.field}>
             <label>Başlıq ({lang.toUpperCase()})</label>
             <input className={styles.input} value={block.title[lang] ?? ""}
               onChange={e => updateBlock(i, "title", { ...block.title, [lang]: e.target.value })} />
           </div>
-
           <label className={styles.sectionGroupLabel}>Paraqraflar ({lang.toUpperCase()})</label>
           {block.paragraphs.map((p, j) => (
             <div key={j} className={styles.field}>
@@ -364,35 +386,20 @@ const updateBlock = (i: number, key: keyof StoryBlock, val: any) => {
                 <label>Paraqraf {j + 1}</label>
                 {block.paragraphs.length > 1 && (
                   <button type="button" className={styles.removeBtn} style={{ fontSize: 11 }}
-                    onClick={() => {
-                      const arr = [...block.paragraphs];
-                      arr.splice(j, 1);
-                      updateBlock(i, "paragraphs", arr);
-                    }}>✕</button>
+                    onClick={() => { const arr = [...block.paragraphs]; arr.splice(j, 1); updateBlock(i, "paragraphs", arr); }}>✕</button>
                 )}
               </div>
-              <RichEditor
-                value={p[lang] ?? ""}
-                onChange={v => {
-                  const arr = [...block.paragraphs];
-                  arr[j] = { ...arr[j], [lang]: v };
-                  updateBlock(i, "paragraphs", arr);
-                }}
-              />
+              <RichEditor value={p[lang] ?? ""}
+                onChange={v => { const arr = [...block.paragraphs]; arr[j] = { ...arr[j], [lang]: v }; updateBlock(i, "paragraphs", arr); }} />
             </div>
           ))}
           <button type="button" className={styles.addRowBtn}
             onClick={() => updateBlock(i, "paragraphs", [...block.paragraphs, { ...EMPTY_LOCALIZED }])}>
             + Paraqraf əlavə et
           </button>
-
           <div className={styles.sectionDivider} />
-
-          <SingleImageUpload
-            label="Şəkil (optional)"
-            value={block.image ?? ""}
-            onChange={v => updateBlock(i, "image", v)}
-          />
+          <SingleImageUpload label="Şəkil (optional)" accept="image/webp"
+            value={block.image ?? ""} onChange={v => updateBlock(i, "image", v)} />
           <div className={styles.field}>
             <label>Şəkil alt mətn ({lang.toUpperCase()})</label>
             <input className={styles.input} value={block.imageAlt?.[lang] ?? ""}
@@ -400,49 +407,40 @@ const updateBlock = (i: number, key: keyof StoryBlock, val: any) => {
           </div>
         </div>
       ))}
-
-      <button type="button" className={styles.addRowBtn} onClick={addBlock}>
-        + Blok əlavə et
-      </button>
+      <button type="button" className={styles.addRowBtn} onClick={addBlock}>+ Blok əlavə et</button>
     </div>
   );
 }
-function TeamSection({
-  data, onChange, lang,
-}: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
+
+function TeamSection({ data, onChange, lang }: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
   const updL = (field: keyof AboutData, val: string) =>
     onChange({ ...data, [field]: { ...(data[field] as LocalizedString), [lang]: val } });
 
   return (
     <div className={styles.fullDrawerSection}>
       <h3 className={styles.drawerSectionTitle}>Team Bölməsi (Sol Yazı)</h3>
-
       <div className={styles.field}>
         <label>Başlıq ({lang.toUpperCase()})</label>
         <input className={styles.input} value={data.teamTitle[lang] ?? ""}
-          placeholder="İLHAM VERƏN KOMANDA"
-          onChange={e => updL("teamTitle", e.target.value)} />
+          placeholder="İLHAM VERƏN KOMANDA" onChange={e => updL("teamTitle", e.target.value)} />
       </div>
       <div className={styles.field}>
         <label>Təsvir ({lang.toUpperCase()})</label>
         <textarea className={styles.input} value={data.teamDescription[lang] ?? ""}
           placeholder="Biz tipik bir marketinq şirkəti deyilik..."
-          rows={4}
-          style={{ resize: "vertical", minHeight: 100 }}
+          rows={4} style={{ resize: "vertical", minHeight: 100 }}
           onChange={e => updL("teamDescription", e.target.value)} />
       </div>
       <div className={styles.twoCol}>
         <div className={styles.field}>
           <label>Button mətni ({lang.toUpperCase()})</label>
           <input className={styles.input} value={data.teamCtaLabel[lang] ?? ""}
-            placeholder="Keçid edin →"
-            onChange={e => updL("teamCtaLabel", e.target.value)} />
+            placeholder="Keçid edin →" onChange={e => updL("teamCtaLabel", e.target.value)} />
         </div>
         <div className={styles.field}>
           <label>Button linki</label>
           <input className={styles.input} value={data.teamCtaHref ?? ""}
-            placeholder="/OurTeam"
-            onChange={e => onChange({ ...data, teamCtaHref: e.target.value })} />
+            placeholder="/OurTeam" onChange={e => onChange({ ...data, teamCtaHref: e.target.value })} />
         </div>
       </div>
     </div>
@@ -466,8 +464,8 @@ export default function AboutPage() {
           heroBadge: d.heroBadge ?? { ...EMPTY_LOCALIZED },
           heroTitle: d.heroTitle ?? { ...EMPTY_LOCALIZED },
           heroParagraphs: Array.isArray(d.heroParagraphs) && d.heroParagraphs.length > 0
-            ? d.heroParagraphs
-            : [{ ...EMPTY_LOCALIZED }],
+            ? d.heroParagraphs : [{ ...EMPTY_LOCALIZED }],
+          heroStats: Array.isArray(d.heroStats) ? d.heroStats : [],
           storyBlocks: Array.isArray(d.storyBlocks) ? d.storyBlocks : [],
           teamTitle: d.teamTitle ?? { ...EMPTY_LOCALIZED },
           teamDescription: d.teamDescription ?? { ...EMPTY_LOCALIZED },
@@ -483,10 +481,7 @@ export default function AboutPage() {
     setSaving(true);
     setSaveStatus("idle");
     try {
-      await apiFetch("/about/settings", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      await apiFetch("/about/settings", { method: "PUT", body: JSON.stringify(data) });
       setSaveStatus("success");
     } catch {
       setSaveStatus("error");
@@ -506,23 +501,16 @@ export default function AboutPage() {
           <p className={styles.subtitle}>About Us səhifəsinin məzmununu idarə edin</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {saveStatus === "success" && (
-            <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>
-          )}
-          {saveStatus === "error" && (
-            <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>
-          )}
+          {saveStatus === "success" && <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>}
+          {saveStatus === "error" && <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>}
           <button className={styles.saveBtn} onClick={save} disabled={saving}>
             {saving ? "Saxlanır..." : "Saxla"}
           </button>
         </div>
       </div>
-
-      {/* Global Lang Tabs — bütün seksiyalara tətbiq olunur */}
       <div style={{ marginBottom: 8 }}>
         <LangTabs active={lang} onChange={setLang} />
       </div>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <HeroSection data={data} onChange={setData} lang={lang} />
         <StorySection data={data} onChange={setData} lang={lang} />

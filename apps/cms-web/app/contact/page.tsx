@@ -91,6 +91,8 @@ interface ContactSettings {
     socialLinks: ContactSocialLink[];
     budgetOptions: ContactOption[];
     timelineOptions: ContactOption[];
+    image: string | null;
+    imageAlt: LocalizedString;
 }
 
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
@@ -414,6 +416,8 @@ export default function ContactPage() {
                     formMessageLabel: settings.formMessageLabel,
                     formMessagePlaceholder: settings.formMessagePlaceholder,
                     formSubmitLabel: settings.formSubmitLabel,
+                    image: settings.image,
+                    imageAlt: settings.imageAlt,
                 }),
             });
 
@@ -492,6 +496,57 @@ export default function ContactPage() {
                         <textarea className={styles.input} value={settings.description?.[activeLang] || ""} rows={3}
                             style={{ resize: "vertical" }} placeholder="Ready to start a project..."
                             onChange={e => updL("description", activeLang, e.target.value)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Şəkil</label>
+                        <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+                            <div
+                                onClick={() => (document.getElementById("contact-img-upload") as HTMLInputElement)?.click()}
+                                style={{
+                                    width: 160, height: 100, border: "1.5px dashed #444",
+                                    borderRadius: 10, display: "flex", alignItems: "center",
+                                    justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0,
+                                }}
+                            >
+                                {settings.image ? (
+                                    <img src={toAbsUrl(settings.image)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                    <span style={{ fontSize: 22, color: "#555" }}>+</span>
+                                )}
+                            </div>
+                            <input id="contact-img-upload" type="file" accept="image/*" style={{ display: "none" }}
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    const fd = new FormData();
+                                    fd.append("file", file);
+                                    const res = await fetch(`${API}/about/upload`, {
+                                        method: "POST",
+                                        headers: { Authorization: `Bearer ${getToken()}` },
+                                        body: fd,
+                                    });
+                                    if (!res.ok) { alert("Yükləmə uğursuz"); return; }
+                                    const { url } = await res.json();
+                                    upd("image", url);
+                                    e.target.value = "";
+                                }}
+                            />
+                            <div style={{ flex: 1 }}>
+                                <div className={styles.field} style={{ marginBottom: 0 }}>
+                                    <label>Alt text ({activeLang.toUpperCase()})</label>
+                                    <input className={styles.input}
+                                        value={settings.imageAlt?.[activeLang] || ""}
+                                        placeholder="Ofis şəkili"
+                                        onChange={e => updL("imageAlt", activeLang, e.target.value)} />
+                                </div>
+                                {settings.image && (
+                                    <button type="button" onClick={() => upd("image", null)}
+                                        style={{ marginTop: 8, background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 13 }}>
+                                        ✕ Şəkili sil
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

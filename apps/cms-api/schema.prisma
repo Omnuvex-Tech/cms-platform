@@ -163,6 +163,16 @@ model Portfolio {
   @@map("portfolios")
 }
 
+model PortfolioSettings {
+  id              Int      @id @default(autoincrement())
+  sectionTitle    Json
+  dropdownLabel   Json
+  moreButtonLabel Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PartnerSection {
   id          Int       @id @default(autoincrement())
   title       Json      @default("{}")
@@ -285,6 +295,10 @@ model BlogSettings {
   quoteText     Json     @default("{}")
   quoteImage    Json  @default("{}")
   quoteImageAlt Json     @default("{}")
+  searchPlaceholder Json @default("{}")
+  categoriesLabel   Json @default("{}")
+  pickOfWeekLabel   Json @default("{}")
+  moreBlogsButtonText Json @default("{}")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   @@map("blog_settings")
@@ -294,6 +308,7 @@ model OurTeamSettings {
   id          Int      @id @default(autoincrement())
   title       Json     @default("{}")
   description Json     @default("{}")
+  moreBtn Json @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -312,6 +327,7 @@ model AboutSettings {
   teamDescription Json     @default("{}")
   teamCtaLabel    Json     @default("{}")
   teamCtaHref     String?
+  heroStats Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -450,6 +466,8 @@ model ContactSettings {
   formMessageLabel        Json                    @default("{}")
   formMessagePlaceholder  Json                    @default("{}")
   formSubmitLabel         Json                    @default("{}")
+  image     String?
+imageAlt  Json    @default("{}")
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
   budgetOptions           ContactBudgetOption[]

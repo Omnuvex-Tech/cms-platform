@@ -18,10 +18,11 @@ export class SearchService {
         return json[locale] || json['az'] || '';
     }
 
-private stripHtml(html: any): string {
-    if (!html) return '';
-    return String(html).replace(/<[^>]*>/g, '').trim();
-}
+    private stripHtml(html: any): string {
+        if (!html) return '';
+        return String(html).replace(/<[^>]*>/g, '').trim();
+    }
+
     private highlight(text: string, q: string): string {
         if (!text || !q) return text ?? '';
         const idx = text.toLowerCase().indexOf(q.toLowerCase());
@@ -43,9 +44,9 @@ private stripHtml(html: any): string {
             select: { title: true, slug: true, badge: true, excerpt: true },
         });
         for (const b of blogs) {
-            const title = this.stripHtml(b.title ?? '');
-            const badge = this.stripHtml(b.badge ?? '');
-            const excerpt = this.stripHtml(b.excerpt ?? '');
+            const title = this.stripHtml(this.t(b.title, locale));
+            const badge = this.stripHtml(this.t(b.badge, locale));
+            const excerpt = this.stripHtml(this.t(b.excerpt, locale));
             if (
                 title.toLowerCase().includes(lower) ||
                 badge.toLowerCase().includes(lower) ||
@@ -53,7 +54,7 @@ private stripHtml(html: any): string {
             ) {
                 results.push({
                     title,
-                    url: `/blog/${b.slug}`,
+                    url: `/Blog/${b.slug}`,
                     breadcrumb: `Blog · ${badge}`,
                     excerpt: this.highlight(excerpt, q),
                 });
@@ -94,7 +95,7 @@ private stripHtml(html: any): string {
             ) {
                 results.push({
                     title,
-                    url: `/services/${s.slug}`,
+                    url: `/service/${s.slug}`,
                     breadcrumb: `Xidmətlər · ${badge}`,
                     excerpt: this.highlight(desc, q),
                 });
@@ -107,9 +108,9 @@ private stripHtml(html: any): string {
             select: { name: true, slug: true, role: true, bio: true },
         });
         for (const a of authors) {
-            const name = this.stripHtml(a.name ?? '');
-            const role = this.stripHtml(a.role ?? '');
-            const bio = this.stripHtml(a.bio ?? '');
+            const name = this.stripHtml(this.t(a.name, locale));
+            const role = this.stripHtml(this.t(a.role, locale));
+            const bio = this.stripHtml(this.t(a.bio, locale));
             if (
                 name.toLowerCase().includes(lower) ||
                 role.toLowerCase().includes(lower) ||
@@ -117,7 +118,7 @@ private stripHtml(html: any): string {
             ) {
                 results.push({
                     title: name,
-                    url: a.slug ? `/blog/authors/${a.slug}` : '/blog',
+                    url: a.slug ? `/BlogAuthor/${a.slug}` : '/blog',
                     breadcrumb: 'Blog · Müəlliflər',
                     excerpt: this.highlight(bio || role, q),
                 });
@@ -133,7 +134,7 @@ private stripHtml(html: any): string {
             const title = this.stripHtml(this.t(v.title, locale));
             const tags = this.stripHtml(
                 Array.isArray(v.tags)
-                    ? (v.tags as any[]).map(t => this.t(t, locale)).join(' ')
+                    ? (v.tags as any[]).map(tag => this.t(tag, locale)).join(' ')
                     : ''
             );
             if (title.toLowerCase().includes(lower) || tags.toLowerCase().includes(lower)) {

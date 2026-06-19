@@ -3,6 +3,8 @@ import { PortfolioRepository } from './portfolio.repository';
 import { CreatePortfolioDto } from './dto/create-portfolio.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { ReorderPortfolioDto } from './dto/reorder-portfolio.dto';
+import { CreatePortfolioSettingsDto } from './dto/create-portfolio-settings.dto';
+import { UpdatePortfolioSettingsDto } from './dto/update-portfolio-settings.dto';
 
 @Injectable()
 export class PortfolioService {
@@ -68,4 +70,20 @@ async toggleHomepage(id: number, isHomepage: boolean) {
   await this.findOne(id);
   return this.repo.toggleHomepage(id, isHomepage);
 }
+
+
+getPortfolioSettings() {
+    return this.repo.getPortfolioSettings();
+  }
+
+  createPortfolioSettings(dto: CreatePortfolioSettingsDto) {
+    return this.repo.createPortfolioSettings(dto);
+  }
+
+  updatePortfolioSettings(
+    id: number,
+    dto: UpdatePortfolioSettingsDto,
+  ) {
+    return this.repo.updatePortfolioSettings(id, dto);
+  }
 }

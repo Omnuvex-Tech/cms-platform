@@ -34,9 +34,15 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...options?.headers,
     },
   });
-  if (!res.ok) throw new Error("Xəta baş verdi");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    console.error("API error:", res.status, body);
+    throw new Error(body?.message ?? `Xəta baş verdi (${res.status})`);
+  }
   return res.json();
 }
+
+
 
 async function uploadFile(file: File): Promise<string> {
   const formData = new FormData();
@@ -227,6 +233,12 @@ function HeroSectionEditor({ data, onChange, activeLang }: { data: any; onChange
         <input className={styles.input} value={data.number ?? ""}
           onChange={e => onChange({ ...data, number: e.target.value })} placeholder="01" />
       </div>
+      <div className={styles.field}><label>Button Yazısı ({activeLang.toUpperCase()})</label>
+        <input className={styles.input}
+          value={data.contactLabel?.[activeLang] || ""}
+          onChange={e => onChange({ ...data, contactLabel: { ...data.contactLabel, [activeLang]: e.target.value } })}
+          placeholder="Bizimlə əlaqə" />
+      </div>
       <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
         <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
           onChange={v => onChange({ ...data, title: v })} />
@@ -392,6 +404,13 @@ function StrategySectionEditor({ data, onChange, activeLang }: { data: any; onCh
             value={data.badge?.[activeLang] || ""}
             onChange={e => onChange({ ...data, badge: { ...data.badge, [activeLang]: e.target.value } })}
             placeholder="Brendinq" />
+        </div>
+
+        <div className={styles.field}><label>Button Yazısı ({activeLang.toUpperCase()})</label>
+          <input className={styles.input}
+            value={data.contactLabel?.[activeLang] || ""}
+            onChange={e => onChange({ ...data, contactLabel: { ...data.contactLabel, [activeLang]: e.target.value } })}
+            placeholder="Bizimlə əlaqə" />
         </div>
       </div>
       <div className={styles.field}><label>Başlıq ({activeLang.toUpperCase()})</label>
@@ -594,7 +613,27 @@ export default function PortfolioPage() {
   const [coverImage, setCoverImage] = useState("");
   const [coverImageAlt, setCoverImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sections, setSections] = useState<any[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsId, setSettingsId] = useState<number | null>(null);
 
+  const [portfolioTitle, setPortfolioTitle] = useState<LocalizedString>({
+    az: "",
+    en: "",
+    ru: "",
+  });
+
+  const [portfolioDescription, setPortfolioDescription] = useState<LocalizedString>({
+    az: "",
+    en: "",
+    ru: "",
+  });
+
+  const [portfolioButtonText, setPortfolioButtonText] = useState<LocalizedString>({
+    az: "",
+    en: "",
+    ru: "",
+  });
   const coverInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -606,7 +645,22 @@ export default function PortfolioPage() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+
+const loadSettings = async () => {
+  try {
+    const data = await apiFetch("/portfolio/settings");
+    if (!data) return;
+
+    setSettingsId(data.id);
+    setPortfolioTitle(data.sectionTitle ?? { az: "", en: "", ru: "" });
+    setPortfolioDescription(data.dropdownLabel ?? { az: "", en: "", ru: "" });
+    setPortfolioButtonText(data.moreButtonLabel ?? { az: "", en: "", ru: "" });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+  useEffect(() => { load(); loadSettings(); }, []);
 
   const openCreate = () => {
     setEditItem(null);
@@ -669,6 +723,28 @@ export default function PortfolioPage() {
     } finally { setSaving(false); }
   };
 
+const saveSettings = async () => {
+  setSettingsSaving(true);
+  try {
+    const payload = {
+      sectionTitle: portfolioTitle,
+      dropdownLabel: portfolioDescription,
+      moreButtonLabel: portfolioButtonText,
+    };
+    if (settingsId) {
+      await apiFetch(`/portfolio/settings/${settingsId}`, { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      await apiFetch("/portfolio/settings", { method: "POST", body: JSON.stringify(payload) });
+    }
+    await loadSettings();
+    setSettingsOpen(false);
+  } catch (err: any) {
+    alert(err.message ?? "Settings saxlanılarkən xəta baş verdi");
+  } finally {
+    setSettingsSaving(false);
+  }
+};
+
   const toggleVisibility = async (p: any) => {
     await apiFetch(`/portfolio/${p.id}/visibility`, {
       method: "PATCH", body: JSON.stringify({ isVisible: !p.isVisible }),
@@ -705,7 +781,76 @@ export default function PortfolioPage() {
   const usedTypes = sections.map(s => s.type);
 
   return (
+
+    
     <div className={styles.page}>
+
+      
+      <div className={styles.fullDrawerSection}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+    }}
+  >
+    <div>
+      <h2>Settings</h2>
+      <p>Portfolio səhifəsinin ümumi məlumatları</p>
+    </div>
+
+    <button
+      className={styles.saveBtn}
+      onClick={saveSettings}
+      disabled={settingsSaving}
+    >
+      {settingsSaving ? "Saxlanır..." : "Save"}
+    </button>
+  </div>
+
+  <LangTabs
+    active={activeLang}
+    onChange={setActiveLang}
+  />
+
+  <div className={styles.field}>
+    <label>Başlıq ({activeLang.toUpperCase()})</label>
+
+    <LocalizedRichEditor
+      value={portfolioTitle}
+      lang={activeLang}
+      onChange={setPortfolioTitle}
+    />
+  </div>
+
+  <div className={styles.field}>
+    <label>Dropdown Label ({activeLang.toUpperCase()})</label>
+
+    <LocalizedRichEditor
+      value={portfolioDescription}
+      lang={activeLang}
+      onChange={setPortfolioDescription}
+    />
+  </div>
+
+  <div className={styles.field}>
+    <label>Button Yazısı ({activeLang.toUpperCase()})</label>
+
+    <input
+      className={styles.input}
+      value={portfolioButtonText[activeLang] || ""}
+      onChange={(e) =>
+        setPortfolioButtonText({
+          ...portfolioButtonText,
+          [activeLang]: e.target.value,
+        })
+      }
+      placeholder="Bizimlə əlaqə"
+    />
+  </div>
+</div>
+      
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Portfolio</h1>
@@ -824,6 +969,10 @@ export default function PortfolioPage() {
           </div>
         </div>
       )}
+
     </div>
+
+
+
   );
 }

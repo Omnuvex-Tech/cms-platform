@@ -58,7 +58,13 @@ async function apiFetch(path: string, options?: RequestInit) {
       ...options?.headers,
     },
   });
-  if (!res.ok) throw new Error("Xəta baş verdi");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message =
+      (Array.isArray(body?.message) ? body.message.join(", ") : body?.message) ??
+      `Xəta baş verdi (${res.status})`;
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -293,11 +299,13 @@ export default function PartnersPage() {
   const [section, setSection] = useState<Section | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [activeLang, setActiveLang] = useState<Lang>("az");
 
   const [sectionTitle, setSectionTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sectionDesc, setSectionDesc] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sectionSaving, setSectionSaving] = useState(false);
+  const [sectionError, setSectionError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLang, setModalLang] = useState<Lang>("az");
@@ -311,7 +319,9 @@ export default function PartnersPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -325,9 +335,11 @@ export default function PartnersPage() {
         setSectionTitle(lv(data.title));
         setSectionDesc(lv(data.description));
         setPartners(data.partners);
+        setListError(null);
       }
-    } catch {
+    } catch (err: any) {
       setSection(null);
+      setListError(err.message ?? "Partnyorlar yüklənərkən xəta baş verdi");
     } finally {
       if (!isSilent) setLoading(false);
     }
@@ -335,21 +347,33 @@ export default function PartnersPage() {
 
   useEffect(() => { load(); }, []);
 
+  const validateSection = (): string | null => {
+    if (!sectionTitle.az?.trim()) return "Başlıq (AZ) boş ola bilməz";
+    return null;
+  };
+
   const saveSection = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!sectionTitle.az?.trim()) return;
+    setSectionError(null);
+    const validationError = validateSection();
+    if (validationError) {
+      setSectionError(validationError);
+      return;
+    }
     setSectionSaving(true);
     try {
-    const payload = {
-  title: sectionTitle,
-  description: sectionDesc,
-};
+      const payload = {
+        title: sectionTitle,
+        description: sectionDesc,
+      };
       if (section) {
         await apiFetch(`/partners/section/${section.id}`, { method: "PUT", body: JSON.stringify(payload) });
       } else {
         await apiFetch("/partners/section", { method: "POST", body: JSON.stringify(payload) });
       }
       load(true);
+    } catch (err: any) {
+      setSectionError(err.message ?? "Bölmə saxlanılarkən xəta baş verdi");
     } finally {
       setSectionSaving(false);
     }
@@ -364,6 +388,9 @@ export default function PartnersPage() {
     setPartners(newList); setReordering(true);
     try {
       await apiFetch("/partners/reorder", { method: "PATCH", body: JSON.stringify({ ids: newList.map((p) => p.id) }) });
+    } catch (err: any) {
+      alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+      load(true);
     } finally { setReordering(false); }
   };
 
@@ -390,7 +417,10 @@ export default function PartnersPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
         body: formData,
       });
-      if (!res.ok) throw new Error("Şəkil yükləmə uğursuz oldu");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? "Şəkil yükləmə uğursuz oldu");
+      }
       const data = await res.json();
       return data.url as string;
     } finally { setImageUploading(false); }
@@ -408,6 +438,7 @@ export default function PartnersPage() {
     setAltText({ az: "", en: "", ru: "" });
     resetImageState();
     setModalLang("az");
+    setFormError(null);
     setModalOpen(true);
   };
 
@@ -420,13 +451,26 @@ export default function PartnersPage() {
     setImagePreview(p.image);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setModalLang("az");
+    setFormError(null);
     setModalOpen(true);
   };
 
-  const closeModal = () => { setModalOpen(false); setEditItem(null); };
+  const closeModal = () => { setModalOpen(false); setEditItem(null); setFormError(null); };
+
+  const validatePartner = (): string | null => {
+    if (!name.az?.trim() || name.az.trim() === "<p></p>") return "Ad / Təsvir (AZ) boş ola bilməz";
+    if (!imageFile && !image) return "Şəkil seçilməlidir";
+    return null;
+  };
 
   const savePartner = async (e: React.MouseEvent) => {
     e.preventDefault();
+    setFormError(null);
+    const validationError = validatePartner();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     setSaving(true);
     try {
       const imageUrl = await uploadImageIfNeeded();
@@ -443,6 +487,8 @@ export default function PartnersPage() {
       }
       closeModal();
       load(true);
+    } catch (err: any) {
+      setFormError(err.message ?? "Partnyor saxlanılarkən xəta baş verdi");
     } finally { setSaving(false); }
   };
 
@@ -450,21 +496,31 @@ export default function PartnersPage() {
     try {
       await apiFetch(`/partners/${p.id}/homepage`, { method: "PATCH", body: JSON.stringify({ isHomepage: !p.isHomepage }) });
       load(true);
-    } catch (e) { console.error(e); }
+    } catch (err: any) {
+      alert(err.message ?? "Status dəyişdirilərkən xəta baş verdi");
+    }
   };
 
   const toggleVisibility = async (p: Partner) => {
     try {
       await apiFetch(`/partners/${p.id}/visibility`, { method: "PATCH", body: JSON.stringify({ isVisible: !p.isVisible }) });
       load(true);
-    } catch (e) { console.error(e); }
+    } catch (err: any) {
+      alert(err.message ?? "Status dəyişdirilərkən xəta baş verdi");
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!deleteId) return;
-    await apiFetch(`/partners/${deleteId}`, { method: "DELETE" });
-    setDeleteId(null); load(true);
+    setDeleteError(null);
+    try {
+      await apiFetch(`/partners/${deleteId}`, { method: "DELETE" });
+      setDeleteId(null);
+      load(true);
+    } catch (err: any) {
+      setDeleteError(err.message ?? "Silinərkən xəta baş verdi");
+    }
   };
 
   if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
@@ -483,6 +539,12 @@ export default function PartnersPage() {
           </div>
         )}
       </div>
+
+      {listError && (
+        <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>
+          ⚠ {listError}
+        </p>
+      )}
 
       {/* ── Section məlumatları ── */}
       <div className={styles.sectionCard}>
@@ -504,8 +566,13 @@ export default function PartnersPage() {
               value={sectionDesc} lang={activeLang}
               onChange={setSectionDesc} placeholder="Bölmə təsviri..." />
           </div>
-         
+
         </div>
+        {sectionError && (
+          <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
+            ⚠ {sectionError}
+          </p>
+        )}
         <div className={styles.sectionFooter}>
           <button type="button" className={styles.saveBtn} onClick={saveSection} disabled={sectionSaving}>
             {sectionSaving ? "Saxlanır..." : section ? "Yenilə" : "Yarat"}
@@ -547,6 +614,13 @@ export default function PartnersPage() {
             </div>
             <div className={styles.modalBody}>
               <LangTabs active={modalLang} onChange={setModalLang} />
+
+              {formError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                  ⚠ {formError}
+                </p>
+              )}
+
               <div className={styles.field}>
                 <label>Ad / Təsvir ({modalLang.toUpperCase()}) <small>(H1–H6, B, I, 🔗 dəstəklənir)</small></label>
                 <LocalizedRichEditor
@@ -590,15 +664,22 @@ export default function PartnersPage() {
       )}
 
       {deleteId && (
-        <div className={styles.overlay} onClick={() => setDeleteId(null)}>
+        <div className={styles.overlay} onClick={() => { setDeleteId(null); setDeleteError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Silməyi təsdiq edin</h2>
-              <button type="button" className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button>
+              <button type="button" className={styles.closeBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>✕</button>
             </div>
-            <div className={styles.modalBody}><p>Bu partnyoru silmək istədiyinizə əminsiniz?</p></div>
+            <div className={styles.modalBody}>
+              <p>Bu partnyoru silmək istədiyinizə əminsiniz?</p>
+              {deleteError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                  ⚠ {deleteError}
+                </p>
+              )}
+            </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
+              <button type="button" className={styles.cancelBtn} onClick={() => { setDeleteId(null); setDeleteError(null); }}>Ləğv et</button>
               <button type="button" className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>
             </div>
           </div>

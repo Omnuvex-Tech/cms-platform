@@ -1,5 +1,6 @@
 // vacancy.repository.ts
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVacancyCategoryDto } from './dto/create-vacancy-category.dto';
 import { UpdateVacancyCategoryDto } from './dto/update-vacancy-category.dto';
@@ -65,27 +66,41 @@ export class VacancyRepository {
     });
   }
 
-  createVacancy(dto: CreateVacancyDto) {
-    return this.prisma.vacancy.create({
-      data: {
-        ...dto,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
-      },
-      include: { category: true },
-    });
+  async createVacancy(dto: CreateVacancyDto) {
+    try {
+      return await this.prisma.vacancy.create({
+        data: {
+          ...dto,
+          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+          closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
+        },
+        include: { category: true },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('Bu slug artıq mövcuddur, başqa slug yazın');
+      }
+      throw err;
+    }
   }
 
-  updateVacancy(id: number, dto: UpdateVacancyDto) {
-    return this.prisma.vacancy.update({
-      where: { id },
-      data: {
-        ...dto,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
-      },
-      include: { category: true },
-    });
+  async updateVacancy(id: number, dto: UpdateVacancyDto) {
+    try {
+      return await this.prisma.vacancy.update({
+        where: { id },
+        data: {
+          ...dto,
+          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+          closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
+        },
+        include: { category: true },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('Bu slug artıq mövcuddur, başqa slug seçin');
+      }
+      throw err;
+    }
   }
 
   deleteVacancy(id: number) {

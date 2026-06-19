@@ -6,4 +6,8 @@ export class UpdateOurTeamSettingsDto {
 
   @IsOptional() @IsObject()
   description?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  moreBtn?: Record<string, string>;
 }

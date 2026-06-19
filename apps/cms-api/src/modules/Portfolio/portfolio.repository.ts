@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePortfolioDto } from './dto/create-portfolio.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
+import { CreatePortfolioSettingsDto } from './dto/create-portfolio-settings.dto';
+import { UpdatePortfolioSettingsDto } from './dto/update-portfolio-settings.dto';
+
 
 @Injectable()
 export class PortfolioRepository {
@@ -24,6 +27,26 @@ findHomepage() {
     where: { isHomepage: true, isVisible: true },
     orderBy: { order: 'asc' },
     take: 6, 
+  });
+}
+
+getPortfolioSettings() {
+  return this.prisma.portfolioSettings.findFirst();
+}
+
+createPortfolioSettings(dto: CreatePortfolioSettingsDto) {
+  return this.prisma.portfolioSettings.create({
+    data: dto,
+  });
+}
+
+updatePortfolioSettings(
+  id: number,
+  dto: UpdatePortfolioSettingsDto,
+) {
+  return this.prisma.portfolioSettings.update({
+    where: { id },
+    data: dto,
   });
 }
 
