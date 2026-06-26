@@ -80,4 +80,16 @@ export class CreateVacancyDto {
   @IsOptional()
   @IsEnum(BulletType)
   requirementsType?: BulletType;
+
+  @IsOptional()
+  @IsObject()
+  seoTitle?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  seoDescription?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
+  seoKeywords?: Record<string, string>;
 }

@@ -18,5 +18,8 @@ export class UpdateServiceDto {
   @IsOptional() @IsBoolean() detailButtonNewTab?: boolean;
   @IsOptional() @IsInt() @Min(0) order?: number;
   @IsOptional() @IsBoolean() isVisible?: boolean;
+  @IsOptional() @IsObject() seoTitle?: Record<string, string>;
+  @IsOptional() @IsObject() seoDescription?: Record<string, string>;
+  @IsOptional() @IsObject() seoKeywords?: Record<string, string>;
   @IsOptional() sections?: any[];
 }

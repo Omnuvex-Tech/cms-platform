@@ -14,7 +14,7 @@ export class UpdateContactSettingsDto {
   @IsOptional() @IsObject() hoursLabel?: Record<string, string>;
   @IsOptional() @IsObject() hoursValue?: Record<string, string>;
   @IsOptional() @IsObject() followUsLabel?: Record<string, string>;
-  @IsOptional() @IsArray() tags?: string[];
+  @IsOptional()             tags?:          Record<string, string>[];
   @IsOptional() @IsObject() formNameLabel?: Record<string, string>;
   @IsOptional() @IsObject() formNamePlaceholder?: Record<string, string>;
   @IsOptional() @IsObject() formEmailLabel?: Record<string, string>;

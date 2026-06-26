@@ -16,11 +16,14 @@ import { FooterModule } from './modules/Footer/footer.module';
 import { ContactModule } from './modules/Contact/contact.module';
 import { SearchModule } from './modules/search/search.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PageMetaModule } from './modules/page-meta/page-meta.module';
+import { HeroModule } from './modules/Home/Hero/hero.module';
+import { HomeModule } from './modules/Home/Settings/home.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
-           ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
-           DashboardModule
+            ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
+            DashboardModule,PageMetaModule, HeroModule, HomeModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -90,6 +90,9 @@ model Vacancy {
   startDate          DateTime?
   slug               String          @unique
   category           VacancyCategory @relation(fields: [categoryId], references: [id])
+   seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
 }
 
 model VacancyPageHeader {
@@ -157,6 +160,11 @@ model Portfolio {
   order         Int      @default(0)
   isVisible     Boolean  @default(true)
   isHomepage    Boolean  @default(false)
+
+  seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -168,7 +176,6 @@ model PortfolioSettings {
   sectionTitle    Json
   dropdownLabel   Json
   moreButtonLabel Json
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -219,6 +226,9 @@ model Service {
   order                 Int      @default(0)
   isVisible             Boolean  @default(true)
   sections              Json     @default("[]")
+  seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -241,6 +251,9 @@ model BlogAuthor {
   skillsTitle  Json     @default("{}")
   slug         String?  @unique
   linkedinIcon String?
+    seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
   isOurTeam    Boolean  @default(false)
   isVisible    Boolean  @default(true)
   blogs        Blog[]
@@ -271,11 +284,13 @@ model Blog {
   isPickOfWeek       Boolean       @default(false)
   isPreview          Boolean       @default(false)
   isGrid             Boolean       @default(false)
-  hashtags           String[]
   sections           Json          @default("[]")
   authorId           Int?
   categoryId         Int?
   order              Int           @default(0)
+   seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   isAuthorList       Boolean       @default(false)
@@ -451,7 +466,7 @@ model ContactSettings {
   hoursLabel              Json                    @default("{}")
   hoursValue              Json                    @default("{}")
   followUsLabel           Json                    @default("{}")
-  tags                    String[]
+  tags                    Json                    @default("[]") 
   formNameLabel           Json                    @default("{}")
   formNamePlaceholder     Json                    @default("{}")
   formEmailLabel          Json                    @default("{}")
@@ -467,7 +482,7 @@ model ContactSettings {
   formMessagePlaceholder  Json                    @default("{}")
   formSubmitLabel         Json                    @default("{}")
   image     String?
-imageAlt  Json    @default("{}")
+  imageAlt  Json    @default("{}")
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
   budgetOptions           ContactBudgetOption[]
@@ -496,6 +511,54 @@ model ContactTimelineOption {
 
   @@map("contact_timeline_options")
 }
+
+model HeroSettings {
+  id                  Int      @id @default(autoincrement())
+  title               Json     @default("{}")
+  description         Json     @default("{}")
+  primaryBtnText      Json     @default("{}")
+  primaryBtnLink      String   @default("/contact")
+  primaryBtnNewTab    Boolean  @default(false)
+  secondaryBtnText    Json     @default("{}")
+  secondaryBtnLink    String   @default("/services")
+  secondaryBtnNewTab  Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("hero_settings")
+}
+
+model HomeSettings {
+  id                    Int      @id @default(autoincrement())
+  projectsTitle         Json     @default("{}")
+  projectsBtnText       Json     @default("{}")
+  projectsBtnLink       String   @default("/portfolio")
+  projectsBtnNewTab     Boolean  @default(false)
+  teamTitle             Json     @default("{}")
+  teamBtnText           Json     @default("{}")
+  teamBtnLink           String   @default("/team")
+  teamBtnNewTab         Boolean  @default(false)
+  teamImage             String?
+  blogsTitle            Json     @default("{}")
+  blogsBtnText          Json     @default("{}")
+  blogsBtnLink          String   @default("/blog")
+  blogsBtnNewTab        Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("home_settings")
+}
+
+model PageMeta {
+  id             String   @id @default(cuid())
+  pageKey        String   @unique
+  seoTitle       Json?
+  seoDescription Json?
+  seoKeywords    Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 
 enum BulletType {
   BULLET

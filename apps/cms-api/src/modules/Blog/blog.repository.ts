@@ -34,7 +34,7 @@ export class BlogRepository {
     return this.prisma.blogAuthor.update({ where: { id }, data: dto });
   }
 
-deleteAuthor(id: number) {
+  deleteAuthor(id: number) {
     return this.prisma.blogAuthor.delete({ where: { id } });
   }
 
@@ -106,7 +106,6 @@ deleteAuthor(id: number) {
     return this.prisma.blog.create({
       data: {
         ...dto,
-        hashtags: dto.hashtags ?? [],
         sections: dto.sections ?? [],
         publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : new Date(),
       },
@@ -140,15 +139,15 @@ deleteAuthor(id: number) {
     return this.prisma.$transaction(updates);
   }
 
-findFeatured() {
-  return this.prisma.blog.findMany({
-    where: { isVisible: true },
-    orderBy: { createdAt: 'desc' },
-    include: { author: true, category: true },
-  });
-}
+  findFeatured() {
+    return this.prisma.blog.findMany({
+      where: { isVisible: true },
+      orderBy: { createdAt: 'desc' },
+      include: { author: true, category: true },
+    });
+  }
 
-  
+
   async findSettings() {
     let settings = await this.prisma.blogSettings.findFirst();
     if (!settings) {
@@ -163,68 +162,68 @@ findFeatured() {
   }
 
   findHomeBlogs() {
-  return this.prisma.blog.findMany({
-    where: { isHomeVisible: true, isVisible: true },
-    orderBy: { order: 'asc' },
-    take: 3,
-    include: { author: true, category: true },
-  });
-}
-async findAuthorList() {
-  const pinned = await this.prisma.blog.findMany({
-    where: { isVisible: true, isAuthorList: true, authorListPinnedAt: { not: null } },
-    orderBy: { authorListPinnedAt: 'desc' },
-    include: { author: true, category: true },
-  });
+    return this.prisma.blog.findMany({
+      where: { isHomeVisible: true, isVisible: true },
+      orderBy: { order: 'asc' },
+      take: 3,
+      include: { author: true, category: true },
+    });
+  }
+  async findAuthorList() {
+    const pinned = await this.prisma.blog.findMany({
+      where: { isVisible: true, isAuthorList: true, authorListPinnedAt: { not: null } },
+      orderBy: { authorListPinnedAt: 'desc' },
+      include: { author: true, category: true },
+    });
 
-  const pinnedIds = pinned.map(b => b.id);
-  const slots = 4 - pinned.length;
+    const pinnedIds = pinned.map(b => b.id);
+    const slots = 4 - pinned.length;
 
-  const auto = slots > 0
-    ? await this.prisma.blog.findMany({
+    const auto = slots > 0
+      ? await this.prisma.blog.findMany({
         where: { isVisible: true, id: { notIn: pinnedIds.length ? pinnedIds : [-1] } },
         orderBy: { createdAt: 'desc' },
         take: slots,
         include: { author: true, category: true },
       })
-    : [];
+      : [];
 
-  return [...pinned, ...auto];
-}
+    return [...pinned, ...auto];
+  }
 
-findOurTeamAuthors() {
-  return this.prisma.blogAuthor.findMany({
-    where: { isOurTeam: true, isVisible: true },
-    orderBy: { order: 'asc' },
-  });
-}
+  findOurTeamAuthors() {
+    return this.prisma.blogAuthor.findMany({
+      where: { isOurTeam: true, isVisible: true },
+      orderBy: { order: 'asc' },
+    });
+  }
 
-findAboutTeamAuthors() {
-  return this.prisma.blogAuthor.findMany({
-    where: { isOurTeam: true, isVisible: true },
-    orderBy: { order: 'asc' },
-    take: 6,
-  });
-}
+  findAboutTeamAuthors() {
+    return this.prisma.blogAuthor.findMany({
+      where: { isOurTeam: true, isVisible: true },
+      orderBy: { order: 'asc' },
+      take: 6,
+    });
+  }
 
-async reorderAuthors(ids: number[]) {
-  const updates = ids.map((id, index) =>
-    this.prisma.blogAuthor.update({ where: { id }, data: { order: index } })
-  );
-  return this.prisma.$transaction(updates);
-}
+  async reorderAuthors(ids: number[]) {
+    const updates = ids.map((id, index) =>
+      this.prisma.blogAuthor.update({ where: { id }, data: { order: index } })
+    );
+    return this.prisma.$transaction(updates);
+  }
 
-async findOurTeamSettings() {
-  let s = await this.prisma.ourTeamSettings.findFirst();
-  if (!s) s = await this.prisma.ourTeamSettings.create({ data: {} });
-  return s;
-}
+  async findOurTeamSettings() {
+    let s = await this.prisma.ourTeamSettings.findFirst();
+    if (!s) s = await this.prisma.ourTeamSettings.create({ data: {} });
+    return s;
+  }
 
-async updateOurTeamSettings(dto: UpdateOurTeamSettingsDto) {
-  const s = await this.findOurTeamSettings();
-  return this.prisma.ourTeamSettings.update({
-    where: { id: s.id },
-    data: dto,
-  });
-}
+  async updateOurTeamSettings(dto: UpdateOurTeamSettingsDto) {
+    const s = await this.findOurTeamSettings();
+    return this.prisma.ourTeamSettings.update({
+      where: { id: s.id },
+      data: dto,
+    });
+  }
 }

@@ -320,7 +320,6 @@ await prisma.user.upsert({
       isFeaturedMain: true,
       authorId: blogAuthor.id,
       categoryId: blogCategory.id,
-      hashtags: ['tech', 'web'],
       sections: [],
       order: 1,
     },
@@ -346,9 +345,7 @@ await prisma.user.upsert({
   });
   console.log('✅ Blog settings seeded');
 
-  // ─────────────────────────────────────────
-  // OUR TEAM SETTINGS
-  // ─────────────────────────────────────────
+
   await prisma.ourTeamSettings.create({
     data: {
       title: { az: 'Komandamız', en: 'Our Team', ru: 'Наша команда' },
@@ -362,9 +359,6 @@ await prisma.user.upsert({
   });
   console.log('✅ OurTeam settings seeded');
 
-  // ─────────────────────────────────────────
-  // ABOUT SETTINGS
-  // ─────────────────────────────────────────
   await prisma.aboutSettings.create({
     data: {
       heroImage: '/uploads/about-hero.jpg',
@@ -388,9 +382,6 @@ await prisma.user.upsert({
   });
   console.log('✅ About settings seeded');
 
-  // ─────────────────────────────────────────
-  // NAVBAR SETTINGS
-  // ─────────────────────────────────────────
   await prisma.navbarSettings.create({
     data: {
       logoImage: '/uploads/logo.svg',

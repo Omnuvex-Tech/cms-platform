@@ -229,9 +229,7 @@ function AvatarUpload({ value, onChange, label }: {
   );
 }
 
-// ─── Our Team Settings Panel ──────────────────────────────
-// Bu bölmə səhifənin yuxarısında "Komandamız" başlığını və
-// sağdakı yarısı rəngli açıqlama mətnini idarə edir.
+
 function OurTeamSettingsPanel() {
   const [activeLang, setActiveLang] = useState<Lang>("az");
   const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
@@ -399,6 +397,9 @@ export default function BlogAuthorsPage() {
 
   const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [avatar, setAvatar] = useState("");
   const [avatarAlt, setAvatarAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [linkedinHref, setLinkedinHref] = useState("");
@@ -424,6 +425,9 @@ export default function BlogAuthorsPage() {
     setName({ az: "", en: "", ru: "" }); setRole({ az: "", en: "", ru: "" });
     setAvatar(""); setAvatarAlt({ az: "", en: "", ru: "" });
     setLinkedinHref(""); setBio({ az: "", en: "", ru: "" });
+    setSeoTitle({ az: "", en: "", ru: "" });
+setSeoDescription({ az: "", en: "", ru: "" });
+setSeoKeywords({ az: "", en: "", ru: "" });
     setSkillsTitle({ az: "SKILLS", en: "SKILLS", ru: "SKILLS" });
     setSkills([]); setLinkedinIcon(""); setSlug("");
     setIsVisible(true); setIsOurTeam(false);
@@ -434,6 +438,9 @@ export default function BlogAuthorsPage() {
     setEditItem(a); setActiveLang("az");
     setName(typeof a.name === "object" ? a.name : { az: a.name ?? "", en: "", ru: "" });
     setRole(typeof a.role === "object" ? a.role : { az: a.role ?? "", en: "", ru: "" });
+    setSeoTitle(a.seoTitle ?? { az: "", en: "", ru: "" });
+setSeoDescription(a.seoDescription ?? { az: "", en: "", ru: "" });
+setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
     setAvatar(a.avatar ?? "");
     setAvatarAlt(typeof a.avatarAlt === "object" ? a.avatarAlt : { az: a.avatarAlt ?? "", en: "", ru: "" });
     setLinkedinHref(a.linkedinHref ?? "");
@@ -451,11 +458,12 @@ export default function BlogAuthorsPage() {
     if (!name.az?.trim()) return;
     setSaving(true);
     try {
-      const body = {
-        name, slug: slug || null, role, avatar: avatar || null, avatarAlt,
-        linkedinHref: linkedinHref || null, bio, skillsTitle, skills,
-        linkedinIcon: linkedinIcon || null, isVisible, isOurTeam,
-      };
+   const body = {
+  name, slug: slug || null, role, avatar: avatar || null, avatarAlt,
+  linkedinHref: linkedinHref || null, bio, skillsTitle, skills,
+  linkedinIcon: linkedinIcon || null, isVisible, isOurTeam,
+  seoTitle, seoDescription, seoKeywords,  // ← əlavə et
+};
       if (editItem) await apiFetch(`/blog/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
       else await apiFetch("/blog/authors", { method: "POST", body: JSON.stringify(body) });
       setModalOpen(false); load();
@@ -525,6 +533,7 @@ export default function BlogAuthorsPage() {
         </div>
       </div>
 
+
       {loading ? (
         <div className={styles.empty}>Yüklənir...</div>
       ) : authors.length === 0 ? (
@@ -553,7 +562,6 @@ export default function BlogAuthorsPage() {
         </div>
       )}
 
-      {/* ── Modal: Create / Edit Author ── */}
       {modalOpen && (
         <div className={styles.overlay} onClick={() => setModalOpen(false)}>
           <div className={styles.modal}
@@ -661,6 +669,27 @@ export default function BlogAuthorsPage() {
                   + Skill əlavə et
                 </button>
               </div>
+                <div style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+                <label style={{ fontWeight: 700, fontSize: 14, display: "block", marginBottom: 12 }}>SEO</label>
+                <div className={styles.field}>
+                  <label>SEO Title ({activeLang.toUpperCase()})</label>
+                  <input className={styles.input} value={seoTitle[activeLang] || ""}
+                    onChange={e => setSeoTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                    placeholder={`SEO başlığı (${activeLang})`} />
+                </div>
+                <div className={styles.field}>
+                  <label>SEO Description ({activeLang.toUpperCase()})</label>
+                  <textarea className={styles.input} rows={3} value={seoDescription[activeLang] || ""}
+                    onChange={e => setSeoDescription(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                    placeholder={`Qısa açıqlama (${activeLang})`} />
+                </div>
+                <div className={styles.field}>
+                  <label>SEO Keywords ({activeLang.toUpperCase()})</label>
+                  <input className={styles.input} value={seoKeywords[activeLang] || ""}
+                    onChange={e => setSeoKeywords(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                    placeholder={`açar söz 1, açar söz 2 (${activeLang})`} />
+                </div>
+              </div>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setModalOpen(false)}>Ləğv et</button>
@@ -669,7 +698,11 @@ export default function BlogAuthorsPage() {
               </button>
             </div>
           </div>
+
+          
         </div>
+
+        
       )}
 
       {/* ── Delete Confirm ── */}
@@ -690,6 +723,8 @@ export default function BlogAuthorsPage() {
           </div>
         </div>
       )}
+
+      
     </div>
   );
 }

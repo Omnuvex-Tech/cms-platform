@@ -591,6 +591,9 @@ export default function ServicePage() {
     const [portfolioButtonLink, setPortfolioButtonLink] = useState("");
     const [portfolioButtonNewTab, setPortfolioButtonNewTab] = useState(false);
     const [detailButtonText, setDetailButtonText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [detailButtonLink, setDetailButtonLink] = useState("");
     const [detailButtonNewTab, setDetailButtonNewTab] = useState(false);
     const [sections, setSections] = useState<any[]>([]);
@@ -616,6 +619,9 @@ export default function ServicePage() {
         setPortfolioButtonText({ az: "", en: "", ru: "" });
         setPortfolioButtonLink(""); setPortfolioButtonNewTab(false);
         setDetailButtonText({ az: "", en: "", ru: "" });
+        setSeoTitle({ az: "", en: "", ru: "" });
+        setSeoDescription({ az: "", en: "", ru: "" });
+        setSeoKeywords({ az: "", en: "", ru: "" });
         setDetailButtonLink(""); setDetailButtonNewTab(false);
         setSections([]);
     };
@@ -646,6 +652,9 @@ export default function ServicePage() {
         setPortfolioButtonLink(s.portfolioButtonLink ?? "");
         setPortfolioButtonNewTab(s.portfolioButtonNewTab ?? false);
         setDetailButtonText(s.detailButtonText ?? { az: "", en: "", ru: "" });
+        setSeoTitle(s.seoTitle ?? { az: "", en: "", ru: "" });
+        setSeoDescription(s.seoDescription ?? { az: "", en: "", ru: "" });
+        setSeoKeywords(s.seoKeywords ?? { az: "", en: "", ru: "" });
         setDetailButtonLink(s.detailButtonLink ?? "");
         setDetailButtonNewTab(s.detailButtonNewTab ?? false);
         setSections(s.sections ?? []);
@@ -689,7 +698,7 @@ export default function ServicePage() {
                 portfolioButtonNewTab,
                 detailButtonText,
                 detailButtonLink: detailButtonLink || null,
-                detailButtonNewTab,
+                detailButtonNewTab, seoTitle, seoDescription, seoKeywords,
             };
             if (editItem) {
                 await apiFetch(`/services/${editItem.id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -887,6 +896,37 @@ export default function ServicePage() {
                                         + {label}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                        <div className={styles.fullDrawerSection}>
+                            <h3 className={styles.drawerSectionTitle}>SEO</h3>
+                            <div className={styles.field}>
+                                <label>SEO Title ({activeLang.toUpperCase()})</label>
+                                <input
+                                    className={styles.input}
+                                    value={seoTitle[activeLang] || ""}
+                                    onChange={e => setSeoTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`SEO başlığı (${activeLang})`}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>SEO Description ({activeLang.toUpperCase()})</label>
+                                <textarea
+                                    className={styles.input}
+                                    rows={3}
+                                    value={seoDescription[activeLang] || ""}
+                                    onChange={e => setSeoDescription(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`Qısa açıqlama (${activeLang})`}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>SEO Keywords ({activeLang.toUpperCase()})</label>
+                                <input
+                                    className={styles.input}
+                                    value={seoKeywords[activeLang] || ""}
+                                    onChange={e => setSeoKeywords(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
+                                />
                             </div>
                         </div>
                     </div>

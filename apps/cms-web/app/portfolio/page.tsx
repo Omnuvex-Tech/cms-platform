@@ -616,6 +616,9 @@ export default function PortfolioPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<number | null>(null);
+  const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
 
   const [portfolioTitle, setPortfolioTitle] = useState<LocalizedString>({
     az: "",
@@ -646,19 +649,19 @@ export default function PortfolioPage() {
   };
 
 
-const loadSettings = async () => {
-  try {
-    const data = await apiFetch("/portfolio/settings");
-    if (!data) return;
+  const loadSettings = async () => {
+    try {
+      const data = await apiFetch("/portfolio/settings");
+      if (!data) return;
 
-    setSettingsId(data.id);
-    setPortfolioTitle(data.sectionTitle ?? { az: "", en: "", ru: "" });
-    setPortfolioDescription(data.dropdownLabel ?? { az: "", en: "", ru: "" });
-    setPortfolioButtonText(data.moreButtonLabel ?? { az: "", en: "", ru: "" });
-  } catch (err) {
-    console.log(err);
-  }
-};
+      setSettingsId(data.id);
+      setPortfolioTitle(data.sectionTitle ?? { az: "", en: "", ru: "" });
+      setPortfolioDescription(data.dropdownLabel ?? { az: "", en: "", ru: "" });
+      setPortfolioButtonText(data.moreButtonLabel ?? { az: "", en: "", ru: "" });
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   useEffect(() => { load(); loadSettings(); }, []);
 
@@ -667,13 +670,20 @@ const loadSettings = async () => {
     setTitle({ az: "", en: "", ru: "" });
     setSlug(""); setTags(""); setCoverImage("");
     setCoverImageAlt({ az: "", en: "", ru: "" });
+    setSeoTitle({ az: "", en: "", ru: "" });
+    setSeoDescription({ az: "", en: "", ru: "" });
+    setSeoKeywords({ az: "", en: "", ru: "" });
     setSections([]);
     setDrawerOpen(true);
+
   };
 
   const openEdit = (p: any) => {
     setEditItem(p);
     setTitle(p.title ?? { az: "", en: "", ru: "" });
+    setSeoTitle(p.seoTitle ?? { az: "", en: "", ru: "" });
+    setSeoDescription(p.seoDescription ?? { az: "", en: "", ru: "" });
+    setSeoKeywords(p.seoKeywords ?? { az: "", en: "", ru: "" });
     setSlug(p.slug ?? "");
     setTags(p.tags?.join(", ") ?? "");
     setCoverImage(p.coverImage ?? "");
@@ -712,7 +722,7 @@ const loadSettings = async () => {
       const payload = {
         title, slug,
         tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-        coverImage, coverImageAlt, sections,
+        coverImage, coverImageAlt, sections, seoTitle, seoDescription, seoKeywords,
       };
       if (editItem) {
         await apiFetch(`/portfolio/${editItem.id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -723,27 +733,27 @@ const loadSettings = async () => {
     } finally { setSaving(false); }
   };
 
-const saveSettings = async () => {
-  setSettingsSaving(true);
-  try {
-    const payload = {
-      sectionTitle: portfolioTitle,
-      dropdownLabel: portfolioDescription,
-      moreButtonLabel: portfolioButtonText,
-    };
-    if (settingsId) {
-      await apiFetch(`/portfolio/settings/${settingsId}`, { method: "PUT", body: JSON.stringify(payload) });
-    } else {
-      await apiFetch("/portfolio/settings", { method: "POST", body: JSON.stringify(payload) });
+  const saveSettings = async () => {
+    setSettingsSaving(true);
+    try {
+      const payload = {
+        sectionTitle: portfolioTitle,
+        dropdownLabel: portfolioDescription,
+        moreButtonLabel: portfolioButtonText,
+      };
+      if (settingsId) {
+        await apiFetch(`/portfolio/settings/${settingsId}`, { method: "PUT", body: JSON.stringify(payload) });
+      } else {
+        await apiFetch("/portfolio/settings", { method: "POST", body: JSON.stringify(payload) });
+      }
+      await loadSettings();
+      setSettingsOpen(false);
+    } catch (err: any) {
+      alert(err.message ?? "Settings saxlanılarkən xəta baş verdi");
+    } finally {
+      setSettingsSaving(false);
     }
-    await loadSettings();
-    setSettingsOpen(false);
-  } catch (err: any) {
-    alert(err.message ?? "Settings saxlanılarkən xəta baş verdi");
-  } finally {
-    setSettingsSaving(false);
-  }
-};
+  };
 
   const toggleVisibility = async (p: any) => {
     await apiFetch(`/portfolio/${p.id}/visibility`, {
@@ -782,75 +792,75 @@ const saveSettings = async () => {
 
   return (
 
-    
+
     <div className={styles.page}>
 
-      
+
       <div className={styles.fullDrawerSection}>
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-    }}
-  >
-    <div>
-      <h2>Settings</h2>
-      <p>Portfolio səhifəsinin ümumi məlumatları</p>
-    </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <h2>Settings</h2>
+            <p>Portfolio səhifəsinin ümumi məlumatları</p>
+          </div>
 
-    <button
-      className={styles.saveBtn}
-      onClick={saveSettings}
-      disabled={settingsSaving}
-    >
-      {settingsSaving ? "Saxlanır..." : "Save"}
-    </button>
-  </div>
+          <button
+            className={styles.saveBtn}
+            onClick={saveSettings}
+            disabled={settingsSaving}
+          >
+            {settingsSaving ? "Saxlanır..." : "Save"}
+          </button>
+        </div>
 
-  <LangTabs
-    active={activeLang}
-    onChange={setActiveLang}
-  />
+        <LangTabs
+          active={activeLang}
+          onChange={setActiveLang}
+        />
 
-  <div className={styles.field}>
-    <label>Başlıq ({activeLang.toUpperCase()})</label>
+        <div className={styles.field}>
+          <label>Başlıq ({activeLang.toUpperCase()})</label>
 
-    <LocalizedRichEditor
-      value={portfolioTitle}
-      lang={activeLang}
-      onChange={setPortfolioTitle}
-    />
-  </div>
+          <LocalizedRichEditor
+            value={portfolioTitle}
+            lang={activeLang}
+            onChange={setPortfolioTitle}
+          />
+        </div>
 
-  <div className={styles.field}>
-    <label>Dropdown Label ({activeLang.toUpperCase()})</label>
+        <div className={styles.field}>
+          <label>Dropdown Label ({activeLang.toUpperCase()})</label>
 
-    <LocalizedRichEditor
-      value={portfolioDescription}
-      lang={activeLang}
-      onChange={setPortfolioDescription}
-    />
-  </div>
+          <LocalizedRichEditor
+            value={portfolioDescription}
+            lang={activeLang}
+            onChange={setPortfolioDescription}
+          />
+        </div>
 
-  <div className={styles.field}>
-    <label>Button Yazısı ({activeLang.toUpperCase()})</label>
+        <div className={styles.field}>
+          <label>Button Yazısı ({activeLang.toUpperCase()})</label>
 
-    <input
-      className={styles.input}
-      value={portfolioButtonText[activeLang] || ""}
-      onChange={(e) =>
-        setPortfolioButtonText({
-          ...portfolioButtonText,
-          [activeLang]: e.target.value,
-        })
-      }
-      placeholder="Bizimlə əlaqə"
-    />
-  </div>
-</div>
-      
+          <input
+            className={styles.input}
+            value={portfolioButtonText[activeLang] || ""}
+            onChange={(e) =>
+              setPortfolioButtonText({
+                ...portfolioButtonText,
+                [activeLang]: e.target.value,
+              })
+            }
+            placeholder="Bizimlə əlaqə"
+          />
+        </div>
+      </div>
+
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Portfolio</h1>
@@ -950,6 +960,38 @@ const saveSettings = async () => {
                 ))}
               </div>
             </div>
+
+            <div className={styles.fullDrawerSection}>
+              <h3 className={styles.drawerSectionTitle}>SEO</h3>
+              <div className={styles.field}>
+                <label>SEO Title ({activeLang.toUpperCase()})</label>
+                <input
+                  className={styles.input}
+                  value={seoTitle[activeLang] || ""}
+                  onChange={e => setSeoTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                  placeholder={`SEO başlığı (${activeLang})`}
+                />
+              </div>
+              <div className={styles.field}>
+                <label>SEO Description ({activeLang.toUpperCase()})</label>
+                <textarea
+                  className={styles.input}
+                  rows={3}
+                  value={seoDescription[activeLang] || ""}
+                  onChange={e => setSeoDescription(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                  placeholder={`Qısa açıqlama (${activeLang})`}
+                />
+              </div>
+              <div className={styles.field}>
+                <label>SEO Keywords ({activeLang.toUpperCase()})</label>
+                <input
+                  className={styles.input}
+                  value={seoKeywords[activeLang] || ""}
+                  onChange={e => setSeoKeywords(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                  placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -969,10 +1011,6 @@ const saveSettings = async () => {
           </div>
         </div>
       )}
-
     </div>
-
-
-
   );
 }

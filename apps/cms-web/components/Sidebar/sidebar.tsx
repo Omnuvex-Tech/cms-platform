@@ -20,6 +20,7 @@ import {
     ChevronDown,
     LogOut,
     PanelsTopLeft,
+    Search,
 } from "lucide-react";
 
 
@@ -47,6 +48,7 @@ const NAV_ITEMS = [
             { label: "Hero", href: "/home/hero" },
             { label: "Testimonials", href: "/home/testimonials" },
             { label: "Faq", href: "/home/faq" },
+            { label: "Settings", href: "/home/settings" },
         ],
     },
 
@@ -84,6 +86,11 @@ const NAV_ITEMS = [
         label: "Footer",
         href: "/footer",
         icon: <PanelsTopLeft size={18} />,
+    },
+    {
+        label: "SEO",
+        href: "/seo",
+        icon: <Search size={18} />,
     },
 ];
 

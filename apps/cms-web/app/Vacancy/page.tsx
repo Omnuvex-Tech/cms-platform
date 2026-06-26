@@ -45,6 +45,9 @@ interface Vacancy {
   responsibleType: BulletType;
   requirements: LocalizedString[];
   requirementsType: BulletType;
+  seoTitle?: LocalizedString;
+  seoDescription?: LocalizedString;
+  seoKeywords?: LocalizedString;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -79,7 +82,6 @@ async function apiFetch(path: string, options?: RequestInit) {
   return text ? JSON.parse(text) : null;
 }
 
-// ─── Lang Tabs ────────────────────────────────────────────
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -100,7 +102,6 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
-// ─── Tag Input (Localized) ────────────────────────────────
 function LocalizedTagInput({ label, items, setItems, lang, large }: {
   label: string;
   items: LocalizedString[];
@@ -155,7 +156,6 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
   );
 }
 
-// ─── Sortable Category Row ────────────────────────────────
 function SortableCategoryRow({ cat, index, lang, onEdit, onDelete }: {
   cat: VacancyCategory; index: number; lang: Lang;
   onEdit: (c: VacancyCategory) => void;
@@ -179,7 +179,6 @@ function SortableCategoryRow({ cat, index, lang, onEdit, onDelete }: {
   );
 }
 
-// ─── Sortable Vacancy Row ─────────────────────────────────
 function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibility }: {
   v: Vacancy; index: number; lang: Lang;
   onEdit: (v: Vacancy) => void;
@@ -230,7 +229,6 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
   );
 }
 
-// ─── Vacancy Modal ────────────────────────────────────────
 function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
   open: boolean; onClose: () => void;
   editVac: Vacancy | null;
@@ -253,6 +251,9 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
   const [closingDate, setClosingDate] = useState("");
   const [isDateVisible, setIsDateVisible] = useState(true);
   const [aboutRole, setAboutRole] = useState<LocalizedString>({ ...EMPTY_L });
+  const [seoTitle, setSeoTitle] = useState<LocalizedString>({ ...EMPTY_L });
+  const [seoDescription, setSeoDescription] = useState<LocalizedString>({ ...EMPTY_L });
+  const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ ...EMPTY_L });
   const [responsible, setResponsible] = useState<LocalizedString[]>([]);
   const [responsibleType, setResponsibleType] = useState<BulletType>("BULLET");
   const [requirements, setRequirements] = useState<LocalizedString[]>([]);
@@ -276,6 +277,9 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
       setClosingDate(editVac.closingDate ? editVac.closingDate.slice(0, 10) : "");
       setIsDateVisible(editVac.isDateVisible);
       setAboutRole(editVac.aboutRole ?? { ...EMPTY_L });
+      setSeoTitle(editVac.seoTitle ?? { ...EMPTY_L });
+      setSeoDescription(editVac.seoDescription ?? { ...EMPTY_L });
+      setSeoKeywords(editVac.seoKeywords ?? { ...EMPTY_L });
       setResponsible(editVac.responsible ?? []);
       setResponsibleType(editVac.responsibleType);
       setRequirements(editVac.requirements ?? []);
@@ -287,6 +291,9 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
       setStartDate(""); setIsStartDateVisible(true);
       setClosingDate(""); setIsDateVisible(true);
       setAboutRole({ ...EMPTY_L });
+      setSeoTitle({ ...EMPTY_L });
+      setSeoDescription({ ...EMPTY_L });
+      setSeoKeywords({ ...EMPTY_L });
       setResponsible([]); setResponsibleType("BULLET");
       setRequirements([]); setRequirementsType("BULLET");
       setSkills([]);
@@ -324,7 +331,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
         closingDate: closingDate || null, isDateVisible,
         aboutRole: aboutRole.az?.trim() ? aboutRole : null,
         responsible, responsibleType,
-        requirements, requirementsType,
+        requirements, requirementsType, seoTitle, seoDescription, seoKeywords,
       };
       if (editVac) {
         await apiFetch(`/vacancy/${editVac.id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -481,6 +488,37 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
               <LocalizedTagInput label="Requirements" items={requirements} setItems={setRequirements} lang={lang} large />
             </>
           )}
+          <div className={styles.field} style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+            <label style={{ fontWeight: 700, fontSize: 14 }}>SEO</label>
+          </div>
+          <div className={styles.field}>
+            <label>SEO Title ({lang.toUpperCase()})</label>
+            <input
+              className={styles.input}
+              value={seoTitle[lang] ?? ""}
+              onChange={e => setSeoTitle(prev => ({ ...prev, [lang]: e.target.value }))}
+              placeholder={`SEO başlığı (${lang})`}
+            />
+          </div>
+          <div className={styles.field}>
+            <label>SEO Description ({lang.toUpperCase()})</label>
+            <textarea
+              className={styles.textarea}
+              rows={3}
+              value={seoDescription[lang] ?? ""}
+              onChange={e => setSeoDescription(prev => ({ ...prev, [lang]: e.target.value }))}
+              placeholder={`Qısa açıqlama (${lang})`}
+            />
+          </div>
+          <div className={styles.field}>
+            <label>SEO Keywords ({lang.toUpperCase()})</label>
+            <input
+              className={styles.input}
+              value={seoKeywords[lang] ?? ""}
+              onChange={e => setSeoKeywords(prev => ({ ...prev, [lang]: e.target.value }))}
+              placeholder={`açar söz 1, açar söz 2 (${lang})`}
+            />
+          </div>
         </div>
 
         <div className={styles.modalFooter}>

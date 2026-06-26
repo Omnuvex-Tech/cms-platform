@@ -13,4 +13,7 @@ export class UpdateBlogAuthorDto {
   @IsOptional() @IsString() linkedinIcon?: string;
   @IsOptional() @IsBoolean() isVisible?: boolean;
   @IsOptional() @IsBoolean() isOurTeam?: boolean;
+  @IsOptional() @IsObject() seoTitle?: Record<string, string>;
+@IsOptional() @IsObject() seoDescription?: Record<string, string>;
+@IsOptional() @IsObject() seoKeywords?: Record<string, string>;
 }

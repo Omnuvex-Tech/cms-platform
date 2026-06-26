@@ -73,7 +73,7 @@ interface ContactSettings {
     hoursLabel: LocalizedString;
     hoursValue: LocalizedString;
     followUsLabel: LocalizedString;
-    tags: string[];
+    tags: Record<string, string>[];
     formNameLabel: LocalizedString;
     formNamePlaceholder: LocalizedString;
     formEmailLabel: LocalizedString;
@@ -230,42 +230,66 @@ function OptionRow({
     );
 }
 
-function TagsEditor({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
+function TagsEditor({ tags, onChange }: {
+    tags: Record<string, string>[];
+    onChange: (t: Record<string, string>[]) => void;
+}) {
     const [input, setInput] = useState("");
 
     const add = () => {
         const val = input.trim();
         if (!val) return;
         const tag = val.startsWith("#") ? val : `#${val}`;
-        if (!tags.includes(tag)) onChange([...tags, tag]);
+        onChange([...tags, { az: tag, en: "", ru: "" }]);
         setInput("");
     };
 
-    const remove = (t: string) => onChange(tags.filter(x => x !== t));
+    const update = (i: number, lang: "az" | "en" | "ru", val: string) => {
+        const arr = [...tags];
+        arr[i] = { ...arr[i], [lang]: val };
+        onChange(arr);
+    };
+
+    const remove = (i: number) => onChange(tags.filter((_, idx) => idx !== i));
 
     return (
         <div className={styles.field}>
             <label>Tagler</label>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 <input className={styles.input} value={input}
-                    placeholder="#aiblog"
+                    placeholder="#aiblog (AZ)"
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), add())} />
-                <button type="button" className={styles.addRowBtn} style={{ marginTop: 0, width: "auto", padding: "0 16px" }} onClick={add}>
+                <button type="button" className={styles.addRowBtn}
+                    style={{ marginTop: 0, width: "auto", padding: "0 16px" }} onClick={add}>
                     + Əlavə et
                 </button>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {tags.map(t => (
-                    <span key={t} style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        background: "#1e2a3a", color: "#7cb3f5",
-                        borderRadius: 20, padding: "4px 12px", fontSize: 13,
-                    }}>
-                        {t}
-                        <button type="button" onClick={() => remove(t)}
-                            style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>
-                    </span>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {tags.map((tag, i) => (
+                    <div key={i} className={styles.contentItemBlock} style={{ padding: "10px 14px" }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            {(["az", "en", "ru"] as const).map(lang => (
+                                <div key={lang} style={{ flex: 1 }}>
+                                    <label style={{ fontSize: 11, color: "#888", display: "block", marginBottom: 4 }}>
+                                        {lang.toUpperCase()}
+                                    </label>
+                                    <input
+                                        className={styles.input}
+                                        value={tag[lang] || ""}
+                                        placeholder={`#tag (${lang})`}
+                                        onChange={e => update(i, lang, e.target.value)}
+                                    />
+                                </div>
+                            ))}
+                            <button type="button" onClick={() => remove(i)}
+                                style={{
+                                    background: "none", border: "none", color: "#ef4444",
+                                    cursor: "pointer", fontSize: 18, flexShrink: 0, marginTop: 16
+                                }}>✕</button>
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>
@@ -636,8 +660,7 @@ export default function ContactPage() {
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Tagler</h3>
-                    <TagsEditor tags={settings.tags} onChange={t => upd("tags", t)} />
-                </div>
+                    <TagsEditor tags={settings.tags} onChange={t => upd("tags", t)} />              </div>
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Form Sahələri</h3>

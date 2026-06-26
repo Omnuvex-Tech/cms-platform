@@ -12,7 +12,7 @@ import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 import { ReorderBlogDto } from './dto/reorder-blog.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto'
+import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
@@ -48,7 +48,6 @@ export class BlogController {
   }
 
   // ── Authors ──────────────────────────────────────────
-
   @Get('authors/slug/:slug')
   findAuthorBySlug(@Param('slug') slug: string) {
     return this.service.findAuthorBySlug(slug);
@@ -69,13 +68,7 @@ export class BlogController {
   reorderAuthors(@Body() dto: { ids: number[] }) {
     return this.service.reorderAuthors(dto.ids);
   }
-@Get('our-team-settings')
-getOurTeamSettings() { return this.service.findOurTeamSettings(); }
 
-@Put('our-team-settings')
-updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
-  return this.service.updateOurTeamSettings(dto);
-}
   @Get('authors')
   findAllAuthors() { return this.service.findAllAuthors(); }
 
@@ -89,6 +82,15 @@ updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
 
   @Delete('authors/:id')
   deleteAuthor(@Param('id', ParseIntPipe) id: number) { return this.service.deleteAuthor(id); }
+
+  // ── Our Team Settings ────────────────────────────────
+  @Get('our-team-settings')
+  getOurTeamSettings() { return this.service.findOurTeamSettings(); }
+
+  @Put('our-team-settings')
+  updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
+    return this.service.updateOurTeamSettings(dto);
+  }
 
   // ── Categories ───────────────────────────────────────
   @Get('categories')
@@ -105,20 +107,18 @@ updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
   @Delete('categories/:id')
   deleteCategory(@Param('id', ParseIntPipe) id: number) { return this.service.deleteCategory(id); }
 
+  // ── Blogs (literal routes first) ─────────────────────
+  @Get('public')
+  findAllVisible() { return this.service.findAllVisible(); }
+
   @Get('featured')
   findFeatured() { return this.service.findFeatured(); }
 
   @Get('home')
   getHomeBlogs() { return this.service.getHomeBlogs(); }
-  // ── Blogs ────────────────────────────────────────────
-  @Get('public')
-  findAllVisible() { return this.service.findAllVisible(); }
 
-  @Get()
-  findAll() { return this.service.findAll(); }
-
-  @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) { return this.service.findBySlug(slug); }
+  @Get('author-list')
+  findAuthorList() { return this.service.findAuthorList(); }
 
   @Get('settings')
   getSettings() { return this.service.findSettings(); }
@@ -128,15 +128,21 @@ updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
     return this.service.updateSettings(dto);
   }
 
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) { return this.service.findBySlug(slug); }
+
   @Patch('reorder')
   reorder(@Body() dto: ReorderBlogDto) { return this.service.reorder(dto); }
-  @Get('author-list')
-  findAuthorList() { return this.service.findAuthorList(); }
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+
+  @Get()
+  findAll() { return this.service.findAll(); }
 
   @Post()
   create(@Body() dto: CreateBlogDto) { return this.service.create(dto); }
+
+  // ── Blogs (wildcard :id routes last) ─────────────────
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
 
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBlogDto) {
@@ -153,5 +159,4 @@ updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
 
   @Delete(':id')
   delete(@Param('id', ParseIntPipe) id: number) { return this.service.delete(id); }
-
 }

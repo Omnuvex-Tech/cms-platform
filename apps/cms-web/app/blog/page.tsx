@@ -24,12 +24,31 @@ type LocalizedString = Record<string, string>;
 
 function getToken() { return document.cookie.split("access_token=")[1]?.split(";")[0] ?? ""; }
 
+// async function apiFetch(path: string, options?: RequestInit) {
+//     const res = await fetch(`${API}${path}`, {
+//         ...options,
+//         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}`, ...options?.headers },
+//     });
+//     if (!res.ok) throw new Error("Xəta baş verdi");
+//     const text = await res.text();
+//     return text ? JSON.parse(text) : null;
+// }
+
 async function apiFetch(path: string, options?: RequestInit) {
     const res = await fetch(`${API}${path}`, {
         ...options,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}`, ...options?.headers },
     });
-    if (!res.ok) throw new Error("Xəta baş verdi");
+    if (!res.ok) {
+        let message = "Xəta baş verdi";
+        try {
+            const err = await res.json();
+            message = err?.message || err?.error || JSON.stringify(err);
+        } catch {
+            message = await res.text().catch(() => `HTTP ${res.status}`);
+        }
+        throw new Error(`[${res.status}] ${path}: ${message}`);
+    }
     const text = await res.text();
     return text ? JSON.parse(text) : null;
 }
@@ -505,12 +524,40 @@ function ArticleSectionEditor({ data, onChange, activeLang }: {
             <button type="button" className={styles.addRowBtn} onClick={addSection}>+ Bölmə əlavə et</button>
             <div className={styles.sectionDivider} />
             <label className={styles.sectionGroupLabel}>Hashtaglar</label>
-            <div className={styles.field}>
-                <input className={styles.input}
-                    value={Array.isArray(data.hashtags) ? data.hashtags.join(", ") : (data.hashtags ?? "")}
-                    placeholder="#aiblog, #design"
-                    onChange={e => onChange({ ...data, hashtags: e.target.value })} />
-                <small style={{ color: "#94a3b8" }}>Vergüllə ayırın</small>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+                {(Array.isArray(data.hashtags) ? data.hashtags : []).map((tag: any, i: number) => {
+                    const tagObj = typeof tag === "string" ? { az: tag, en: tag, ru: tag } : tag;
+                    return (
+                        <div key={i} className={styles.contentItemBlock} style={{ padding: "10px 14px" }}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                {(["az", "en", "ru"] as const).map(lang => (
+                                    <div key={lang} style={{ flex: 1 }}>
+                                        <label style={{ fontSize: 11, color: "#888", display: "block", marginBottom: 4 }}>
+                                            {lang.toUpperCase()}
+                                        </label>
+                                        <input
+                                            className={styles.input}
+                                            value={tagObj[lang] || ""}
+                                            placeholder={`#tag (${lang})`}
+                                            onChange={e => {
+                                                const arr = [...(data.hashtags ?? [])];
+                                                arr[i] = { ...tagObj, [lang]: e.target.value };
+                                                onChange({ ...data, hashtags: arr });
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                                <button type="button"
+                                    onClick={() => onChange({ ...data, hashtags: (data.hashtags ?? []).filter((_: any, idx: number) => idx !== i) })}
+                                    style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 18, flexShrink: 0, marginTop: 16 }}>✕</button>
+                            </div>
+                        </div>
+                    );
+                })}
+                <button type="button" className={styles.addRowBtn}
+                    onClick={() => onChange({ ...data, hashtags: [...(Array.isArray(data.hashtags) ? data.hashtags : []), { az: "", en: "", ru: "" }] })}>
+                    + Hashtag əlavə et
+                </button>
             </div>
         </div>
     );
@@ -960,10 +1007,12 @@ export default function BlogPage() {
     const [excerpt, setExcerpt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [coverImage, setCoverImage] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [coverImageAlt, setCoverImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+    const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [publishedAt, setPublishedAt] = useState("");
     const [authorId, setAuthorId] = useState<number | "">("");
     const [categoryId, setCategoryId] = useState<number | "">("");
-    const [hashtags, setHashtags] = useState("");
     const [placements, setPlacements] = useState<Record<PlacementKey, boolean>>({
         isFeaturedMain: false, isPickOfWeek: false, isPreview: false,
         isGrid: true, isAuthorPreview: false, isAuthorList: false, isHomeVisible: false,
@@ -972,13 +1021,27 @@ export default function BlogPage() {
 
     const sensors = useSensors(useSensor(PointerSensor));
 
+    // const load = async () => {
+    //     setLoading(true);
+    //     try {
+    //         const [blogsData, authorsData, catsData] = await Promise.all([
+    //             apiFetch("/blog"), apiFetch("/blog/authors"), apiFetch("/blog/categories"),
+    //         ]);
+    //         setBlogs(blogsData ?? []); setAuthors(authorsData ?? []); setCategories(catsData ?? []);
+    //     } finally { setLoading(false); }
+    // };
+
     const load = async () => {
         setLoading(true);
         try {
             const [blogsData, authorsData, catsData] = await Promise.all([
                 apiFetch("/blog"), apiFetch("/blog/authors"), apiFetch("/blog/categories"),
             ]);
-            setBlogs(blogsData ?? []); setAuthors(authorsData ?? []); setCategories(catsData ?? []);
+            console.log("AUTHORS:", authorsData);
+            console.log("CATS:", catsData);
+            setBlogs(Array.isArray(blogsData) ? blogsData : []);
+            setAuthors(Array.isArray(authorsData) ? authorsData : []);
+            setCategories(Array.isArray(catsData) ? catsData : []);
         } finally { setLoading(false); }
     };
 
@@ -988,7 +1051,10 @@ export default function BlogPage() {
         setTitle({ az: "", en: "", ru: "" }); setSlug("");
         setBadge({ az: "", en: "", ru: "" }); setExcerpt({ az: "", en: "", ru: "" });
         setCoverImage({ az: "", en: "", ru: "" }); setCoverImageAlt({ az: "", en: "", ru: "" });
-        setPublishedAt(""); setAuthorId(""); setCategoryId(""); setHashtags("");
+        setSeoTitle({ az: "", en: "", ru: "" });
+        setSeoDescription({ az: "", en: "", ru: "" });
+        setSeoKeywords({ az: "", en: "", ru: "" });
+        setPublishedAt(""); setAuthorId(""); setCategoryId("");
         setPlacements({ isFeaturedMain: false, isPickOfWeek: false, isPreview: false, isGrid: true, isAuthorPreview: false, isAuthorList: false, isHomeVisible: false });
         setSections([]);
     };
@@ -1003,9 +1069,11 @@ export default function BlogPage() {
         setExcerpt(typeof b.excerpt === "object" ? b.excerpt : { az: b.excerpt ?? "", en: "", ru: "" });
         setCoverImage(typeof b.coverImage === "object" ? b.coverImage : { az: b.coverImage ?? "", en: "", ru: "" });
         setCoverImageAlt(typeof b.coverImageAlt === "object" ? b.coverImageAlt : { az: b.coverImageAlt ?? "", en: "", ru: "" });
+        setSeoTitle(b.seoTitle ?? { az: "", en: "", ru: "" });
+        setSeoDescription(b.seoDescription ?? { az: "", en: "", ru: "" });
+        setSeoKeywords(b.seoKeywords ?? { az: "", en: "", ru: "" });
         setPublishedAt(b.publishedAt ? b.publishedAt.slice(0, 10) : "");
         setAuthorId(b.authorId ?? ""); setCategoryId(b.categoryId ?? "");
-        setHashtags((b.hashtags ?? []).join(", "));
         setPlacements({
             isFeaturedMain: b.isFeaturedMain ?? false, isPickOfWeek: b.isPickOfWeek ?? false,
             isPreview: b.isPreview ?? false, isGrid: b.isGrid ?? true,
@@ -1061,8 +1129,8 @@ export default function BlogPage() {
                 publishedAt: publishedAt || null,
                 authorId: authorId ? Number(authorId) : null,
                 categoryId: categoryId ? Number(categoryId) : null,
-                hashtags: hashtags.split(/[,\s]+/).map(t => t.trim()).filter(Boolean),
                 ...placements, sections,
+                seoTitle, seoDescription, seoKeywords,
             };
             if (editItem) await apiFetch(`/blog/${editItem.id}`, { method: "PUT", body: JSON.stringify(payload) });
             else await apiFetch("/blog", { method: "POST", body: JSON.stringify(payload) });
@@ -1206,9 +1274,7 @@ export default function BlogPage() {
                                 <div className={styles.field}><label>Yayımlanma tarixi</label>
                                     <input type="date" className={styles.input} value={publishedAt} onChange={e => setPublishedAt(e.target.value)} />
                                 </div>
-                                <div className={styles.field}><label>Hashtaglar <small>(vergüllə)</small></label>
-                                    <input className={styles.input} value={hashtags} onChange={e => setHashtags(e.target.value)} placeholder="#design, #ai" />
-                                </div>
+
                             </div>
                         </div>
                         <div className={styles.fullDrawerSection}>
@@ -1252,6 +1318,41 @@ export default function BlogPage() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className={styles.fullDrawerSection}>
+                            <h3 className={styles.drawerSectionTitle}>SEO</h3>
+                            <div className={styles.field}>
+                                <label>SEO Title ({activeLang.toUpperCase()})</label>
+                                <input
+                                    className={styles.input}
+                                    value={seoTitle[activeLang] || ""}
+                                    onChange={e => setSeoTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`SEO başlığı (${activeLang})`}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>SEO Description ({activeLang.toUpperCase()})</label>
+                                <textarea
+                                    className={styles.input}
+                                    rows={3}
+                                    value={seoDescription[activeLang] || ""}
+                                    onChange={e => setSeoDescription(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`Qısa açıqlama (${activeLang})`}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>SEO Keywords ({activeLang.toUpperCase()})</label>
+                                <input
+                                    className={styles.input}
+                                    value={seoKeywords[activeLang] || ""}
+                                    onChange={e => setSeoKeywords(prev => ({ ...prev, [activeLang]: e.target.value }))}
+                                    placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
+                                />
+                            </div>
+                            <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                                ℹ Article section-larındakı hashtaglar avtomatik keyword-lərə əlavə olunacaq
+                            </p>
                         </div>
                     </div>
                 </div>

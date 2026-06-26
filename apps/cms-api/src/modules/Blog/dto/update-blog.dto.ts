@@ -15,10 +15,12 @@ export class UpdateBlogDto {
   @IsOptional() @IsBoolean() isPreview?: boolean;
   @IsOptional() @IsBoolean() isGrid?: boolean;
   @IsOptional() @IsBoolean() isHomeVisible?: boolean;
-  @IsOptional() @IsArray() @IsString({ each: true }) hashtags?: string[];
   @IsOptional() sections?: any[];
   @IsOptional() @IsInt() authorId?: number;
   @IsOptional() @IsInt() categoryId?: number;
   @IsOptional() @IsInt() order?: number;
   @IsOptional() authorListPinnedAt?: string | null;
+  @IsOptional() @IsObject() seoTitle?: Record<string, string>;
+@IsOptional() @IsObject() seoDescription?: Record<string, string>;
+@IsOptional() @IsObject() seoKeywords?: Record<string, string>;
 }
