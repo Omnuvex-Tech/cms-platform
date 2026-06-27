@@ -19,11 +19,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PageMetaModule } from './modules/page-meta/page-meta.module';
 import { HeroModule } from './modules/Home/Hero/hero.module';
 import { HomeModule } from './modules/Home/Settings/home.module';
+import { PulseModule } from './modules/Pulse/pulse.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
             ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
-            DashboardModule,PageMetaModule, HeroModule, HomeModule
+            DashboardModule,PageMetaModule, HeroModule, HomeModule, PulseModule
   ],
   controllers: [AppController],
   providers: [AppService],

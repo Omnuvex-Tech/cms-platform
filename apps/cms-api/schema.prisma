@@ -565,3 +565,62 @@ enum BulletType {
   NUMBERED
   DASH
 }
+
+// ─── Pulse CMS ──────────────────────────────────────────────
+
+model PulseArticle {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  category        String
+  date            DateTime @default(now())
+  coverImage      String?
+  excerpt         String?
+  authorId        String?
+  author          PulseAuthor? @relation(fields: [authorId], references: [id])
+  keywords        PulseKeyword[]
+  blocks          Json     @default("[]")
+  metaTitle       String?
+  metaDescription String?
+  featured        Boolean  @default(false)
+  published       Boolean  @default(false)
+  headerPosition  String?
+  headerOrder     Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("pulse_articles")
+}
+
+model PulseAuthor {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  title       String?
+  avatar      String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  articles    PulseArticle[]
+
+  @@map("pulse_authors")
+}
+
+model PulseKeyword {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  slug     String   @unique
+  articles PulseArticle[]
+
+  @@map("pulse_keywords")
+}
+
+model PulseCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pulse_categories")
+}

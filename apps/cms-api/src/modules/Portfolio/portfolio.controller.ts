@@ -84,12 +84,12 @@ updateSettings(
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'image/webp')
-          return cb(new Error('Yalnız WebP formatı qəbul edilir'), false);
+        if (!['image/webp', 'image/jpeg', 'image/png', 'image/jpg'].includes(file.mimetype))
+          return cb(new Error('Yalnız WebP, JPEG və PNG formatları qəbul edilir'), false);
 
         cb(null, true);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   uploadImage(@UploadedFile() file: Express.Multer.File) {

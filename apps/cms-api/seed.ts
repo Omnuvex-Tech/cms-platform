@@ -504,6 +504,137 @@ await prisma.user.upsert({
   });
   console.log('✅ Contact settings seeded');
 
+  // ─────────────────────────────────────────
+  // PULSE CMS
+  // ─────────────────────────────────────────
+  const pulseCategories = [
+    { name: 'Bloq', slug: 'blog' },
+    { name: 'Kampaniya', slug: 'kampaniya' },
+    { name: 'Tədbir', slug: 'tedbir' },
+    { name: 'Analizlər', slug: 'analizler' },
+    { name: 'Xəbərlər', slug: 'xeberler' },
+  ];
+  for (const cat of pulseCategories) {
+    await prisma.pulseCategory.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    });
+  }
+  console.log('✅ Pulse categories seeded');
+
+  const pulseAuthors = [
+    { name: 'Əli Məmmədov', slug: 'ali-mammadov', title: 'Baş redaktor', description: 'Pulse baş redaktoru' },
+    { name: 'Leyla Hüseynova', slug: 'leyla-huseynova', title: 'Müəllif', description: 'Texnologiya üzrə müəllif' },
+    { name: 'Kənan Rəhimov', slug: 'kenan-rahimov', title: 'Müəllif', description: 'Biznes üzrə müəllif' },
+  ];
+  for (const author of pulseAuthors) {
+    await prisma.pulseAuthor.upsert({
+      where: { slug: author.slug },
+      update: {},
+      create: author,
+    });
+  }
+  console.log('✅ Pulse authors seeded');
+
+  const pulseKeywords = [
+    { name: 'Texnologiya', slug: 'texnologiya' },
+    { name: 'Biznes', slug: 'biznes' },
+    { name: 'Marketing', slug: 'marketing' },
+    { name: 'Startap', slug: 'startap' },
+    { name: 'Rəqəmsal', slug: 'reqemsal' },
+  ];
+  for (const kw of pulseKeywords) {
+    await prisma.pulseKeyword.upsert({
+      where: { slug: kw.slug },
+      update: {},
+      create: kw,
+    });
+  }
+  console.log('✅ Pulse keywords seeded');
+
+  const ali = await prisma.pulseAuthor.findUnique({ where: { slug: 'ali-mammadov' } });
+  const texnologiya = await prisma.pulseKeyword.findUnique({ where: { slug: 'texnologiya' } });
+  const biznes = await prisma.pulseKeyword.findUnique({ where: { slug: 'biznes' } });
+
+  const pulseArticles = [
+    {
+      slug: 'rəqəmsal transformasiya',
+      title: 'Rəqəmsal Transformasiya: 2026-cı ilin Trendləri',
+      category: 'Analizlər',
+      excerpt: 'Müasir şirkətlər rəqəmsal transformasiya prosesini necə sürətləndirir.',
+      authorId: ali?.id,
+      published: true,
+      featured: true,
+      headerPosition: 'left',
+      headerOrder: 1,
+      blocks: [
+        { type: 'heading', content: 'Rəqəmsal Transformasiya', level: 2 },
+        { type: 'paragraph', content: 'Müasir dünyada rəqəmsal transformasiya şirkətlərin rəqabət qabiliyyətini artırmaq üçün vacibdir.' },
+        { type: 'paragraph', content: 'Bu məqalədə 2026-cı ilin əsas trendlərini nəzərdən keçirəcəyik.' },
+      ],
+    },
+    {
+      slug: 'startap-ekosistemi',
+      title: 'Azərbaycan Startap Ekosistemi',
+      category: 'Bloq',
+      excerpt: 'Ölkəmizdə startap ekosisteminin inkişafı haqqında.',
+      authorId: ali?.id,
+      published: true,
+      featured: true,
+      headerPosition: 'center',
+      headerOrder: 1,
+      blocks: [
+        { type: 'heading', content: 'Startap Ekosistemi', level: 2 },
+        { type: 'paragraph', content: 'Azərbaycan son illərdə startap ekosisteminə ciddi investisiyalar qoyur.' },
+      ],
+    },
+    {
+      slug: 'kampaniya-yay-2026',
+      title: 'Yay Kampaniyası: Endirimlər',
+      category: 'Kampaniya',
+      excerpt: 'Bu yay üçün xüsusi endirim kampaniyamız.',
+      authorId: ali?.id,
+      published: true,
+      featured: false,
+      headerPosition: 'right',
+      headerOrder: 1,
+      blocks: [
+        { type: 'heading', content: 'Yay Kampaniyası', level: 2 },
+        { type: 'paragraph', content: 'Endirimlər 30% endirimlə başlayır.' },
+      ],
+    },
+    {
+      slug: 'həftənin-seçimi-1',
+      title: 'Həftənin Seçimi: Süni İntellekt',
+      category: 'Xəbərlər',
+      excerpt: 'Süni intellektin business-a təsiri.',
+      authorId: ali?.id,
+      published: true,
+      featured: true,
+      headerPosition: 'week',
+      headerOrder: 1,
+      blocks: [
+        { type: 'heading', content: 'Süni İntellekt', level: 2 },
+        { type: 'paragraph', content: 'AI technologies are reshaping how businesses operate.' },
+      ],
+    },
+  ];
+
+  for (const article of pulseArticles) {
+    const existing = await prisma.pulseArticle.findUnique({ where: { slug: article.slug } });
+    if (!existing) {
+      const { slug, title, category, excerpt, authorId, published, featured, headerPosition, headerOrder, blocks } = article;
+      await prisma.pulseArticle.create({
+        data: {
+          slug, title, category, excerpt, authorId, published, featured, headerPosition, headerOrder, blocks,
+          keywords: { connect: texnologiya ? [{ id: texnologiya.id }] : [] },
+        },
+      });
+    }
+  }
+  console.log('✅ Pulse articles seeded');
+
   console.log('\n🎉 All done! Database seeded successfully.');
 }
 

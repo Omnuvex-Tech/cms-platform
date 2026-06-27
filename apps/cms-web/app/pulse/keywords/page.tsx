@@ -1,0 +1,114 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { apiFetch, generateSlug } from "@/lib/pulse-api";
+import styles from "@/styles/blog.module.css";
+
+type Keyword = { id: string; name: string; slug: string };
+
+export default function PulseKeywordsPage() {
+    const [keywords, setKeywords] = useState<Keyword[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editItem, setEditItem] = useState<Keyword | null>(null);
+    const [name, setName] = useState("");
+    const [slug, setSlug] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+
+    const load = async () => {
+        setLoading(true);
+        try { setKeywords(await apiFetch("/pulse/keywords")); } finally { setLoading(false); }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const openCreate = () => { setEditItem(null); setName(""); setSlug(""); setModalOpen(true); };
+    const openEdit = (k: Keyword) => { setEditItem(k); setName(k.name); setSlug(k.slug); setModalOpen(true); };
+
+    const save = async () => {
+        if (!name.trim()) return;
+        setSaving(true);
+        try {
+            const body = { name, slug: slug || generateSlug(name) };
+            if (editItem) await apiFetch(`/pulse/keywords/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
+            else await apiFetch("/pulse/keywords", { method: "POST", body: JSON.stringify(body) });
+            setModalOpen(false); load();
+        } finally { setSaving(false); }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+        await apiFetch(`/pulse/keywords/${deleteId}`, { method: "DELETE" });
+        setDeleteId(null); load();
+    };
+
+    return (
+        <div>
+            <div className={styles.tabHeader}>
+                <h2 className={styles.tabTitle}>Pulse Açar Sözləri</h2>
+                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Açar söz</button>
+            </div>
+            {loading ? <div className={styles.empty}>Yüklənir...</div>
+                : keywords.length === 0 ? <div className={styles.empty}>Hələ açar söz yoxdur</div>
+                    : (
+                        <div className={styles.tableWrap}>
+                            <table className={styles.table}>
+                                <thead><tr><th>Ad</th><th>Slug</th><th>Əməliyyatlar</th></tr></thead>
+                                <tbody>
+                                    {keywords.map(k => (
+                                        <tr key={k.id}>
+                                            <td><strong>{k.name}</strong></td>
+                                            <td><span className={styles.blogSlug}>/{k.slug}</span></td>
+                                            <td>
+                                                <div className={styles.actions}>
+                                                    <button className={styles.editBtn} onClick={() => openEdit(k)}>Düzəlt</button>
+                                                    <button className={styles.deleteBtn} onClick={() => setDeleteId(k.id)}>Sil</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+            {modalOpen && (
+                <div className={styles.overlay} onClick={() => setModalOpen(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h2>{editItem ? "Açar sözü Düzəlt" : "Yeni Açar söz"}</h2>
+                            <button className={styles.closeBtn} onClick={() => setModalOpen(false)}>✕</button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <div className={styles.field}>
+                                <label>Ad *</label>
+                                <input className={styles.input} value={name} onChange={e => { setName(e.target.value); if (!editItem) setSlug(generateSlug(e.target.value)); }} placeholder="Texnologiya" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Slug</label>
+                                <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} placeholder="texnologiya" />
+                            </div>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button className={styles.cancelBtn} onClick={() => setModalOpen(false)}>Ləğv et</button>
+                            <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {deleteId && (
+                <div className={styles.overlay} onClick={() => setDeleteId(null)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}><h2>Silməyi təsdiq edin</h2>
+                            <button className={styles.closeBtn} onClick={() => setDeleteId(null)}>✕</button></div>
+                        <div className={styles.modalBody}><p>Bu açar sözü silmək istədiyinizə əminsiniz?</p></div>
+                        <div className={styles.modalFooter}>
+                            <button className={styles.cancelBtn} onClick={() => setDeleteId(null)}>Ləğv et</button>
+                            <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Sil</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

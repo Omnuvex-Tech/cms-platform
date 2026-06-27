@@ -21,6 +21,7 @@ import {
     LogOut,
     PanelsTopLeft,
     Search,
+    Zap,
 } from "lucide-react";
 
 
@@ -56,6 +57,17 @@ const NAV_ITEMS = [
     { label: "Partners", href: "/partners", icon: <Handshake size={18} /> },
     { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} /> },
     { label: "Blog", href: "/blog", icon: <FileText size={18} /> },
+    {
+        label: "Pulse",
+        icon: <Zap size={18} />,
+        children: [
+            { label: "Məqalələr", href: "/pulse" },
+            { label: "Müəlliflər", href: "/pulse/authors" },
+            { label: "Kateqoriyalar", href: "/pulse/categories" },
+            { label: "Açar sözlər", href: "/pulse/keywords" },
+            { label: "Layout", href: "/pulse/layout" },
+        ],
+    },
     { label: "Team", href: "/team", icon: <Users size={18} /> },
     {
         label: "Vacancy",

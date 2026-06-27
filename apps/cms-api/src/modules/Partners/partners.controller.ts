@@ -50,10 +50,10 @@ export class PartnersController {
       },
     }),
     fileFilter: (req, file, cb) => {
-      if (file.mimetype !== 'image/webp') return cb(new Error('Yalnız WebP'), false);
+      if (!['image/webp', 'image/jpeg', 'image/png', 'image/jpg'].includes(file.mimetype)) return cb(new Error('Yalnız WebP, JPEG və PNG'), false);
       cb(null, true);
     },
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 },
   }))
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/partners/${file.filename}` };
