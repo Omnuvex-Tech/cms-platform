@@ -57,4 +57,8 @@ export class CreatePulseArticleDto {
   @IsArray()
   @IsOptional()
   keywordIds?: string[];
+
+  @IsArray()
+  @IsOptional()
+  selectedArticleIds?: string[];
 }

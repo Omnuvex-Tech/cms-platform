@@ -60,4 +60,8 @@ export class UpdatePulseArticleDto {
   @IsArray()
   @IsOptional()
   keywordIds?: string[];
+
+  @IsArray()
+  @IsOptional()
+  selectedArticleIds?: string[];
 }

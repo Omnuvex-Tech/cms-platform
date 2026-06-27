@@ -8,6 +8,7 @@ import styles from "@/styles/blog.module.css";
 type Author = { id: string; name: string; slug: string };
 type Keyword = { id: string; name: string; slug: string };
 type Category = { id: string; name: string; slug: string };
+type ArticleSummary = { id: string; slug: string; title: string; coverImage?: string; category?: string };
 
 type Block =
     | { type: "heading"; level: 2 | 3; text: string }
@@ -242,17 +243,22 @@ export default function PulseArticleEditPage() {
     const [headerOrder, setHeaderOrder] = useState<number>(0);
     const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
     const [blocks, setBlocks] = useState<Block[]>([]);
+    const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
 
     const [authors, setAuthors] = useState<Author[]>([]);
     const [keywords, setKeywords] = useState<Keyword[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [allArticles, setAllArticles] = useState<ArticleSummary[]>([]);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(!isNew);
     const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        Promise.all([apiFetch("/pulse/authors"), apiFetch("/pulse/keywords"), apiFetch("/pulse/categories")])
-            .then(([a, k, c]) => { setAuthors(a); setKeywords(k); setCategories(c); });
+        Promise.all([apiFetch("/pulse/authors"), apiFetch("/pulse/keywords"), apiFetch("/pulse/categories"), apiFetch("/pulse/articles/all")])
+            .then(([a, k, c, articles]) => {
+                setAuthors(a); setKeywords(k); setCategories(c);
+                setAllArticles(articles.map((art: any) => ({ id: art.id, slug: art.slug, title: art.title, coverImage: art.coverImage, category: art.category })));
+            });
         if (!isNew) {
             apiFetch(`/pulse/articles/${id}`).then(a => {
                 setTitle(a.title); setSlug(a.slug); setCategory(a.category);
@@ -262,6 +268,7 @@ export default function PulseArticleEditPage() {
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
                 setBlocks(Array.isArray(a.blocks) ? a.blocks : []);
+                setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
             }).finally(() => setLoading(false));
         }
     }, [id, isNew]);
@@ -317,6 +324,7 @@ export default function PulseArticleEditPage() {
                 headerOrder: headerOrder || null,
                 blocks,
                 keywordIds: selectedKeywords,
+                selectedArticleIds,
             };
             if (isNew) await apiFetch("/pulse/articles", { method: "POST", body: JSON.stringify(body) });
             else await apiFetch(`/pulse/articles/${id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -328,6 +336,16 @@ export default function PulseArticleEditPage() {
     const toggleKeyword = (kid: string) => {
         setSelectedKeywords(prev => prev.includes(kid) ? prev.filter(k => k !== kid) : [...prev, kid]);
     };
+
+    const toggleSelectedArticle = (aid: string) => {
+        setSelectedArticleIds(prev => {
+            if (prev.includes(aid)) return prev.filter(id => id !== aid);
+            if (prev.length >= 4) return prev;
+            return [...prev, aid];
+        });
+    };
+
+    const availableArticles = allArticles.filter(a => a.id !== id);
 
     if (loading) return <div className={styles.empty}>Yüklənir...</div>;
 
@@ -408,6 +426,49 @@ export default function PulseArticleEditPage() {
                             {k.name}
                         </button>
                     ))}
+                </div>
+            </div>
+
+            <div className={styles.settingsCard}>
+                <h3 className={styles.settingsGroupTitle}>Seçilmiş məqalələr <span style={{ fontWeight: 400, fontSize: 13, color: "#94a3b8" }}>({selectedArticleIds.length}/4)</span></h3>
+                {selectedArticleIds.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                        {selectedArticleIds.map(aid => {
+                            const art = allArticles.find(a => a.id === aid);
+                            if (!art) return null;
+                            return (
+                                <div key={aid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", border: "1.5px solid #2563eb", borderRadius: 8, background: "#eff6ff" }}>
+                                    {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 4 }} />}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 500, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{art.title}</div>
+                                        {art.category && <div style={{ fontSize: 11, color: "#64748b" }}>{art.category}</div>}
+                                    </div>
+                                    <button type="button" onClick={() => toggleSelectedArticle(aid)}
+                                        style={{ padding: "4px 10px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, flexShrink: 0 }}>Sil</button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {availableArticles.map(art => {
+                        const isSelected = selectedArticleIds.includes(art.id);
+                        return (
+                            <button key={art.id} type="button" disabled={!isSelected && selectedArticleIds.length >= 4}
+                                onClick={() => toggleSelectedArticle(art.id)}
+                                style={{
+                                    display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: isSelected || selectedArticleIds.length < 4 ? "pointer" : "not-allowed",
+                                    border: "1.5px solid",
+                                    borderColor: isSelected ? "#2563eb" : "#e2e8f0",
+                                    background: isSelected ? "#2563eb" : "#fff",
+                                    color: isSelected ? "#fff" : "#475569",
+                                    opacity: !isSelected && selectedArticleIds.length >= 4 ? 0.5 : 1,
+                                }}>
+                                {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3 }} />}
+                                {art.title.length > 40 ? art.title.slice(0, 40) + "..." : art.title}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 

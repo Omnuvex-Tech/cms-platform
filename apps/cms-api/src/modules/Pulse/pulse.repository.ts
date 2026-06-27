@@ -16,7 +16,7 @@ export class PulseRepository {
   // ── Articles ──────────────────────────────────────────
   findAllArticles() {
     return this.prisma.pulseArticle.findMany({
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -24,7 +24,7 @@ export class PulseRepository {
   findPublishedArticles() {
     return this.prisma.pulseArticle.findMany({
       where: { published: true },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
       orderBy: { date: 'desc' },
     });
   }
@@ -32,14 +32,14 @@ export class PulseRepository {
   findArticleById(id: string) {
     return this.prisma.pulseArticle.findUnique({
       where: { id },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
     });
   }
 
   findArticleBySlug(slug: string) {
     return this.prisma.pulseArticle.findUnique({
       where: { slug },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
     });
   }
 
@@ -49,7 +49,7 @@ export class PulseRepository {
         published: true,
         headerPosition: position,
       },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
       orderBy: { headerOrder: 'asc' },
     });
   }
@@ -57,7 +57,7 @@ export class PulseRepository {
   findFeaturedArticles() {
     return this.prisma.pulseArticle.findMany({
       where: { published: true, featured: true },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
       orderBy: { date: 'desc' },
       take: 6,
     });
@@ -83,8 +83,11 @@ export class PulseRepository {
         keywords: dto.keywordIds
           ? { connect: dto.keywordIds.map((id) => ({ id })) }
           : undefined,
+        selectedArticles: dto.selectedArticleIds
+          ? { connect: dto.selectedArticleIds.map((id) => ({ id })) }
+          : undefined,
       },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
     });
   }
 
@@ -109,8 +112,11 @@ export class PulseRepository {
         ...(dto.keywordIds !== undefined && {
           keywords: { set: dto.keywordIds.map((kid) => ({ id: kid })) },
         }),
+        ...(dto.selectedArticleIds !== undefined && {
+          selectedArticles: { set: dto.selectedArticleIds.map((sid) => ({ id: sid })) },
+        }),
       },
-      include: { author: true, keywords: true },
+      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
     });
   }
 

@@ -88,6 +88,7 @@ async function main() {
       headerOrder: 1,
       featured: true,
       keywords: ['dasinmaz-emlak', 'bakida-evler', 'ipoteka', 'investisiya'],
+      selectedArticleSlugs: ['bakida-dasinmaz-emlak-satis-ugurunu-ne-mueyyen-edir', 'bakida-investisiya-ucun-en-ugurlu-layiheler-hansilardir', 'investisiya-ucun-niye-mehz-sea-breeze'],
       blocks: [
         { type: 'paragraph' as const, text: 'Hər kəsin büdcəsi fərqlidir, amma daşınmaz əmlak bazarı daxilindəki tendensiyalar bizə müəyyən rəqəmlər diktə edir. Adətən, ilkin ödəniş faizi layihədən və ödəniş növündən (daxili kredit və ya ipoteka) asılı olaraq dəyişir. Bakıda mənzil almaq istəyirsinizsə, minimum 20-30% ilkin ödənişə hazır olmalısınız. Bəzən kampaniyalar çərçivəsində ilkin ödənişli mənzillər daha aşağı - 10% ilə də təklif oluna bilir, lakin bu zaman aylıq ödənişlərin bir qədər yüksək olacağını nəzərə almalısınız. İlkin ödənişin miqdarı seçilən layihə, kredit növü və ödəniş planına görə dəyişir. Daha aşağı ilkin ödəniş aylıq ödənişlərin artmasına səbəb olur, yüksək ilkin ödəniş isə ümumi maliyyə yükünü azaldır.' },
         { type: 'heading' as const, level: 2 as const, text: 'Bakıda mənzil qiymətləri nə qədərdir və artım gözlənilirmi?' },
@@ -352,7 +353,7 @@ async function main() {
   ];
 
   for (const a of ARTICLES_DATA) {
-    const { authorSlug, keywords: kwSlugs, date: dateStr, ...articleData } = a;
+    const { authorSlug, keywords: kwSlugs, selectedArticleSlugs, date: dateStr, ...articleData } = a;
     const relations: any = { published: true };
     if (dateStr) {
       const [day, month, year] = dateStr.split('.');
@@ -372,6 +373,27 @@ async function main() {
       create: { ...articleData, ...relations },
     });
   }
+
+  for (const a of ARTICLES_DATA) {
+    const slugs = (a as any).selectedArticleSlugs;
+    if (slugs && slugs.length > 0) {
+      const target = await prisma.pulseArticle.findUnique({ where: { slug: a.slug } });
+      if (target) {
+        const toConnect: { id: string }[] = [];
+        for (const s of slugs) {
+          const sa = await prisma.pulseArticle.findUnique({ where: { slug: s } });
+          if (sa) toConnect.push({ id: sa.id });
+        }
+        if (toConnect.length > 0) {
+          await prisma.pulseArticle.update({
+            where: { id: target.id },
+            data: { selectedArticles: { connect: toConnect } },
+          });
+        }
+      }
+    }
+  }
+
   console.log('✅ Pulse articles seeded (22)');
 
   console.log('\n🎉 Pulse CMS seeded successfully!');

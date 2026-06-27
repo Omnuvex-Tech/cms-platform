@@ -589,6 +589,9 @@ model PulseArticle {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  selectedArticles PulseArticle[] @relation("ArticleSelections")
+  selectedBy       PulseArticle[] @relation("ArticleSelections")
+
   @@map("pulse_articles")
 }
 
