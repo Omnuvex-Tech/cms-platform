@@ -680,6 +680,7 @@ model LayihelerimizProjectDetail {
 
   locationTitleLight    String?
   locationTitleBold     String?
+  locationBrandName     String?
   locationMainLead      String?
   locationSubText       String?
   locationMapImage      String?

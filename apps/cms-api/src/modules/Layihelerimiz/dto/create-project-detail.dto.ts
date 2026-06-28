@@ -35,6 +35,7 @@ export class CreateProjectDetailDto {
 
   @IsString() @IsOptional() locationTitleLight?: string;
   @IsString() @IsOptional() locationTitleBold?: string;
+  @IsString() @IsOptional() locationBrandName?: string;
   @IsString() @IsOptional() locationMainLead?: string;
   @IsString() @IsOptional() locationSubText?: string;
   @IsString() @IsOptional() locationMapImage?: string;

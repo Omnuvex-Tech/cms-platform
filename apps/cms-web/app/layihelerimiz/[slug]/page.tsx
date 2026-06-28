@@ -59,6 +59,7 @@ interface ProjectDetailData {
   brochureFile: string;
   locationTitleLight: string;
   locationTitleBold: string;
+  locationBrandName: string;
   locationMainLead: string;
   locationSubText: string;
   locationMapImage: string;
@@ -148,6 +149,7 @@ const emptyDetail: ProjectDetailData = {
   brochureFile: "",
   locationTitleLight: "Property ",
   locationTitleBold: "Location",
+  locationBrandName: "",
   locationMainLead: "",
   locationSubText: "",
   locationMapImage: "",
@@ -599,6 +601,9 @@ export default function ProjectDetailEditor() {
             <input value={detail.locationTitleBold} onChange={(e) => updateField("locationTitleBold", e.target.value)} style={input} />
           </Field>
         </div>
+        <Field label="Brand Adı">
+          <input value={detail.locationBrandName} onChange={(e) => updateField("locationBrandName", e.target.value)} style={input} placeholder="Panorama by ELIE SAAB" />
+        </Field>
         <Field label="Main Lead">
           <textarea value={detail.locationMainLead} onChange={(e) => updateField("locationMainLead", e.target.value)} rows={3} style={input} />
         </Field>
