@@ -631,16 +631,18 @@ model PulseCategory {
 // ─── Layihelerimiz (Projects) ────────────────────────────────
 
 model LayihelerimizCategory {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  image       String?
-  description String?
-  brand       String?
-  order       Int      @default(0)
-  isVisible   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  image         String?
+  brandImage    String?
+  description   String?
+  brand         String?
+  brandTextColor String?  @default("white")
+  order         Int      @default(0)
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("layihelerimiz_categories")
 }

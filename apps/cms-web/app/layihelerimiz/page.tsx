@@ -17,8 +17,10 @@ interface CmsDisplayData {
   id: string;
   slug: string;
   image: string | null;
+  brandImage: string | null;
   description: string | null;
   brand: string | null;
+  brandTextColor: string | null;
   order: number;
   isVisible: boolean;
 }
@@ -29,9 +31,11 @@ interface MergedCategory {
   title: string;
   slug: string;
   image: string | null;
+  brandImage: string | null;
   cmsId: string | null;
   description: string | null;
   brand: string | null;
+  brandTextColor: string | null;
   order: number;
   isVisible: boolean;
 }
@@ -92,10 +96,16 @@ export default function LayihelerimizPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
+  const [brandImage, setBrandImage] = useState("");
+  const [brandImageFile, setBrandImageFile] = useState<File | null>(null);
+  const [brandImagePreview, setBrandImagePreview] = useState("");
+  const [brandImageUploading, setBrandImageUploading] = useState(false);
   const [description, setDescription] = useState("");
   const [brand, setBrand] = useState("");
+  const [brandTextColor, setBrandTextColor] = useState("white");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const brandFileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -121,9 +131,11 @@ export default function LayihelerimizPage() {
           title: cat.title,
           slug: cat.slug,
           image: cms?.image || cat.image || null,
+          brandImage: cms?.brandImage || null,
           cmsId: cms?.id || null,
           description: cms?.description || null,
           brand: cms?.brand || null,
+          brandTextColor: cms?.brandTextColor || 'white',
           order: cms?.order ?? 0,
           isVisible: cms?.isVisible ?? true,
         };
@@ -147,8 +159,12 @@ export default function LayihelerimizPage() {
     setImage(item.image || "");
     setImageFile(null);
     setImagePreview(item.image ? toAbsUrl(item.image) : "");
+    setBrandImage(item.brandImage || "");
+    setBrandImageFile(null);
+    setBrandImagePreview(item.brandImage ? toAbsUrl(item.brandImage) : "");
     setDescription(item.description || "");
     setBrand(item.brand || "");
+    setBrandTextColor(item.brandTextColor || "white");
     setModalOpen(true);
   };
 
@@ -164,6 +180,18 @@ export default function LayihelerimizPage() {
     setImagePreview(URL.createObjectURL(file));
   };
 
+  const handleBrandImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/webp", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      alert("Yalnız WebP, JPEG və PNG formatları qəbul edilir");
+      if (brandFileInputRef.current) brandFileInputRef.current.value = "";
+      return;
+    }
+    setBrandImageFile(file);
+    setBrandImagePreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
     if (!editingItem) return;
     setSaving(true);
@@ -175,12 +203,21 @@ export default function LayihelerimizPage() {
         setImageUploading(false);
       }
 
+      let brandImageUrl = brandImage;
+      if (brandImageFile) {
+        setBrandImageUploading(true);
+        brandImageUrl = await uploadFile(brandImageFile);
+        setBrandImageUploading(false);
+      }
+
       const payload = {
         title: editingItem.title,
         slug: editingItem.slug,
         image: imageUrl || null,
+        brandImage: brandImageUrl || null,
         description: description.trim() || null,
         brand: brand.trim() || null,
+        brandTextColor: brandTextColor,
         order: editingItem.order,
         isVisible: editingItem.isVisible,
       };
@@ -421,6 +458,67 @@ export default function LayihelerimizPage() {
               )}
             </div>
 
+            {/* Brand Image */}
+            <label style={labelStyle}>Brand Şəkli</label>
+            <input
+              ref={brandFileInputRef}
+              type="file"
+              accept="image/webp,image/jpeg,image/png"
+              style={{ display: "none" }}
+              onChange={handleBrandImageSelect}
+            />
+            <div
+              onClick={() => brandFileInputRef.current?.click()}
+              style={{
+                border: "2px dashed #d1d5db",
+                borderRadius: 8,
+                padding: 16,
+                textAlign: "center",
+                cursor: "pointer",
+                marginBottom: 16,
+                background: "#f9fafb",
+              }}
+            >
+              {brandImagePreview ? (
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img
+                    src={brandImagePreview}
+                    alt="Brand Preview"
+                    style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8 }}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBrandImage("");
+                      setBrandImageFile(null);
+                      setBrandImagePreview("");
+                      if (brandFileInputRef.current) brandFileInputRef.current.value = "";
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 24,
+                      height: 24,
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div style={{ color: "#9ca3af" }}>
+                  <p>Brend loqosu yüklə</p>
+                  <small>WebP, JPEG, PNG (max 10MB)</small>
+                </div>
+              )}
+            </div>
+
             {/* Description */}
             <label style={labelStyle}>Təsvir</label>
             <textarea
@@ -439,6 +537,17 @@ export default function LayihelerimizPage() {
               placeholder="Reportage."
               style={inputStyle}
             />
+
+            {/* Brand Text Color */}
+            <label style={labelStyle}>Brend Mətn Rəngi</label>
+            <select
+              value={brandTextColor}
+              onChange={(e) => setBrandTextColor(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="white">Ağ (White)</option>
+              <option value="black">Qara (Black)</option>
+            </select>
 
             {/* Order */}
             <label style={labelStyle}>Sıra (Order)</label>

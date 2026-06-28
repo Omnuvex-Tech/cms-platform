@@ -14,11 +14,19 @@ export class CreateLayihelerimizDto {
 
   @IsString()
   @IsOptional()
+  brandImage?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 
   @IsString()
   @IsOptional()
   brand?: string;
+
+  @IsString()
+  @IsOptional()
+  brandTextColor?: string;
 
   @IsInt()
   @IsOptional()
