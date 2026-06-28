@@ -644,3 +644,54 @@ model LayihelerimizCategory {
 
   @@map("layihelerimiz_categories")
 }
+
+model LayihelerimizProjectDetail {
+  id             String  @id @default(cuid())
+  categorySlug   String  @unique
+
+  heroTitle            String?
+  heroDesktopDesc      String?
+  heroMobileDesc       String?
+  heroImages           Json?
+  heroCtaText          String?
+  heroCtaLink          String?
+
+  overviewTitleLight      String?
+  overviewTitleBold       String?
+  overviewBrandName       String?
+  overviewDebutText       String?
+  overviewLocationText    String?
+  overviewDebutTextEnd    String?
+  overviewDescription     String?
+  overviewImageLarge      String?
+  overviewImageLargeLabel String?
+  overviewImageMedium     String?
+  overviewImageMediumLabel String?
+  overviewImageSmall      String?
+  overviewImageSmallLabel String?
+  overviewDataRows        Json?
+
+  featuresHeaderMain  String?
+  featuresHeaderSub   String?
+  featuresTitleLight  String?
+  featuresTitleBold   String?
+  featuresSections    Json?
+  brochureFile        String?
+
+  locationTitleLight    String?
+  locationTitleBold     String?
+  locationMainLead      String?
+  locationSubText       String?
+  locationMapImage      String?
+  locationFooterAddress String?
+  locationGoogleMapsUrl String?
+
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("layihelerimiz_project_details")
+}

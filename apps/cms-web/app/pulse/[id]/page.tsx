@@ -184,7 +184,8 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                                     <input className={styles.input} value={img.alt} placeholder="Alt"
                                         onChange={e => {
                                             const newImages = [...block.images];
-                                            newImages[i] = { ...newImages[i], alt: e.target.value };
+                                            const current = newImages[i]!;
+                                            newImages[i] = { url: current.url || "", alt: e.target.value };
                                             onChange({ ...block, images: newImages });
                                         }} style={{ fontSize: 11, marginTop: 2 }} />
                                     <button type="button" onClick={() => {
@@ -267,7 +268,7 @@ export default function PulseArticleEditPage() {
                 setFeatured(a.featured); setHeaderPosition(a.headerPosition || "");
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
-                setBlocks(Array.isArray(a.blocks) ? a.blocks : []);
+                setBlocks(Array.isArray(a.blocks) ? (a.blocks as Block[]) : []);
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
             }).finally(() => setLoading(false));
         }
@@ -307,8 +308,8 @@ export default function PulseArticleEditPage() {
     const moveBlock = useCallback((from: number, to: number) => {
         setBlocks(prev => {
             const next = [...prev];
-            const [moved] = next.splice(from, 1);
-            next.splice(to, 0, moved);
+            const moved = next.splice(from, 1)[0];
+            if (moved) next.splice(to, 0, moved);
             return next;
         });
     }, []);

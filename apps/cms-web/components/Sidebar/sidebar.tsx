@@ -73,8 +73,10 @@ const NAV_ITEMS = [
     },
     {
         label: "Layihelerimiz",
-        href: "/layihelerimiz",
         icon: <FolderOpen size={18} />,
+        children: [
+            { label: "Kateqoriyalar", href: "/layihelerimiz" },
+        ],
     },
     { label: "Team", href: "/team", icon: <Users size={18} />, hidden: true },
     {

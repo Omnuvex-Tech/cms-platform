@@ -302,6 +302,22 @@ export default function LayihelerimizPage() {
                 >
                   {item.cmsId ? "Redaktə" : "Şəkil əlavə et"}
                 </button>
+                <a
+                  href={`/layihelerimiz/${item.slug}`}
+                  style={{
+                    padding: "6px 12px",
+                    background: "#059669",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    textDecoration: "none",
+                  }}
+                >
+                  Layihə Detalları
+                </a>
               </div>
             </div>
           ))}
