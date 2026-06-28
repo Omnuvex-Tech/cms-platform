@@ -2,6 +2,7 @@ import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, Query, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
+import { Public } from '../../common/decorators/public.decorator';
 import { PulseService } from './pulse.service';
 import { CreatePulseArticleDto } from './dto/create-pulse-article.dto';
 import { UpdatePulseArticleDto } from './dto/update-pulse-article.dto';
@@ -46,7 +47,8 @@ export class PulseController {
     return { url: `/uploads/pulse/${file.filename}` };
   }
 
-  // ── Articles ──────────────────────────────────────────
+  // ── Articles (PUBLIC for treva-web) ──────────────────
+  @Public()
   @Get('articles')
   findPublishedArticles() {
     return this.service.findPublishedArticles();
@@ -57,16 +59,19 @@ export class PulseController {
     return this.service.findAllArticles();
   }
 
+  @Public()
   @Get('articles/header')
   findHeaderArticles(@Query('position') position: string) {
     return this.service.findHeaderArticles(position);
   }
 
+  @Public()
   @Get('articles/featured')
   findFeaturedArticles() {
     return this.service.findFeaturedArticles();
   }
 
+  @Public()
   @Get('articles/slug/:slug')
   findArticleBySlug(@Param('slug') slug: string) {
     return this.service.findArticleBySlug(slug);
@@ -92,12 +97,14 @@ export class PulseController {
     return this.service.deleteArticle(id);
   }
 
-  // ── Authors ──────────────────────────────────────────
+  // ── Authors (PUBLIC for treva-web) ──────────────────
+  @Public()
   @Get('authors')
   findAllAuthors() {
     return this.service.findAllAuthors();
   }
 
+  @Public()
   @Get('authors/slug/:slug')
   findAuthorBySlug(@Param('slug') slug: string) {
     return this.service.findAuthorBySlug(slug);
@@ -123,12 +130,14 @@ export class PulseController {
     return this.service.deleteAuthor(id);
   }
 
-  // ── Keywords ──────────────────────────────────────────
+  // ── Keywords (PUBLIC for treva-web) ──────────────────
+  @Public()
   @Get('keywords')
   findAllKeywords() {
     return this.service.findAllKeywords();
   }
 
+  @Public()
   @Get('keywords/slug/:slug')
   findKeywordBySlug(@Param('slug') slug: string) {
     return this.service.findKeywordBySlug(slug);
@@ -154,7 +163,8 @@ export class PulseController {
     return this.service.deleteKeyword(id);
   }
 
-  // ── Categories ──────────────────────────────────────────
+  // ── Categories (PUBLIC for treva-web) ────────────────
+  @Public()
   @Get('categories')
   findAllCategories() {
     return this.service.findAllCategories();

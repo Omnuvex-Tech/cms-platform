@@ -16,7 +16,6 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("API URL:", process.env.NEXT_PUBLIC_API_URL); // ← bura
         setError("");
         setLoading(true);
 
@@ -34,7 +33,7 @@ export default function LoginPage() {
                 return;
             }
 
-            document.cookie = `access_token=${data.access_token}; path=/`;
+            document.cookie = `access_token=${data.access_token}; path=/; SameSite=Lax; Max-Age=86400`;
             router.push("/");
         } catch {
             setError("Serverlə əlaqə qurmaq mümkün olmadı");

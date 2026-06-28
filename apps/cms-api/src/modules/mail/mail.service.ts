@@ -28,7 +28,7 @@ export class MailService {
     message: string;
     submittedAt: Date;
   }) {
-    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'aitajjf2@gmail.com';
+    const to = process.env.CONTACT_RECEIVER_EMAIL;
     const html = `
 <!DOCTYPE html>
 <html>
@@ -123,7 +123,7 @@ export class MailService {
     vacancyTitle?: string;
     submittedAt: Date;
   }) {
-    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'aitajjf2@gmail.com';
+    const to = process.env.CONTACT_RECEIVER_EMAIL;
 
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">

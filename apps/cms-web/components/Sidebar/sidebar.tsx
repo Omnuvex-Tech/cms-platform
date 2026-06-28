@@ -35,16 +35,19 @@ interface NavItem {
     href?: string;
     icon: React.ReactNode;
     children?: NavChild[];
+    hidden?: boolean;
 }
 const NAV_ITEMS = [
     {
         label: "Dashboard",
         href: "/",
         icon: <LayoutDashboard size={18} />,
+        hidden: true,
     },
     {
         label: "Home",
         icon: <Home size={18} />,
+        hidden: true,
         children: [
             { label: "Hero", href: "/home/hero" },
             { label: "Testimonials", href: "/home/testimonials" },
@@ -53,10 +56,10 @@ const NAV_ITEMS = [
         ],
     },
 
-    { label: "Service", href: "/service", icon: <Settings size={18} /> },
-    { label: "Partners", href: "/partners", icon: <Handshake size={18} /> },
-    { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} /> },
-    { label: "Blog", href: "/blog", icon: <FileText size={18} /> },
+    { label: "Service", href: "/service", icon: <Settings size={18} />, hidden: true },
+    { label: "Partners", href: "/partners", icon: <Handshake size={18} />, hidden: true },
+    { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} />, hidden: true },
+    { label: "Blog", href: "/blog", icon: <FileText size={18} />, hidden: true },
     {
         label: "Pulse",
         icon: <Zap size={18} />,
@@ -68,21 +71,28 @@ const NAV_ITEMS = [
             { label: "Layout", href: "/pulse/layout" },
         ],
     },
-    { label: "Team", href: "/team", icon: <Users size={18} /> },
+    {
+        label: "Layihelerimiz",
+        href: "/layihelerimiz",
+        icon: <FolderOpen size={18} />,
+    },
+    { label: "Team", href: "/team", icon: <Users size={18} />, hidden: true },
     {
         label: "Vacancy",
         icon: <Briefcase size={18} />,
+        hidden: true,
         children: [
             { label: "Vakansiyalar", href: "/Vacancy" },
             { label: "Settings", href: "/Vacancy/VacancySetting" },
             { label: "Vacancy Submissions", href: "/Vacancy/VacancySubmissions" },
         ],
     },
-    { label: "About", href: "/about", icon: <Info size={18} /> },
+    { label: "About", href: "/about", icon: <Info size={18} />, hidden: true },
 
     {
         label: "Contact",
         icon: <Phone size={18} />,
+        hidden: true,
         children: [
             { label: "Contact", href: "/contact" },
             { label: "Contact Submissions", href: "/contact-submissions" },
@@ -93,16 +103,19 @@ const NAV_ITEMS = [
         label: "Navbar",
         href: "/navbar",
         icon: <Menu size={18} />,
+        hidden: true,
     },
     {
         label: "Footer",
         href: "/footer",
         icon: <PanelsTopLeft size={18} />,
+        hidden: true,
     },
     {
         label: "SEO",
         href: "/seo",
         icon: <Search size={18} />,
+        hidden: true,
     },
 ];
 
@@ -132,7 +145,7 @@ export function Sidebar() {
             </div>
 
             <nav className={styles.nav}>
-                {NAV_ITEMS.map((item) => (
+                {NAV_ITEMS.filter(item => !item.hidden).map((item) => (
                     <div key={item.label}>
                         {item.children ? (
                             <>
