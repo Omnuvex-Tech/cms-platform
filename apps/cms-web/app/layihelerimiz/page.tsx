@@ -101,7 +101,10 @@ export default function LayihelerimizPage() {
     setLoading(true);
     try {
       const [offPlanCategories, cmsCategories]: [OffPlanCategory[], CmsDisplayData[]] = await Promise.all([
-        fetch(`${TREVA_API}/categories`).then((r) => r.json()),
+        fetch(`${TREVA_API}/categories`).then((r) => {
+          if (!r.ok) throw new Error("Treva API not available");
+          return r.json();
+        }).catch(() => [] as OffPlanCategory[]),
         cmsApiFetch("/layihelerimiz/categories"),
       ]);
 
@@ -126,6 +129,7 @@ export default function LayihelerimizPage() {
         };
       });
 
+      merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       setItems(merged);
     } catch (e) {
       console.error(e);
@@ -433,6 +437,16 @@ export default function LayihelerimizPage() {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="Reportage."
+              style={inputStyle}
+            />
+
+            {/* Order */}
+            <label style={labelStyle}>Sıra (Order)</label>
+            <input
+              type="number"
+              value={editingItem.order}
+              onChange={(e) => setEditingItem({ ...editingItem, order: Number(e.target.value) })}
+              placeholder="0"
               style={inputStyle}
             />
 
