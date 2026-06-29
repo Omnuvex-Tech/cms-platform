@@ -427,18 +427,6 @@ model FooterSocialLink {
   @@map("footer_social_links")
 }
 
-model ContactSocialLink {
-  id        Int             @id @default(autoincrement())
-  icon      String?
-  href      String
-  order     Int             @default(0)
-  isVisible Boolean         @default(true)
-  contactId Int
-  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@map("contact_social_links")
-}
-
 model ContactSubmission {
   id        Int      @id @default(autoincrement())
   name      String
@@ -451,65 +439,6 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@map("contact_submissions")
-}
-
-model ContactSettings {
-  id                      Int                     @id @default(autoincrement())
-  title                   Json                    @default("{}")
-  description             Json                    @default("{}")
-  emailLabel              Json                    @default("{}")
-  emailValue              Json                    @default("{}")
-  phoneLabel              Json                    @default("{}")
-  phoneValue              Json                    @default("{}")
-  locationLabel           Json                    @default("{}")
-  locationValue           Json                    @default("{}")
-  hoursLabel              Json                    @default("{}")
-  hoursValue              Json                    @default("{}")
-  followUsLabel           Json                    @default("{}")
-  tags                    Json                    @default("[]") 
-  formNameLabel           Json                    @default("{}")
-  formNamePlaceholder     Json                    @default("{}")
-  formEmailLabel          Json                    @default("{}")
-  formEmailPlaceholder    Json                    @default("{}")
-  formPhoneLabel          Json                    @default("{}")
-  formPhonePlaceholder    Json                    @default("{}")
-  formServiceLabel        Json                    @default("{}")
-  formBudgetLabel         Json                    @default("{}")
-  formBudgetPlaceholder   Json                    @default("{}")
-  formTimelineLabel       Json                    @default("{}")
-  formTimelinePlaceholder Json                    @default("{}")
-  formMessageLabel        Json                    @default("{}")
-  formMessagePlaceholder  Json                    @default("{}")
-  formSubmitLabel         Json                    @default("{}")
-  image     String?
-  imageAlt  Json    @default("{}")
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
-  budgetOptions           ContactBudgetOption[]
-  socialLinks             ContactSocialLink[]
-  timelineOptions         ContactTimelineOption[]
-
-  @@map("contact_settings")
-}
-
-model ContactBudgetOption {
-  id        Int             @id @default(autoincrement())
-  label     Json            @default("{}")
-  order     Int             @default(0)
-  contactId Int
-  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@map("contact_budget_options")
-}
-
-model ContactTimelineOption {
-  id        Int             @id @default(autoincrement())
-  label     Json            @default("{}")
-  order     Int             @default(0)
-  contactId Int
-  contact   ContactSettings @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
-  @@map("contact_timeline_options")
 }
 
 model HeroSettings {
