@@ -94,7 +94,6 @@ const NAV_ITEMS = [
     {
         label: "Contact",
         icon: <Phone size={18} />,
-        hidden: true,
         children: [
             { label: "Contact", href: "/contact" },
             { label: "Contact Submissions", href: "/contact-submissions" },
