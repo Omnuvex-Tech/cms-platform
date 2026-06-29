@@ -11,6 +11,7 @@ import { CreateContactOptionDto } from './dto/create-contact-option.dto';
 import { UpdateContactOptionDto } from './dto/update-contact-option.dto';
 import { ReorderContactLinksDto } from './dto/reorder-contact-links.dto';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
+import { Public } from '../../common/decorators/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -125,6 +126,7 @@ export class ContactController {
   }
 
 
+  @Public()
   @Post('submit')
   createSubmission(@Body() dto: CreateContactSubmissionDto) {
     return this.service.createSubmission(dto);

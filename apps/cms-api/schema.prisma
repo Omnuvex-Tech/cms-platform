@@ -444,9 +444,9 @@ model ContactSubmission {
   name      String
   email     String
   phone     String
-  service   String
-  budget    String
-  timeline  String
+  service   String?
+  budget    String?
+  timeline  String?
   message   String
   createdAt DateTime @default(now())
 

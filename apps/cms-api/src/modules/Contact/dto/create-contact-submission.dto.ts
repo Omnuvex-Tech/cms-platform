@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreateContactSubmissionDto {
   @IsString()
@@ -11,13 +11,16 @@ export class CreateContactSubmissionDto {
   phone: string;
 
   @IsString()
-  service: string;
+  @IsOptional()
+  service?: string;
 
   @IsString()
-  budget: string;
+  @IsOptional()
+  budget?: string;
 
   @IsString()
-  timeline: string;
+  @IsOptional()
+  timeline?: string;
 
   @IsString()
   message: string;
