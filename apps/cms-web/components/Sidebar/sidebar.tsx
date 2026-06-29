@@ -123,7 +123,12 @@ const NAV_ITEMS = [
 export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
-    const [openItems, setOpenItems] = useState<string[]>(["Home"]);
+    const [openItems, setOpenItems] = useState<string[]>(() => {
+        const active = NAV_ITEMS
+            .filter(item => !item.hidden && item.children)
+            .find(item => item.children?.some(child => pathname === child.href));
+        return active ? [active.label, "Home"] : ["Home"];
+    });
 
     const toggleItem = (label: string) => {
         setOpenItems((prev) =>
