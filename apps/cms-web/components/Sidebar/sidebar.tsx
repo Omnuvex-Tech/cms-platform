@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "@/styles/sidebar.module.css";
@@ -129,6 +129,15 @@ export function Sidebar() {
             .find(item => item.children?.some(child => pathname === child.href));
         return active ? [active.label, "Home"] : ["Home"];
     });
+
+    useEffect(() => {
+        const active = NAV_ITEMS
+            .filter(item => !item.hidden && item.children)
+            .find(item => item.children?.some(child => pathname === child.href));
+        if (active) {
+            setOpenItems(prev => prev.includes(active.label) ? prev : [...prev, active.label]);
+        }
+    }, [pathname]);
 
     const toggleItem = (label: string) => {
         setOpenItems((prev) =>
