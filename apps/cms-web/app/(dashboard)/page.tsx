@@ -23,6 +23,7 @@ export default async function DashboardPage() {
         { label: "Portfolio",            value: stats?.portfolio ?? "-",           addHref: "/portfolio",             linkLabel: "Əlavə et" },
         { label: "Team",                 value: stats?.team ?? "-",               addHref: "/team",                      linkLabel: "Bax" },
         { label: "Contact Submissions",  value: stats?.contactSubmission ?? "-",   addHref: "/contact-submissions",       linkLabel: "Bax" },
+        { label: "Callback Requests",   value: stats?.callbackRequest ?? "-",    addHref: "/callback-requests",        linkLabel: "Bax" },
         { label: "Vacancy Submissions",  value: stats?.vacancySubmission ?? "-",   addHref: "/Vacancy/VacancySubmissions",       linkLabel: "Bax" },
     ];
 

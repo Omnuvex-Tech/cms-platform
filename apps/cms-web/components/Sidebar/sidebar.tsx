@@ -98,6 +98,7 @@ const NAV_ITEMS = [
         children: [
             { label: "Contact", href: "/contact" },
             { label: "Contact Submissions", href: "/contact-submissions" },
+            { label: "Callback Requests", href: "/callback-requests" },
         ],
     },
 
