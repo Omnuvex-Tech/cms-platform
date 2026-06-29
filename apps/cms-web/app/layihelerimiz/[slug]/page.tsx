@@ -3,9 +3,18 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { LangInput } from "@/components/LangInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const TREVA_API = "http://localhost:10011/api/v1";
+
+type LocalizedValue = Record<string, string> | string | null | undefined;
+
+function toObj(val: LocalizedValue): Record<string, string> {
+  if (!val) return { az: "", en: "", ru: "" };
+  if (typeof val === "string") return { az: val, en: val, ru: val };
+  return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
+}
 
 interface FeatureSection {
   id: string;
@@ -31,42 +40,42 @@ interface HeroImage {
 interface ProjectDetailData {
   id?: string;
   categorySlug: string;
-  heroTitle: string;
-  heroDesktopDesc: string;
-  heroMobileDesc: string;
+  heroTitle: any;
+  heroDesktopDesc: any;
+  heroMobileDesc: any;
   heroImages: HeroImage[];
-  heroCtaText: string;
+  heroCtaText: any;
   heroCtaLink: string;
-  overviewTitleLight: string;
-  overviewTitleBold: string;
-  overviewBrandName: string;
-  overviewDebutText: string;
-  overviewLocationText: string;
-  overviewDebutTextEnd: string;
-  overviewDescription: string;
+  overviewTitleLight: any;
+  overviewTitleBold: any;
+  overviewBrandName: any;
+  overviewDebutText: any;
+  overviewLocationText: any;
+  overviewDebutTextEnd: any;
+  overviewDescription: any;
   overviewImageLarge: string;
-  overviewImageLargeLabel: string;
+  overviewImageLargeLabel: any;
   overviewImageMedium: string;
-  overviewImageMediumLabel: string;
+  overviewImageMediumLabel: any;
   overviewImageSmall: string;
-  overviewImageSmallLabel: string;
+  overviewImageSmallLabel: any;
   overviewDataRows: OverviewDataRow[];
-  featuresHeaderMain: string;
-  featuresHeaderSub: string;
-  featuresTitleLight: string;
-  featuresTitleBold: string;
+  featuresHeaderMain: any;
+  featuresHeaderSub: any;
+  featuresTitleLight: any;
+  featuresTitleBold: any;
   featuresSections: FeatureSection[];
   brochureFile: string;
-  locationTitleLight: string;
-  locationTitleBold: string;
-  locationBrandName: string;
-  locationMainLead: string;
-  locationSubText: string;
+  locationTitleLight: any;
+  locationTitleBold: any;
+  locationBrandName: any;
+  locationMainLead: any;
+  locationSubText: any;
   locationMapImage: string;
-  locationFooterAddress: string;
+  locationFooterAddress: any;
   locationGoogleMapsUrl: string;
-  seoTitle: string;
-  seoDescription: string;
+  seoTitle: any;
+  seoDescription: any;
   ogImage: string;
 }
 
@@ -115,48 +124,52 @@ function toAbs(path: string) {
   return `${API}${path}`;
 }
 
+function ensureObj(val: any): Record<string, string> {
+  return toObj(val);
+}
+
 const emptyDetail: ProjectDetailData = {
   categorySlug: "",
-  heroTitle: "",
-  heroDesktopDesc: "",
-  heroMobileDesc: "",
+  heroTitle: { az: "", en: "", ru: "" },
+  heroDesktopDesc: { az: "", en: "", ru: "" },
+  heroMobileDesc: { az: "", en: "", ru: "" },
   heroImages: [],
-  heroCtaText: "",
+  heroCtaText: { az: "", en: "", ru: "" },
   heroCtaLink: "",
-  overviewTitleLight: "Project ",
-  overviewTitleBold: "Overview",
-  overviewBrandName: "",
-  overviewDebutText: "",
-  overviewLocationText: "",
-  overviewDebutTextEnd: "",
-  overviewDescription: "",
+  overviewTitleLight: { az: "Layihəyə ", en: "Project ", ru: "Обзор " },
+  overviewTitleBold: { az: "Ümumi Baxış", en: "Overview", ru: "Проекта" },
+  overviewBrandName: { az: "", en: "", ru: "" },
+  overviewDebutText: { az: "", en: "", ru: "" },
+  overviewLocationText: { az: "", en: "", ru: "" },
+  overviewDebutTextEnd: { az: "", en: "", ru: "" },
+  overviewDescription: { az: "", en: "", ru: "" },
   overviewImageLarge: "",
-  overviewImageLargeLabel: "",
+  overviewImageLargeLabel: { az: "", en: "", ru: "" },
   overviewImageMedium: "",
-  overviewImageMediumLabel: "",
+  overviewImageMediumLabel: { az: "", en: "", ru: "" },
   overviewImageSmall: "",
-  overviewImageSmallLabel: "",
+  overviewImageSmallLabel: { az: "", en: "", ru: "" },
   overviewDataRows: [
     { key: "Project Type", value: "" },
     { key: "Year of Completion", value: "" },
     { key: "Price Range", value: "" },
   ],
-  featuresHeaderMain: "",
-  featuresHeaderSub: "",
-  featuresTitleLight: "Project ",
-  featuresTitleBold: "Details",
+  featuresHeaderMain: { az: "", en: "", ru: "" },
+  featuresHeaderSub: { az: "", en: "", ru: "" },
+  featuresTitleLight: { az: "Layihənin ", en: "Project ", ru: "Детали " },
+  featuresTitleBold: { az: "Detalları", en: "Details", ru: "Проекта" },
   featuresSections: [],
   brochureFile: "",
-  locationTitleLight: "Property ",
-  locationTitleBold: "Location",
-  locationBrandName: "",
-  locationMainLead: "",
-  locationSubText: "",
+  locationTitleLight: { az: "Layihənin ", en: "Property ", ru: "Расположение " },
+  locationTitleBold: { az: "Coğrafi Mövqeyi", en: "Location", ru: "Проекта" },
+  locationBrandName: { az: "", en: "", ru: "" },
+  locationMainLead: { az: "", en: "", ru: "" },
+  locationSubText: { az: "", en: "", ru: "" },
   locationMapImage: "",
-  locationFooterAddress: "",
+  locationFooterAddress: { az: "", en: "", ru: "" },
   locationGoogleMapsUrl: "",
-  seoTitle: "",
-  seoDescription: "",
+  seoTitle: { az: "", en: "", ru: "" },
+  seoDescription: { az: "", en: "", ru: "" },
   ogImage: "",
 };
 
@@ -176,8 +189,6 @@ export default function ProjectDetailEditor() {
     seo: false,
   });
 
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -191,6 +202,32 @@ export default function ProjectDetailEditor() {
         setDetail({
           ...emptyDetail,
           ...data,
+          heroTitle: ensureObj(data.heroTitle),
+          heroDesktopDesc: ensureObj(data.heroDesktopDesc),
+          heroMobileDesc: ensureObj(data.heroMobileDesc),
+          heroCtaText: ensureObj(data.heroCtaText),
+          overviewTitleLight: ensureObj(data.overviewTitleLight),
+          overviewTitleBold: ensureObj(data.overviewTitleBold),
+          overviewBrandName: ensureObj(data.overviewBrandName),
+          overviewDebutText: ensureObj(data.overviewDebutText),
+          overviewLocationText: ensureObj(data.overviewLocationText),
+          overviewDebutTextEnd: ensureObj(data.overviewDebutTextEnd),
+          overviewDescription: ensureObj(data.overviewDescription),
+          overviewImageLargeLabel: ensureObj(data.overviewImageLargeLabel),
+          overviewImageMediumLabel: ensureObj(data.overviewImageMediumLabel),
+          overviewImageSmallLabel: ensureObj(data.overviewImageSmallLabel),
+          featuresHeaderMain: ensureObj(data.featuresHeaderMain),
+          featuresHeaderSub: ensureObj(data.featuresHeaderSub),
+          featuresTitleLight: ensureObj(data.featuresTitleLight),
+          featuresTitleBold: ensureObj(data.featuresTitleBold),
+          locationTitleLight: ensureObj(data.locationTitleLight),
+          locationTitleBold: ensureObj(data.locationTitleBold),
+          locationBrandName: ensureObj(data.locationBrandName),
+          locationMainLead: ensureObj(data.locationMainLead),
+          locationSubText: ensureObj(data.locationSubText),
+          locationFooterAddress: ensureObj(data.locationFooterAddress),
+          seoTitle: ensureObj(data.seoTitle),
+          seoDescription: ensureObj(data.seoDescription),
           heroImages: Array.isArray(data.heroImages) ? data.heroImages : [],
           overviewDataRows: Array.isArray(data.overviewDataRows) && data.overviewDataRows.length > 0
             ? data.overviewDataRows
@@ -420,15 +457,9 @@ export default function ProjectDetailEditor() {
 
       {/* ── HERO ── */}
       <Section title="Hero" open={openSections.hero} onToggle={() => toggleSection("hero")}>
-        <Field label="Başlıq">
-          <input value={detail.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} style={input} />
-        </Field>
-        <Field label="Desktop Təsvir">
-          <textarea value={detail.heroDesktopDesc} onChange={(e) => updateField("heroDesktopDesc", e.target.value)} rows={2} style={input} />
-        </Field>
-        <Field label="Mobil Təsvir">
-          <textarea value={detail.heroMobileDesc} onChange={(e) => updateField("heroMobileDesc", e.target.value)} rows={2} style={input} />
-        </Field>
+        <LangInput label="Başlıq" value={detail.heroTitle} onChange={(v) => updateField("heroTitle", v)} />
+        <LangInput label="Desktop Təsvir" value={detail.heroDesktopDesc} onChange={(v) => updateField("heroDesktopDesc", v)} type="textarea" />
+        <LangInput label="Mobil Təsvir" value={detail.heroMobileDesc} onChange={(v) => updateField("heroMobileDesc", v)} type="textarea" />
         <Field label="Şəkillər (Swiper)">
           {(detail.heroImages || []).map((img, idx) => (
             <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
@@ -447,9 +478,7 @@ export default function ProjectDetailEditor() {
           ))}
           <button onClick={addHeroImage} style={addBtn}>+ Şəkil əlavə et</button>
         </Field>
-        <Field label="CTA Mətni">
-          <input value={detail.heroCtaText} onChange={(e) => updateField("heroCtaText", e.target.value)} style={input} placeholder="GET A CONSULTATION" />
-        </Field>
+        <LangInput label="CTA Mətni" value={detail.heroCtaText} onChange={(v) => updateField("heroCtaText", v)} placeholder="GET A CONSULTATION" />
         <Field label="CTA Link">
           <input value={detail.heroCtaLink} onChange={(e) => updateField("heroCtaLink", e.target.value)} style={input} placeholder="/consultation" />
         </Field>
@@ -458,46 +487,38 @@ export default function ProjectDetailEditor() {
       {/* ── OVERVIEW ── */}
       <Section title="Overview" open={openSections.overview} onToggle={() => toggleSection("overview")}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Başlıq (Light)">
-            <input value={detail.overviewTitleLight} onChange={(e) => updateField("overviewTitleLight", e.target.value)} style={input} />
-          </Field>
-          <Field label="Başlıq (Bold)">
-            <input value={detail.overviewTitleBold} onChange={(e) => updateField("overviewTitleBold", e.target.value)} style={input} />
-          </Field>
+          <LangInput label="Başlıq (Light)" value={detail.overviewTitleLight} onChange={(v) => updateField("overviewTitleLight", v)} />
+          <LangInput label="Başlıq (Bold)" value={detail.overviewTitleBold} onChange={(v) => updateField("overviewTitleBold", v)} />
         </div>
-        <Field label="Brand Adı">
-          <input value={detail.overviewBrandName} onChange={(e) => updateField("overviewBrandName", e.target.value)} style={input} />
-        </Field>
+        <LangInput label="Brand Adı" value={detail.overviewBrandName} onChange={(v) => updateField("overviewBrandName", v)} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-          <Field label="Debut Text">
-            <input value={detail.overviewDebutText} onChange={(e) => updateField("overviewDebutText", e.target.value)} style={input} />
-          </Field>
-          <Field label="Location Text">
-            <input value={detail.overviewLocationText} onChange={(e) => updateField("overviewLocationText", e.target.value)} style={input} />
-          </Field>
-          <Field label="Debut Text End">
-            <input value={detail.overviewDebutTextEnd} onChange={(e) => updateField("overviewDebutTextEnd", e.target.value)} style={input} />
-          </Field>
+          <LangInput label="Debut Text" value={detail.overviewDebutText} onChange={(v) => updateField("overviewDebutText", v)} />
+          <LangInput label="Location Text" value={detail.overviewLocationText} onChange={(v) => updateField("overviewLocationText", v)} />
+          <LangInput label="Debut Text End" value={detail.overviewDebutTextEnd} onChange={(v) => updateField("overviewDebutTextEnd", v)} />
         </div>
-        <Field label="Təsvir">
-          <textarea value={detail.overviewDescription} onChange={(e) => updateField("overviewDescription", e.target.value)} rows={4} style={input} />
-        </Field>
+        <LangInput label="Təsvir" value={detail.overviewDescription} onChange={(v) => updateField("overviewDescription", v)} type="textarea" />
         <Field label="Böyük Şəkil">
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <FileUploadButton currentUrl={detail.overviewImageLarge} onUpload={(f) => handleFileUpload("overviewImageLarge", f)} onRemove={() => updateField("overviewImageLarge", "")} />
-            <input value={detail.overviewImageLargeLabel} onChange={(e) => updateField("overviewImageLargeLabel", e.target.value)} placeholder="Label" style={{ ...input, flex: 1 }} />
+            <div style={{ flex: 1 }}>
+              <LangInput label="Label" value={detail.overviewImageLargeLabel} onChange={(v) => updateField("overviewImageLargeLabel", v)} />
+            </div>
           </div>
         </Field>
         <Field label="Orta Şəkil">
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <FileUploadButton currentUrl={detail.overviewImageMedium} onUpload={(f) => handleFileUpload("overviewImageMedium", f)} onRemove={() => updateField("overviewImageMedium", "")} />
-            <input value={detail.overviewImageMediumLabel} onChange={(e) => updateField("overviewImageMediumLabel", e.target.value)} placeholder="Label" style={{ ...input, flex: 1 }} />
+            <div style={{ flex: 1 }}>
+              <LangInput label="Label" value={detail.overviewImageMediumLabel} onChange={(v) => updateField("overviewImageMediumLabel", v)} />
+            </div>
           </div>
         </Field>
         <Field label="Kiçik Şəkil">
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <FileUploadButton currentUrl={detail.overviewImageSmall} onUpload={(f) => handleFileUpload("overviewImageSmall", f)} onRemove={() => updateField("overviewImageSmall", "")} />
-            <input value={detail.overviewImageSmallLabel} onChange={(e) => updateField("overviewImageSmallLabel", e.target.value)} placeholder="Label" style={{ ...input, flex: 1 }} />
+            <div style={{ flex: 1 }}>
+              <LangInput label="Label" value={detail.overviewImageSmallLabel} onChange={(v) => updateField("overviewImageSmallLabel", v)} />
+            </div>
           </div>
         </Field>
         <Field label="Data Rows">
@@ -514,19 +535,11 @@ export default function ProjectDetailEditor() {
 
       {/* ── FEATURES ── */}
       <Section title="Features" open={openSections.features} onToggle={() => toggleSection("features")}>
-        <Field label="Header Main">
-          <textarea value={detail.featuresHeaderMain} onChange={(e) => updateField("featuresHeaderMain", e.target.value)} rows={3} style={input} />
-        </Field>
-        <Field label="Header Sub">
-          <textarea value={detail.featuresHeaderSub} onChange={(e) => updateField("featuresHeaderSub", e.target.value)} rows={3} style={input} />
-        </Field>
+        <LangInput label="Header Main" value={detail.featuresHeaderMain} onChange={(v) => updateField("featuresHeaderMain", v)} type="textarea" />
+        <LangInput label="Header Sub" value={detail.featuresHeaderSub} onChange={(v) => updateField("featuresHeaderSub", v)} type="textarea" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Başlıq (Light)">
-            <input value={detail.featuresTitleLight} onChange={(e) => updateField("featuresTitleLight", e.target.value)} style={input} />
-          </Field>
-          <Field label="Başlıq (Bold)">
-            <input value={detail.featuresTitleBold} onChange={(e) => updateField("featuresTitleBold", e.target.value)} style={input} />
-          </Field>
+          <LangInput label="Başlıq (Light)" value={detail.featuresTitleLight} onChange={(v) => updateField("featuresTitleLight", v)} />
+          <LangInput label="Başlıq (Bold)" value={detail.featuresTitleBold} onChange={(v) => updateField("featuresTitleBold", v)} />
         </div>
         <Field label="Brochure Faylı">
           <FileUploadButton
@@ -594,28 +607,16 @@ export default function ProjectDetailEditor() {
       {/* ── LOCATION ── */}
       <Section title="Location" open={openSections.location} onToggle={() => toggleSection("location")}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Başlıq (Light)">
-            <input value={detail.locationTitleLight} onChange={(e) => updateField("locationTitleLight", e.target.value)} style={input} />
-          </Field>
-          <Field label="Başlıq (Bold)">
-            <input value={detail.locationTitleBold} onChange={(e) => updateField("locationTitleBold", e.target.value)} style={input} />
-          </Field>
+          <LangInput label="Başlıq (Light)" value={detail.locationTitleLight} onChange={(v) => updateField("locationTitleLight", v)} />
+          <LangInput label="Başlıq (Bold)" value={detail.locationTitleBold} onChange={(v) => updateField("locationTitleBold", v)} />
         </div>
-        <Field label="Brand Adı">
-          <input value={detail.locationBrandName} onChange={(e) => updateField("locationBrandName", e.target.value)} style={input} placeholder="Panorama by ELIE SAAB" />
-        </Field>
-        <Field label="Main Lead">
-          <textarea value={detail.locationMainLead} onChange={(e) => updateField("locationMainLead", e.target.value)} rows={3} style={input} />
-        </Field>
-        <Field label="Sub Text">
-          <textarea value={detail.locationSubText} onChange={(e) => updateField("locationSubText", e.target.value)} rows={3} style={input} />
-        </Field>
+        <LangInput label="Brand Adı" value={detail.locationBrandName} onChange={(v) => updateField("locationBrandName", v)} placeholder="Panorama by ELIE SAAB" />
+        <LangInput label="Main Lead" value={detail.locationMainLead} onChange={(v) => updateField("locationMainLead", v)} type="textarea" />
+        <LangInput label="Sub Text" value={detail.locationSubText} onChange={(v) => updateField("locationSubText", v)} type="textarea" />
         <Field label="Xəritə Şəkli">
           <FileUploadButton currentUrl={detail.locationMapImage} onUpload={(f) => handleFileUpload("locationMapImage", f)} onRemove={() => updateField("locationMapImage", "")} />
         </Field>
-        <Field label="Ünvan (Footer)">
-          <input value={detail.locationFooterAddress} onChange={(e) => updateField("locationFooterAddress", e.target.value)} style={input} />
-        </Field>
+        <LangInput label="Ünvan (Footer)" value={detail.locationFooterAddress} onChange={(v) => updateField("locationFooterAddress", v)} />
         <Field label="Google Maps Embed URL">
           <input value={detail.locationGoogleMapsUrl} onChange={(e) => updateField("locationGoogleMapsUrl", e.target.value)} style={input} placeholder="https://www.google.com/maps/embed?..." />
         </Field>
@@ -623,12 +624,8 @@ export default function ProjectDetailEditor() {
 
       {/* ── SEO ── */}
       <Section title="SEO" open={openSections.seo} onToggle={() => toggleSection("seo")}>
-        <Field label="SEO Başlıq">
-          <input value={detail.seoTitle} onChange={(e) => updateField("seoTitle", e.target.value)} style={input} />
-        </Field>
-        <Field label="SEO Təsvir">
-          <textarea value={detail.seoDescription} onChange={(e) => updateField("seoDescription", e.target.value)} rows={2} style={input} />
-        </Field>
+        <LangInput label="SEO Başlıq" value={detail.seoTitle} onChange={(v) => updateField("seoTitle", v)} />
+        <LangInput label="SEO Təsvir" value={detail.seoDescription} onChange={(v) => updateField("seoDescription", v)} type="textarea" />
         <Field label="OG Şəkil">
           <FileUploadButton currentUrl={detail.ogImage} onUpload={(f) => handleFileUpload("ogImage", f)} onRemove={() => updateField("ogImage", "")} />
         </Field>

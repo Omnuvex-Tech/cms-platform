@@ -632,12 +632,12 @@ model PulseCategory {
 
 model LayihelerimizCategory {
   id            String   @id @default(cuid())
-  title         String
+  title         Json     @default("{}")
   slug          String   @unique
   image         String?
   brandImage    String?
-  description   String?
-  brand         String?
+  description   Json?
+  brand         Json?
   brandTextColor String?  @default("white")
   order         Int      @default(0)
   isVisible     Boolean  @default(true)
@@ -651,50 +651,60 @@ model LayihelerimizProjectDetail {
   id             String  @id @default(cuid())
   categorySlug   String  @unique
 
-  heroTitle            String?
-  heroDesktopDesc      String?
-  heroMobileDesc       String?
+  heroTitle            Json?
+  heroDesktopDesc      Json?
+  heroMobileDesc       Json?
   heroImages           Json?
-  heroCtaText          String?
+  heroCtaText          Json?
   heroCtaLink          String?
 
-  overviewTitleLight      String?
-  overviewTitleBold       String?
-  overviewBrandName       String?
-  overviewDebutText       String?
-  overviewLocationText    String?
-  overviewDebutTextEnd    String?
-  overviewDescription     String?
+  overviewTitleLight      Json?
+  overviewTitleBold       Json?
+  overviewBrandName       Json?
+  overviewDebutText       Json?
+  overviewLocationText    Json?
+  overviewDebutTextEnd    Json?
+  overviewDescription     Json?
   overviewImageLarge      String?
-  overviewImageLargeLabel String?
+  overviewImageLargeLabel Json?
   overviewImageMedium     String?
-  overviewImageMediumLabel String?
+  overviewImageMediumLabel Json?
   overviewImageSmall      String?
-  overviewImageSmallLabel String?
+  overviewImageSmallLabel Json?
   overviewDataRows        Json?
 
-  featuresHeaderMain  String?
-  featuresHeaderSub   String?
-  featuresTitleLight  String?
-  featuresTitleBold   String?
+  featuresHeaderMain  Json?
+  featuresHeaderSub   Json?
+  featuresTitleLight  Json?
+  featuresTitleBold   Json?
   featuresSections    Json?
   brochureFile        String?
 
-  locationTitleLight    String?
-  locationTitleBold     String?
-  locationBrandName     String?
-  locationMainLead      String?
-  locationSubText       String?
+  locationTitleLight    Json?
+  locationTitleBold     Json?
+  locationBrandName     Json?
+  locationMainLead      Json?
+  locationSubText       Json?
   locationMapImage      String?
-  locationFooterAddress String?
+  locationFooterAddress Json?
   locationGoogleMapsUrl String?
 
-  seoTitle       String?
-  seoDescription String?
+  seoTitle       Json?
+  seoDescription Json?
   ogImage        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("layihelerimiz_project_details")
+}
+
+model CallbackRequest {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  role      String
+  createdAt DateTime @default(now())
+
+  @@map("callback_requests")
 }

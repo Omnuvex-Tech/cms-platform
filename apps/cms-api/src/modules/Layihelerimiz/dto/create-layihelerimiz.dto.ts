@@ -1,8 +1,8 @@
-import { IsString, IsOptional, IsInt, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean, IsObject } from 'class-validator';
 
 export class CreateLayihelerimizDto {
-  @IsString()
-  title: string;
+  @IsObject()
+  title: any;
 
   @IsString()
   @IsOptional()
@@ -16,13 +16,13 @@ export class CreateLayihelerimizDto {
   @IsOptional()
   brandImage?: string;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  description?: string;
+  description?: any;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  brand?: string;
+  brand?: any;
 
   @IsString()
   @IsOptional()

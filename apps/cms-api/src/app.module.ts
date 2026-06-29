@@ -23,6 +23,7 @@ import { HeroModule } from './modules/Home/Hero/hero.module';
 import { HomeModule } from './modules/Home/Settings/home.module';
 import { PulseModule } from './modules/Pulse/pulse.module';
 import { LayihelerimizModule } from './modules/Layihelerimiz/layihelerimiz.module';
+import { CallbackModule } from './modules/Callback/callback.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -30,7 +31,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
               ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
-              DashboardModule,PageMetaModule, HeroModule, HomeModule, PulseModule, LayihelerimizModule
+              DashboardModule,PageMetaModule, HeroModule, HomeModule, PulseModule, LayihelerimizModule, CallbackModule
   ],
   controllers: [AppController],
   providers: [

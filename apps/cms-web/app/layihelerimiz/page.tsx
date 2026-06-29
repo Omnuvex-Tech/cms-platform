@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { LangInput, getLocalized } from "@/components/LangInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const TREVA_API = "http://localhost:10011/api/v1";
+
+type LocalizedValue = Record<string, string> | string | null | undefined;
+
+function toObj(val: LocalizedValue): Record<string, string> {
+  if (!val) return { az: "", en: "", ru: "" };
+  if (typeof val === "string") return { az: val, en: val, ru: val };
+  return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
+}
 
 interface OffPlanCategory {
   id: string;
@@ -18,8 +27,8 @@ interface CmsDisplayData {
   slug: string;
   image: string | null;
   brandImage: string | null;
-  description: string | null;
-  brand: string | null;
+  description: LocalizedValue;
+  brand: LocalizedValue;
   brandTextColor: string | null;
   order: number;
   isVisible: boolean;
@@ -33,8 +42,8 @@ interface MergedCategory {
   image: string | null;
   brandImage: string | null;
   cmsId: string | null;
-  description: string | null;
-  brand: string | null;
+  description: LocalizedValue;
+  brand: LocalizedValue;
   brandTextColor: string | null;
   order: number;
   isVisible: boolean;
@@ -100,8 +109,8 @@ export default function LayihelerimizPage() {
   const [brandImageFile, setBrandImageFile] = useState<File | null>(null);
   const [brandImagePreview, setBrandImagePreview] = useState("");
   const [brandImageUploading, setBrandImageUploading] = useState(false);
-  const [description, setDescription] = useState("");
-  const [brand, setBrand] = useState("");
+  const [description, setDescription] = useState<Record<string, string>>({ az: "", en: "", ru: "" });
+  const [brand, setBrand] = useState<Record<string, string>>({ az: "", en: "", ru: "" });
   const [brandTextColor, setBrandTextColor] = useState("white");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,8 +171,8 @@ export default function LayihelerimizPage() {
     setBrandImage(item.brandImage || "");
     setBrandImageFile(null);
     setBrandImagePreview(item.brandImage ? toAbsUrl(item.brandImage) : "");
-    setDescription(item.description || "");
-    setBrand(item.brand || "");
+    setDescription(toObj(item.description));
+    setBrand(toObj(item.brand));
     setBrandTextColor(item.brandTextColor || "white");
     setModalOpen(true);
   };
@@ -215,8 +224,8 @@ export default function LayihelerimizPage() {
         slug: editingItem.slug,
         image: imageUrl || null,
         brandImage: brandImageUrl || null,
-        description: description.trim() || null,
-        brand: brand.trim() || null,
+        description: (description.az || description.en || description.ru) ? description : null,
+        brand: (brand.az || brand.en || brand.ru) ? brand : null,
         brandTextColor: brandTextColor,
         order: editingItem.order,
         isVisible: editingItem.isVisible,
@@ -298,7 +307,7 @@ export default function LayihelerimizPage() {
                 <div style={{ fontSize: 13, color: "#6b7280" }}>
                   /{item.slug}
                   {item.brand && (
-                    <> · {item.brand}</>
+                    <> · {getLocalized(item.brand, 'az')}</>
                   )}
                 </div>
               </div>
@@ -520,23 +529,10 @@ export default function LayihelerimizPage() {
             </div>
 
             {/* Description */}
-            <label style={labelStyle}>Təsvir</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Qısa təsvir"
-              rows={3}
-              style={{ ...inputStyle, resize: "vertical" }}
-            />
+            <LangInput label="Təsvir" value={description} onChange={setDescription} type="textarea" placeholder="Qısa təsvir" />
 
             {/* Brand */}
-            <label style={labelStyle}>Brand</label>
-            <input
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              placeholder="Reportage."
-              style={inputStyle}
-            />
+            <LangInput label="Brand" value={brand} onChange={setBrand} placeholder="Reportage." />
 
             {/* Brand Text Color */}
             <label style={labelStyle}>Brend Mətn Rəngi</label>

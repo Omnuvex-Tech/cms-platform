@@ -38,7 +38,7 @@ export class LayihelerimizService {
   }
 
   async create(dto: CreateLayihelerimizDto) {
-    const slug = dto.slug || slugify(dto.title);
+    const slug = dto.slug || slugify(typeof dto.title === 'object' ? (dto.title?.az || Object.values(dto.title)[0] || '') : dto.title);
     const existing = await this.repo.findBySlug(slug);
     if (existing) throw new ConflictException('Bu slug artıq mövcuddur');
     return this.repo.create({ ...dto, slug });

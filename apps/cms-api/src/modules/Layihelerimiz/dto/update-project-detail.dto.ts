@@ -1,47 +1,47 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class UpdateProjectDetailDto {
   @IsString() @IsOptional() categorySlug?: string;
 
-  @IsString() @IsOptional() heroTitle?: string;
-  @IsString() @IsOptional() heroDesktopDesc?: string;
-  @IsString() @IsOptional() heroMobileDesc?: string;
+  @IsObject() @IsOptional() heroTitle?: any;
+  @IsObject() @IsOptional() heroDesktopDesc?: any;
+  @IsObject() @IsOptional() heroMobileDesc?: any;
   @IsOptional() heroImages?: any;
-  @IsString() @IsOptional() heroCtaText?: string;
+  @IsObject() @IsOptional() heroCtaText?: any;
   @IsString() @IsOptional() heroCtaLink?: string;
 
-  @IsString() @IsOptional() overviewTitleLight?: string;
-  @IsString() @IsOptional() overviewTitleBold?: string;
-  @IsString() @IsOptional() overviewBrandName?: string;
-  @IsString() @IsOptional() overviewDebutText?: string;
-  @IsString() @IsOptional() overviewLocationText?: string;
-  @IsString() @IsOptional() overviewDebutTextEnd?: string;
-  @IsString() @IsOptional() overviewDescription?: string;
+  @IsObject() @IsOptional() overviewTitleLight?: any;
+  @IsObject() @IsOptional() overviewTitleBold?: any;
+  @IsObject() @IsOptional() overviewBrandName?: any;
+  @IsObject() @IsOptional() overviewDebutText?: any;
+  @IsObject() @IsOptional() overviewLocationText?: any;
+  @IsObject() @IsOptional() overviewDebutTextEnd?: any;
+  @IsObject() @IsOptional() overviewDescription?: any;
   @IsString() @IsOptional() overviewImageLarge?: string;
-  @IsString() @IsOptional() overviewImageLargeLabel?: string;
+  @IsObject() @IsOptional() overviewImageLargeLabel?: any;
   @IsString() @IsOptional() overviewImageMedium?: string;
-  @IsString() @IsOptional() overviewImageMediumLabel?: string;
+  @IsObject() @IsOptional() overviewImageMediumLabel?: any;
   @IsString() @IsOptional() overviewImageSmall?: string;
-  @IsString() @IsOptional() overviewImageSmallLabel?: string;
+  @IsObject() @IsOptional() overviewImageSmallLabel?: any;
   @IsOptional() overviewDataRows?: any;
 
-  @IsString() @IsOptional() featuresHeaderMain?: string;
-  @IsString() @IsOptional() featuresHeaderSub?: string;
-  @IsString() @IsOptional() featuresTitleLight?: string;
-  @IsString() @IsOptional() featuresTitleBold?: string;
+  @IsObject() @IsOptional() featuresHeaderMain?: any;
+  @IsObject() @IsOptional() featuresHeaderSub?: any;
+  @IsObject() @IsOptional() featuresTitleLight?: any;
+  @IsObject() @IsOptional() featuresTitleBold?: any;
   @IsOptional() featuresSections?: any;
   @IsString() @IsOptional() brochureFile?: string;
 
-  @IsString() @IsOptional() locationTitleLight?: string;
-  @IsString() @IsOptional() locationTitleBold?: string;
-  @IsString() @IsOptional() locationBrandName?: string;
-  @IsString() @IsOptional() locationMainLead?: string;
-  @IsString() @IsOptional() locationSubText?: string;
+  @IsObject() @IsOptional() locationTitleLight?: any;
+  @IsObject() @IsOptional() locationTitleBold?: any;
+  @IsObject() @IsOptional() locationBrandName?: any;
+  @IsObject() @IsOptional() locationMainLead?: any;
+  @IsObject() @IsOptional() locationSubText?: any;
   @IsString() @IsOptional() locationMapImage?: string;
-  @IsString() @IsOptional() locationFooterAddress?: string;
+  @IsObject() @IsOptional() locationFooterAddress?: any;
   @IsString() @IsOptional() locationGoogleMapsUrl?: string;
 
-  @IsString() @IsOptional() seoTitle?: string;
-  @IsString() @IsOptional() seoDescription?: string;
+  @IsObject() @IsOptional() seoTitle?: any;
+  @IsObject() @IsOptional() seoDescription?: any;
   @IsString() @IsOptional() ogImage?: string;
 }

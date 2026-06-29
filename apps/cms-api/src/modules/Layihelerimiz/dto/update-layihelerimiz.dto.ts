@@ -1,9 +1,9 @@
-import { IsString, IsOptional, IsInt, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean, IsObject } from 'class-validator';
 
 export class UpdateLayihelerimizDto {
-  @IsString()
+  @IsObject()
   @IsOptional()
-  title?: string;
+  title?: any;
 
   @IsString()
   @IsOptional()
@@ -17,13 +17,13 @@ export class UpdateLayihelerimizDto {
   @IsOptional()
   brandImage?: string;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  description?: string;
+  description?: any;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  brand?: string;
+  brand?: any;
 
   @IsString()
   @IsOptional()
