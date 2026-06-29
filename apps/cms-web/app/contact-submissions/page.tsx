@@ -35,7 +35,8 @@ function formatDate(iso: string) {
     });
 }
 
-function decode(str: string) {
+function decode(str: string | null | undefined) {
+    if (!str) return '';
     return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
 }
 
