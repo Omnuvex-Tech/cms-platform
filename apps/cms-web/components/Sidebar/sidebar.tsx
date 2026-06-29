@@ -95,7 +95,6 @@ const NAV_ITEMS = [
         label: "Contact",
         icon: <Phone size={18} />,
         children: [
-            { label: "Contact", href: "/contact" },
             { label: "Contact Submissions", href: "/contact-submissions" },
             { label: "Callback Requests", href: "/callback-requests" },
         ],
