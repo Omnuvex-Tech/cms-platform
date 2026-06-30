@@ -21,10 +21,16 @@ export class PulseRepository {
     });
   }
 
-  findPublishedArticles() {
+  findPublishedArticles(q?: string, categorySlug?: string) {
+    // Always fetch all published articles — filtering done in service layer
+    // because Prisma doesn't support mode:insensitive on JSON path filters
     return this.prisma.pulseArticle.findMany({
       where: { published: true },
-      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
+      include: {
+        author: true,
+        keywords: true,
+        selectedArticles: { include: { author: true, keywords: true } },
+      },
       orderBy: { date: 'desc' },
     });
   }

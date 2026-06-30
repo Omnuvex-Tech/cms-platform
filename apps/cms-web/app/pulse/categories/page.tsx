@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { apiFetch, generateSlug } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
-type Category = { id: string; name: string; slug: string };
+type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
+
+function getLocalizedName(name: string | { az?: string; en?: string; ru?: string } | undefined): string {
+    if (!name) return "";
+    if (typeof name === "string") return name;
+    return name.az || Object.values(name)[0] || "";
+}
 
 export default function PulseCategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -24,13 +30,13 @@ export default function PulseCategoriesPage() {
     useEffect(() => { load(); }, []);
 
     const openCreate = () => { setEditItem(null); setName(""); setSlug(""); setModalOpen(true); };
-    const openEdit = (c: Category) => { setEditItem(c); setName(c.name); setSlug(c.slug); setModalOpen(true); };
+    const openEdit = (c: Category) => { setEditItem(c); setName(getLocalizedName(c.name)); setSlug(c.slug); setModalOpen(true); };
 
     const save = async () => {
         if (!name.trim()) return;
         setSaving(true);
         try {
-            const body = { name, slug: slug || generateSlug(name) };
+            const body = { name: { az: name }, slug: slug || generateSlug(name) };
             if (editItem) await apiFetch(`/pulse/categories/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/categories", { method: "POST", body: JSON.stringify(body) });
             setModalOpen(false); load();
@@ -58,7 +64,7 @@ export default function PulseCategoriesPage() {
                                 <tbody>
                                     {categories.map(c => (
                                         <tr key={c.id}>
-                                            <td><strong>{c.name}</strong></td>
+                                            <td><strong>{getLocalizedName(c.name)}</strong></td>
                                             <td><span className={styles.blogSlug}>/{c.slug}</span></td>
                                             <td>
                                                 <div className={styles.actions}>

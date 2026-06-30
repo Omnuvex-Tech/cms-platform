@@ -6,12 +6,18 @@ import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
 type Article = {
-    id: string; slug: string; title: string; category: string;
+    id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; category: string | { az?: string; en?: string; ru?: string };
     date: string; coverImage?: string; excerpt?: string;
     published: boolean; featured: boolean;
     headerPosition?: string; headerOrder?: number;
     author?: { name: string }; keywords?: { name: string }[];
 };
+
+function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.az || Object.values(value)[0] || "";
+}
 
 export default function PulseArticlesPage() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -83,12 +89,12 @@ export default function PulseArticlesPage() {
                                                         <img src={toAbsUrl(a.coverImage)} alt="" className={styles.coverThumb} />
                                                     )}
                                                     <div>
-                                                        <div className={styles.blogTitle}>{a.title}</div>
+                                                        <div className={styles.blogTitle}>{getLocalizedName(a.title)}</div>
                                                         <div className={styles.blogSlug}>/{a.slug}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td><span className={styles.badgeTag}>{a.category}</span></td>
+                                            <td><span className={styles.badgeTag}>{getLocalizedName(a.category)}</span></td>
                                             <td>{a.author?.name || "—"}</td>
                                             <td>{positionBadge(a.headerPosition)}</td>
                                             <td>

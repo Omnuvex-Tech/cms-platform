@@ -3,15 +3,15 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Pulse CMS (production seed — 6 articles)...');
+  console.log('🌱 Seeding Pulse CMS (multilingual seed — 6 articles)...');
 
   // ── Categories ──────────────────────────────────────────
   const pulseCategories = [
-    { name: 'Bloq', slug: 'bloq' },
-    { name: 'Kampaniya', slug: 'kampaniya' },
-    { name: 'Tədbir', slug: 'tedbir' },
-    { name: 'Analizlər', slug: 'analizler' },
-    { name: 'Xəbərlər', slug: 'xebərlər' },
+    { name: { az: 'Bloq', en: 'Blog', ru: 'Блог' }, slug: 'bloq' },
+    { name: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' }, slug: 'kampaniya' },
+    { name: { az: 'Tədbir', en: 'Event', ru: 'Событие' }, slug: 'tedbir' },
+    { name: { az: 'Analizlər', en: 'Analysis', ru: 'Анализы' }, slug: 'analizler' },
+    { name: { az: 'Xəbərlər', en: 'News', ru: 'Новости' }, slug: 'xebərlər' },
   ];
   for (const cat of pulseCategories) {
     await prisma.pulseCategory.upsert({
@@ -74,13 +74,16 @@ async function main() {
   }
   console.log('✅ Pulse keywords seeded (10)');
 
-  // ── Articles (6 — production seed) ──────────────────────
+  // ── Articles (6 — multilingual) ──────────────────────
   const ARTICLES_DATA = [
-    // LEFT 1 — Kampaniya
     {
       slug: 'panorama-by-elie-saab-da-30-70-kampaniyasi',
-      title: 'Panorama By Elie Saab-da 30/70 Kampaniyası: Aylıq Ödənişsiz Eksklüziv İnvestisiya',
-      category: 'Kampaniya',
+      title: {
+        az: 'Panorama By Elie Saab-da 30/70 Kampaniyası: Aylıq Ödənişsiz Eksklüziv İnvestisiya',
+        en: 'Panorama By Elie Saab 30/70 Campaign: Exclusive Investment Without Monthly Payments',
+        ru: 'Panorama By Elie Saab 30/70 Кампания: Эксклюзивная инвестиция без ежемесячных платежей',
+      },
+      category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03349150df278a38351b4a_panorama%20aze.webp',
       headerPosition: 'left',
@@ -88,19 +91,21 @@ async function main() {
       keywords: ['kampaniya', 'investisiya', 'layihe'],
       blocks: [
         { type: 'heading' as const, level: 2 as const, text: 'Panorama By Elie Saab — Bakının yeni ikonu' },
-        { type: 'paragraph' as const, text: 'Panorama By Elie Saab, Bakının ən prestijli layihələrindən biri olaraq, daşınmaz əmlak bazarında yeni standartlar müəyyən edir. Bu layihə, beynəlxalq dizayn anlayışını Azərbaycan memarlığı ilə birləşdirərək, yaşayış məkanına yeni məna verir.' },
+        { type: 'paragraph' as const, text: 'Panorama By Elie Saab, Bakının ən prestijli layihələrindən biri olaraq, daşınmaz əmlak bazarında yeni standartlar müəyyən edir.' },
         { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03349150df278a38351b4a_panorama%20aze.webp', alt: 'Panorama By Elie Saab' },
         { type: 'heading' as const, level: 3 as const, text: '30/70 Kampaniyası nədir?' },
-        { type: 'paragraph' as const, text: '30/70 kampaniyası çərçivəsində yalnız 30% ilkin ödənişlə mənzil sahibi ola bilərsiniz. Qalan 70% isə aylıq ödənişlərlə — faizsiz və komissiyasız. Bu, Bakıda nadir təkliflərdən biridir.' },
+        { type: 'paragraph' as const, text: '30/70 kampaniyası çərçivəsində yalnız 30% ilkin ödənişlə mənzil sahibi ola bilərsiniz.' },
         { type: 'list' as const, items: ['30% ilkin ödəniş', '70% faizsiz aylıq ödəniş', 'Aylıq ödəniş 0% komissiya', 'Çatdırılma 2027-ci ildə'] },
-        { type: 'paragraph' as const, text: 'Layihədə 1, 2 və 3 otaqlı mənzillər təklif olunur. Hər mənzil premium səviyyədə təmir olunub və modern dizayn həlləri təqdim edir.' },
       ],
     },
-    // LEFT 2 — Kampaniya
     {
       slug: 'reportage-heights-de-30-70-kampaniyasi',
-      title: 'Reportage Heights-də 30/70 Kampaniyası: Aylıq Ödənişsiz Prestijli Həyat',
-      category: 'Kampaniya',
+      title: {
+        az: 'Reportage Heights-də 30/70 Kampaniyası: Aylıq Ödənişsiz Prestijli Həyat',
+        en: 'Reportage Heights 30/70 Campaign: Prestigious Life Without Monthly Payments',
+        ru: 'Reportage Heights 30/70 Кампания: Премиум жизнь без ежемесячных платежей',
+      },
+      category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03347538e0bfa6ec214d61_reportage%20aze.webp',
       headerPosition: 'left',
@@ -108,22 +113,28 @@ async function main() {
       keywords: ['kampaniya', 'investisiya'],
       blocks: [
         { type: 'heading' as const, level: 2 as const, text: 'Reportage Heights — Dubay təcrübəsi Bakıda' },
-        { type: 'paragraph' as const, text: 'Reportage Heights, Dubayın məşhur Reportage Group tərəfindən Bakıda həyata keçirilən ilk layihədir. Bu bina, beynəlxalq keyfiyyət standartlarını Azərbaycan bazarına gətirir.' },
+        { type: 'paragraph' as const, text: 'Reportage Heights, Dubayın məşhur Reportage Group tərəfindən Bakıda həyata keçirilən ilk layihədir.' },
         { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03347538e0bfa6ec214d61_reportage%20aze.webp', alt: 'Reportage Heights' },
         { type: 'heading' as const, level: 3 as const, text: 'Kampaniya şərtləri' },
-        { type: 'paragraph' as const, text: 'Reportage Heights-də 30/70 kampaniyası ilə premium mənzillərə sahib ola bilərsiniz. Layihə şəhərin mərkəzində, infrastrukturun inkişaf etdiyi ərazidə yerləşir.' },
+        { type: 'paragraph' as const, text: 'Reportage Heights-də 30/70 kampaniyası ilə premium mənzillərə sahib ola bilərsiniz.' },
         { type: 'list' as const, items: ['Şəhər mərkəzində yerləşmə', 'Premium təmir', 'Geniş mənzil planları', 'Kapital Abadlıq'] },
-        { type: 'paragraph' as const, text: 'Reportage Heights ilə gələcəyinə investisiya et. Həm yaşayış, həm investisiya üçün ideal seçim.' },
       ],
     },
-    // CENTER — Bloq (featured)
     {
       slug: 'menzil-almaq-ucun-ilkin-odenis-ne-qeder-olmalidir',
-      title: 'Mənzil almaq üçün ilkin ödəniş nə qədər olmalıdır?',
-      category: 'Bloq',
+      title: {
+        az: 'Mənzil almaq üçün ilkin ödəniş nə qədər olmalıdır?',
+        en: 'How much should the down payment be for an apartment?',
+        ru: 'Каким должен быть первоначальный взнос за квартиру?',
+      },
+      category: { az: 'Bloq', en: 'Blog', ru: 'Блог' },
+      excerpt: {
+        az: 'Hər kəsin büdcəsi fərqlidir, amma daşınmaz əmlak bazarı daxilindəki tendensiyalar bizə müəyyən rəqəmlər diktə edir.',
+        en: 'Everyone has a different budget, but trends in the real estate market dictate certain figures.',
+        ru: 'У каждого разный бюджет, но тенденции на рынке недвижимости диктуют определённые цифры.',
+      },
       date: '08.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69fd94d16c2f782bfe2b200b_emil%20blog%20cover.webp',
-      excerpt: 'Hər kəsin büdcəsi fərqlidir, amma daşınmaz əmlak bazarı daxilindəki tendensiyalar bizə müəyyən rəqəmlər diktə edir.',
       authorSlug: 'emil-qurbanov',
       headerPosition: 'center',
       headerOrder: 1,
@@ -131,31 +142,23 @@ async function main() {
       keywords: ['dasinmaz-emlak', 'bakida-evler', 'ipoteka', 'investisiya'],
       selectedArticleSlugs: ['bakida-dasinmaz-emlak-satis-ugurunu-ne-mueyyen-edir', 'bakida-investisiya-ucun-en-ugurlu-layiheler-hansilardir'],
       blocks: [
-        { type: 'paragraph' as const, text: 'Hər kəsin büdcəsi fərqlidir, amma daşınmaz əmlak bazarı daxilindəki tendensiyalar bizə müəyyən rəqəmlər diktə edir. Adətən, ilkin ödəniş faizi layihədən və ödəniş növündən (daxili kredit və ya ipoteka) asılı olaraq dəyişir. Bakıda mənzil almaq istəyirsinizsə, minimum 20-30% ilkin ödənişə hazır olmalısınız.' },
-        { type: 'heading' as const, level: 2 as const, text: 'Bakıda mənzil qiymətləri nə qədərdir və artım gözlənilirmi?' },
-        { type: 'paragraph' as const, text: 'Bəli, Bakıda mənzil qiymətləri artımı trendindədir. Bunun əsas səbəbləri:' },
+        { type: 'paragraph' as const, text: 'Hər kəsin büdcəsi fərqlidir, amma daşınmaz əmlak bazarı daxilindəki tendensiyalar bizə müəyyən rəqəmlər diktə edir.' },
+        { type: 'heading' as const, level: 2 as const, text: 'Bakıda mənzil qiymətləri nə qədərdir?' },
+        { type: 'paragraph' as const, text: 'Bəli, Bakıda mənzil qiymətləri artımı trendindədir.' },
         { type: 'list' as const, items: ['Tikinti materiallarının bahalaşması', 'Torpaq sahələrinin azalması', 'İnfrastrukturun inkişafı'] },
-        { type: 'paragraph' as const, text: 'Tez-tez müraciət edib soruşurlar: "Bakıda ev qiymətləri artacaqmı?" Səmimi deyəcəyəm, daşınmaz əmlak qiymətləri yerində saymır. Xüsusilə infrastrukturun inkişaf etdiyi ərazilərdə qiymət artımı qaçılmazdır.' },
         { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69fd9716275a8625e0442bb4_emil%20blog%20img1.webp', alt: 'Blog şəkli' },
         { type: 'heading' as const, level: 3 as const, text: 'İlkin ödənişlə mənzil almağın üstünlükləri' },
         { type: 'list' as const, items: ['Borc yükü azalır', 'Faiz xərcləri aşağı düşür', 'Maliyyə stressi minimum olur', 'Seçim imkanları artır'] },
-        { type: 'paragraph' as const, text: 'İlkin ödəniş yalnız giriş deyil, strategiyadır.' },
-        { type: 'heading' as const, level: 2 as const, text: 'Bakıda investisiya üçün ən doğru seçim' },
-        { type: 'paragraph' as const, text: 'Əgər məqsədiniz sadəcə yaşamaq deyil, həm də Bakıda investisiya etməkdirsə, düzgün layihə seçimi çox vacibdir. Premium seqmentdə infrastrukturun inkişaf etdiyi ərazilər ən yaxşı gəlir gətirir.' },
-        { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69fd97350ec24e311b1a6ce1_emil%20blog%20img2.webp', alt: 'Blog şəkli 2' },
-        { type: 'heading' as const, level: 2 as const, text: 'Niyə mənzil almaq ilkin ödənişlə daha sərfəlidir?' },
-        { type: 'paragraph' as const, text: 'Mənzil almaq ilkin ödənişlə həm psixoloji, həm də maliyyə baxımından sizi rahatladır. Aylıq ödənişlərin minimuma düşməsi, uzunmüddətli planlarda böyük üstünlük verir.' },
-        { type: 'heading' as const, level: 3 as const, text: 'İlkin ödəniş minimum nə qədər ola bilər?' },
-        { type: 'paragraph' as const, text: 'Adətən 20%, lakin kampaniyalarda 10%-ə qədər düşə bilər.' },
-        { type: 'heading' as const, level: 3 as const, text: 'İlkin ödəniş nə qədər optimaldır?' },
-        { type: 'paragraph' as const, text: '20–30% ən balanslı seçim hesab olunur.' },
       ],
     },
-    // RIGHT 1 — Bloq
     {
       slug: 'bakida-dasinmaz-emlak-satis-ugurunu-ne-mueyyen-edir',
-      title: 'Bakıda Daşınmaz Əmlakda Satış Uğurunu Nə Müəyyən Edir?',
-      category: 'Bloq',
+      title: {
+        az: 'Bakıda Daşınmaz Əmlakda Satış Uğurunu Nə Müəyyən Edir?',
+        en: 'What Determines Sales Success in Baku Real Estate?',
+        ru: 'Что определяет успех продаж на рынке недвижимости Баку?',
+      },
+      category: { az: 'Bloq', en: 'Blog', ru: 'Блог' },
       date: '17.04.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69e23b2e65222dfa1568b506_javid%20cover.webp',
       authorSlug: 'cavid-axundov',
@@ -163,30 +166,22 @@ async function main() {
       headerOrder: 1,
       keywords: ['dasinmaz-emlak', 'bloq'],
       blocks: [
-        { type: 'paragraph' as const, text: 'Ayın əvvəlində brokerlər bir neçə müraciət gətirdi, sonra isə səssizlik çökdü. Bu, bir çox developerlərin tanış olduğu ssenaridir. Qısa müddətli maraq dalğası, sonra isə uzun müddətli sustalma. Satışlar niyə dayanır?' },
-        { type: 'paragraph' as const, text: 'Bu problemlərin səbəbi insanlar deyil — məhsulun satış mexanizmidir. Məhsul nə qədər yaxşı olsa da, əgər onu satışa çıxaran sistem düzgün qurulmayıbsa, nəticə dəyişməyəcək.' },
+        { type: 'paragraph' as const, text: 'Ayın əvvəlində brokerlər bir neçə müraciət gətirdi, sonra isə səssizlik çökdü.' },
+        { type: 'paragraph' as const, text: 'Bu problemlərin səbəbi insanlar deyil — məhsulun satış mexanizmidir.' },
         { type: 'heading' as const, level: 2 as const, text: 'Satış Komandası və Satış Sistemi Eyni Şey Deyil' },
-        { type: 'paragraph' as const, text: 'Komanda insanlardır — onlar motivasiya olunur, yorulur, dəyişir. Sistem isə strukturdur — onu qurdunuzmu, işləyir. Əksər developerlər broker komandasına investisiya edir, amma satış arxitekturasına yox.' },
-        { type: 'paragraph' as const, text: 'Bəs bu arxitektura nələrdən ibarətdir?' },
+        { type: 'paragraph' as const, text: 'Komanda insanlardır — onlar motivasiya olunur, yorulur, dəyişir. Sistem isə strukturdur.' },
         { type: 'heading' as const, level: 3 as const, text: 'Peşəkar Satış Sisteminin 4 Sütunu' },
-        { type: 'list' as const, items: [
-          '<strong>Sürət.</strong> İlk 5 dəqiqədə alıcının ehtiyacını anlamaq.',
-          '<strong>Broker Şəbəkəsi.</strong> Yalnız daxili komanda yox, xarici brokerlər də satışa cəlb olunmalıdır.',
-          '<strong>Satış Funnel-i.</strong> Müraciətdən imzaya qədər hər mərhələ ölçülməli və optimallaşdırılmalıdır.',
-          '<strong>Məlumat Bazası.</strong> Hər alıcı, hər əlaqə, hər görüş qeydə alınmalıdır.'
-        ] },
-        { type: 'heading' as const, level: 2 as const, text: 'Developerlər Niyə Bu Sistemi Qurmurlar?' },
-        { type: 'paragraph' as const, text: 'Çoxu bunun lazım olduğunu bilir, amma hərəsi bir səbəbdən geri çəkilir. Əsasən üç səbəb dayanır: "Hər şey qaydasındadır" illüziyası, nəzarəti itirmək qorxusu, daimi "yanğın söndürmə" rejimi.' },
-        { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69e23b2e65222dfa1568b506_javid%20cover.webp', alt: 'Satış sistemi' },
-        { type: 'heading' as const, level: 3 as const, text: 'İki Yol Var. Üçüncüsü Yoxdur.' },
-        { type: 'paragraph' as const, text: 'Birincisi — sistemi özünüz qurmaqdır. İkincisi — artıq qurulmuş bir platformaya qoşulmaqdır. Hər iki yol legitimdir. Əsas olan seçməyinizdir.' },
+        { type: 'list' as const, items: ['Sürət', 'Broker Şəbəkəsi', 'Satış Funnel-i', 'Məlumat Bazası'] },
       ],
     },
-    // RIGHT 2 — Bloq
     {
       slug: 'bakida-investisiya-ucun-en-ugurlu-layiheler-hansilardir',
-      title: 'Bakıda İnvestisiya Üçün Ən Uğurlu Layihələr Hansılardır?',
-      category: 'Bloq',
+      title: {
+        az: 'Bakıda İnvestisiya Üçün Ən Uğurlu Layihələr Hansılardır?',
+        en: 'What Are the Most Successful Investment Projects in Baku?',
+        ru: 'Какие самые успешные инвестиционные проекты в Баку?',
+      },
+      category: { az: 'Bloq', en: 'Blog', ru: 'Блог' },
       date: '10.04.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69d8fa41ad243257771d2882_Nezrin%20Kerimli%20cover%20(1)%20(1).webp',
       authorSlug: 'nezrin-kerimli',
@@ -195,22 +190,19 @@ async function main() {
       keywords: ['investisiya', 'layihe', 'bloq'],
       blocks: [
         { type: 'heading' as const, level: 2 as const, text: 'Bakıda investisiya üçün doğru layihəni necə seçməli?' },
-        { type: 'paragraph' as const, text: 'Daşınmaz əmlaka investisiya edərkən düzgün layihə seçimi ən vacib qərardır. Bakıda bir çox layihə təklif olunur, amma hamısı eyni səviyyədə gəlir gətirmir.' },
-        { type: 'paragraph' as const, text: 'İnvestisiya üçün layihə seçərkən əsas kriteriyalar:' },
+        { type: 'paragraph' as const, text: 'Daşınmaz əmlaka investisiya edərkən düzgün layihə seçimi ən vacib qərardır.' },
         { type: 'list' as const, items: ['Layihənin yerləşdiyi ərazi', 'İnfrastruktur səviyyəsi', 'Developerin etibarlılığı', 'Çatdırılma müddəti', 'Gəlir potensiali'] },
-        { type: 'heading' as const, level: 2 as const, text: 'Ən yüksək gəlir gətirən layihələr' },
-        { type: 'paragraph' as const, text: 'Premium seqmentdə yerləşən layihələr adətən daha yüksək gəlir gətirir. Xüsusilə dəniz kənarı və şəhər mərkəzindəki layihələr Kirayə gəliri baxımından ən sərfəli seçimdir.' },
         { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69d8fa41ad243257771d2882_Nezrin%20Kerimli%20cover%20(1)%20(1).webp', alt: 'İnvestisiya layihələri' },
-        { type: 'heading' as const, level: 3 as const, text: 'Sea Breeze niyə birinci sıradadır?' },
-        { type: 'paragraph' as const, text: 'Sea Breeze, Bakıda ən uzunmüddətli investisiya potensialına malik layihələrdən biridir. Dəniz kənarında yerləşməsi, beynəlxalq səviyyədə infrastrukturu və davamlı inkişafı onu ideal seçim edir.' },
-        { type: 'paragraph' as const, text: 'Düzgün layihə seçimi ilə daşınmaz əmlakdan uzunmüddətli gəlir əldə etmək mümkündür. Əsas olan dataya əsaslanmaq və emosional qərarlardan qaçmaqdır.' },
       ],
     },
-    // WEEK — Kampaniya
     {
       slug: 'arabian-ranches-de-30-70-kampaniyasi',
-      title: 'Arabian Ranches-də 30/70 Kampaniyası: Aylıq Ödənişsiz Mənzil Sahibi Olun',
-      category: 'Kampaniya',
+      title: {
+        az: 'Arabian Ranches-də 30/70 Kampaniyası: Aylıq Ödənişsiz Mənzil Sahibi Olun',
+        en: 'Arabian Ranches 30/70 Campaign: Own an Apartment Without Monthly Payments',
+        ru: 'Arabian Ranches 30/70 Кампания: Владейте квартирой без ежемесячных платежей',
+      },
+      category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03037f2071a1acdd345f50_arabian%2016x9.webp',
       headerPosition: 'week',
@@ -218,12 +210,11 @@ async function main() {
       keywords: ['kampaniya', 'investisiya'],
       blocks: [
         { type: 'heading' as const, level: 2 as const, text: 'Arabian Ranches — Dubay təcrübəsi Bakıda' },
-        { type: 'paragraph' as const, text: 'Arabian Ranches, Dubayın məşhur villa kompleksinin Bakıda tətbiqidir. Bu layihə, şəhər həyatından uzaq, təbiətə yaxın, sakit və rahat yaşam təklif edir.' },
+        { type: 'paragraph' as const, text: 'Arabian Ranches, Dubayın məşhur villa kompleksinin Bakıda tətbiqidir.' },
         { type: 'image' as const, url: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03037f2071a1acdd345f50_arabian%2016x9.webp', alt: 'Arabian Ranches' },
         { type: 'heading' as const, level: 3 as const, text: 'Kampaniya şərtləri' },
-        { type: 'paragraph' as const, text: '30/70 kampaniyası ilə Arabian Ranches-də villa və mənzillərə sahib ola bilərsiniz. Yalnız 30% ilkin ödəniş — qalanı aylıq, faizsiz.' },
+        { type: 'paragraph' as const, text: '30/70 kampaniyası ilə Arabian Ranches-də villa və mənzillərə sahib ola bilərsiniz.' },
         { type: 'list' as const, items: ['Villa və mənzil seçimləri', 'Geniş yaşayış sahəsi', 'Yaşıl ərazilər', 'Uşaqlar üçün oyun sahələri', 'İdman kompleksləri'] },
-        { type: 'paragraph' as const, text: 'Arabian Ranches ilə ailəniz üçün ideal yaşam məkanı yaradın. Təbiətə yaxın, şəhərə rahat çatışla.' },
       ],
     },
   ];
@@ -281,7 +272,7 @@ async function main() {
   });
   console.log(`🗑️  Deleted ${deleted.count} old articles`);
 
-  console.log('\n🎉 Pulse CMS seeded successfully! (6 articles)');
+  console.log('\n🎉 Pulse CMS seeded successfully! (6 articles, multilingual)');
 }
 
 main()

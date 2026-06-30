@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
-type Article = { id: string; title: string; slug: string; coverImage?: string; headerPosition?: string; headerOrder?: number };
+type Article = { id: string; title: string | { az?: string; en?: string; ru?: string }; slug: string; coverImage?: string; headerPosition?: string; headerOrder?: number };
 type Section = { position: string; label: string; color: string; bg: string; border: string };
+
+function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.az || Object.values(value)[0] || "";
+}
 
 const SECTIONS: Section[] = [
     { position: "left", label: "Sol", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
@@ -111,7 +117,7 @@ export default function PulseLayoutPage() {
                                         <img src={toAbsUrl(a.coverImage)} alt="" style={{ width: 36, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                                     )}
                                     <span style={{ fontSize: 12, color: "#94a3b8", minWidth: 20 }}>#{a.headerOrder || idx + 1}</span>
-                                    <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
+                                    <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getLocalizedName(a.title)}</span>
                                     <button onClick={() => moveArticle(a.id, "up")} disabled={idx === 0}
                                         style={{ background: "none", border: "none", color: idx === 0 ? "#cbd5e1" : "#2563eb", cursor: idx === 0 ? "default" : "pointer", fontSize: 14, flexShrink: 0 }}>▲</button>
                                     <button onClick={() => moveArticle(a.id, "down")} disabled={idx === getArticlesForPosition(sec.position).length - 1}
@@ -141,7 +147,7 @@ export default function PulseLayoutPage() {
                             {a.coverImage && (
                                 <img src={toAbsUrl(a.coverImage)} alt="" style={{ width: 36, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                             )}
-                            <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
+                            <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getLocalizedName(a.title)}</span>
                             <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                                 {SECTIONS.map(sec => (
                                     <button key={sec.position} onClick={() => assignArticle(a.id, sec.position)}

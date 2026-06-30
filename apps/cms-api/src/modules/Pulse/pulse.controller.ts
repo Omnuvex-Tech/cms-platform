@@ -50,8 +50,11 @@ export class PulseController {
   // ── Articles (PUBLIC for treva-web) ──────────────────
   @Public()
   @Get('articles')
-  findPublishedArticles() {
-    return this.service.findPublishedArticles();
+  findPublishedArticles(
+    @Query('q') q?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.service.findPublishedArticles(q, category);
   }
 
   @Get('articles/all')

@@ -1,8 +1,8 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsObject, IsString, IsOptional } from 'class-validator';
 
 export class CreatePulseCategoryDto {
-  @IsString()
-  name: string;
+  @IsObject()
+  name: Record<string, string>;
 
   @IsString()
   @IsOptional()

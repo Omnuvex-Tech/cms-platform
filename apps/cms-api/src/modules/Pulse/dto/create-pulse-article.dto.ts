@@ -1,14 +1,14 @@
-import { IsString, IsBoolean, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsObject, IsBoolean, IsOptional, IsArray, IsNumber } from 'class-validator';
 
 export class CreatePulseArticleDto {
   @IsString()
   slug?: string;
 
-  @IsString()
-  title: string;
+  @IsObject()
+  title: Record<string, string>;
 
-  @IsString()
-  category: string;
+  @IsObject()
+  category: Record<string, string>;
 
   @IsString()
   @IsOptional()
@@ -18,9 +18,9 @@ export class CreatePulseArticleDto {
   @IsOptional()
   coverImage?: string;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  excerpt?: string;
+  excerpt?: Record<string, string>;
 
   @IsString()
   @IsOptional()
@@ -30,13 +30,13 @@ export class CreatePulseArticleDto {
   @IsOptional()
   blocks?: any[];
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  metaTitle?: string;
+  metaTitle?: Record<string, string>;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  metaDescription?: string;
+  metaDescription?: Record<string, string>;
 
   @IsBoolean()
   @IsOptional()

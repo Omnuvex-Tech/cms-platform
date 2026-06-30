@@ -500,17 +500,17 @@ enum BulletType {
 model PulseArticle {
   id              String   @id @default(cuid())
   slug            String   @unique
-  title           String
-  category        String
+  title           Json     @default("{}")
+  category        Json     @default("{}")
   date            DateTime @default(now())
   coverImage      String?
-  excerpt         String?
+  excerpt         Json?
   authorId        String?
   author          PulseAuthor? @relation(fields: [authorId], references: [id])
   keywords        PulseKeyword[]
   blocks          Json     @default("[]")
-  metaTitle       String?
-  metaDescription String?
+  metaTitle       Json?
+  metaDescription Json?
   featured        Boolean  @default(false)
   published       Boolean  @default(false)
   headerPosition  String?
@@ -549,7 +549,7 @@ model PulseKeyword {
 
 model PulseCategory {
   id        String   @id @default(cuid())
-  name      String   @unique
+  name      Json     @default("{}")
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

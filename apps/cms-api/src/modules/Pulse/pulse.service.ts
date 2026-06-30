@@ -28,8 +28,43 @@ export class PulseService {
     return this.repo.findAllArticles();
   }
 
-  findPublishedArticles() {
-    return this.repo.findPublishedArticles();
+  async findPublishedArticles(q?: string, categorySlug?: string) {
+    let articles = await this.repo.findPublishedArticles();
+
+    // Cross-language search: filter by title, excerpt, category in all languages (az, en, ru)
+    if (q && q.trim()) {
+      const term = q.trim().toLowerCase();
+      articles = articles.filter((a: any) => {
+        const titleStr = typeof a.title === 'object' && a.title !== null
+          ? Object.values(a.title).join(' ')
+          : String(a.title || '');
+        const excerptStr = typeof a.excerpt === 'object' && a.excerpt !== null
+          ? Object.values(a.excerpt).join(' ')
+          : String(a.excerpt || '');
+        const categoryStr = typeof a.category === 'object' && a.category !== null
+          ? Object.values(a.category).join(' ')
+          : String(a.category || '');
+        return (
+          titleStr.toLowerCase().includes(term) ||
+          excerptStr.toLowerCase().includes(term) ||
+          categoryStr.toLowerCase().includes(term)
+        );
+      });
+    }
+
+    // Category filter: match by slug (az/en/ru values)
+    if (categorySlug && categorySlug.trim()) {
+      const slug = categorySlug.trim().toLowerCase();
+      articles = articles.filter((a: any) => {
+        if (!a.category || typeof a.category !== 'object') return false;
+        const cat = a.category as Record<string, string>;
+        return Object.values(cat).some(v =>
+          String(v || '').toLowerCase().includes(slug)
+        );
+      });
+    }
+
+    return articles;
   }
 
   findArticleById(id: string) {
@@ -53,9 +88,11 @@ export class PulseService {
       const existing = await this.repo.findArticleBySlug(dto.slug);
       if (existing) throw new ConflictException('Bu artıq istifadə olunur');
     }
+    const titleObj = dto.title as any;
+    const titleText = typeof titleObj === 'object' && titleObj !== null ? (titleObj.az || Object.values(titleObj)[0] || '') : titleObj;
     return this.repo.createArticle({
       ...dto,
-      slug: dto.slug || slugify(dto.title),
+      slug: dto.slug || slugify(titleText),
     });
   }
 
@@ -160,13 +197,16 @@ export class PulseService {
 
   async createCategory(dto: CreatePulseCategoryDto) {
     const existing = await this.repo.findAllCategories();
-    const duplicate = existing.find(
-      (c) => c.name.toLowerCase() === dto.name.toLowerCase(),
-    );
+    const newName = typeof dto.name === 'object' ? ((dto.name as any)?.az || Object.values(dto.name as any)[0] || '') : dto.name;
+    const duplicate = existing.find((c) => {
+      const cNameVal = c.name as any;
+      const cName = typeof cNameVal === 'object' && cNameVal !== null ? (cNameVal.az || Object.values(cNameVal)[0] || '') : cNameVal;
+      return cName?.toLowerCase?.() === newName.toLowerCase();
+    });
     if (duplicate) throw new ConflictException('Bu kateqoriya artıq mövcuddur');
     return this.repo.createCategory({
       ...dto,
-      slug: dto.slug || slugify(dto.name),
+      slug: dto.slug || slugify(newName),
     });
   }
 

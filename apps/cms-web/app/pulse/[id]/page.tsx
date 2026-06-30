@@ -7,8 +7,8 @@ import styles from "@/styles/blog.module.css";
 
 type Author = { id: string; name: string; slug: string };
 type Keyword = { id: string; name: string; slug: string };
-type Category = { id: string; name: string; slug: string };
-type ArticleSummary = { id: string; slug: string; title: string; coverImage?: string; category?: string };
+type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
+type ArticleSummary = { id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; coverImage?: string; category?: string | { az?: string; en?: string; ru?: string } };
 
 type Block =
     | { type: "heading"; level: 2 | 3; text: string }
@@ -30,6 +30,12 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
     { type: "video", label: "Video", icon: "▶" },
     { type: "gallery", label: "Qalereya", icon: "⊞" },
 ];
+
+function getLocalizedName(name: string | { az?: string; en?: string; ru?: string } | undefined): string {
+    if (!name) return "";
+    if (typeof name === "string") return name;
+    return name.az || Object.values(name)[0] || "";
+}
 
 function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
     block: Block; index: number; onChange: (b: Block) => void; onRemove: () => void;
@@ -258,12 +264,20 @@ export default function PulseArticleEditPage() {
         Promise.all([apiFetch("/pulse/authors"), apiFetch("/pulse/keywords"), apiFetch("/pulse/categories"), apiFetch("/pulse/articles/all")])
             .then(([a, k, c, articles]) => {
                 setAuthors(a); setKeywords(k); setCategories(c);
-                setAllArticles(articles.map((art: any) => ({ id: art.id, slug: art.slug, title: art.title, coverImage: art.coverImage, category: art.category })));
+                setAllArticles(articles.map((art: any) => ({
+                    id: art.id, slug: art.slug,
+                    title: art.title,
+                    coverImage: art.coverImage,
+                    category: art.category,
+                })));
             });
         if (!isNew) {
             apiFetch(`/pulse/articles/${id}`).then(a => {
-                setTitle(a.title); setSlug(a.slug); setCategory(a.category);
-                setExcerpt(a.excerpt || ""); setCoverImage(a.coverImage || "");
+                setTitle(typeof a.title === "object" ? (a.title?.az || Object.values(a.title)[0] || "") : (a.title || ""));
+                setSlug(a.slug);
+                setCategory(typeof a.category === "object" ? (a.category?.az || Object.values(a.category)[0] || "") : (a.category || ""));
+                setExcerpt(typeof a.excerpt === "object" ? (a.excerpt?.az || Object.values(a.excerpt)[0] || "") : (a.excerpt || ""));
+                setCoverImage(a.coverImage || "");
                 setAuthorId(a.authorId || ""); setPublished(a.published);
                 setFeatured(a.featured); setHeaderPosition(a.headerPosition || "");
                 setHeaderOrder(a.headerOrder || 0);
@@ -319,7 +333,9 @@ export default function PulseArticleEditPage() {
         setSaving(true);
         try {
             const body = {
-                title, slug, category, excerpt, coverImage: coverImage || null,
+                title: { az: title }, slug, category: { az: category },
+                excerpt: excerpt ? { az: excerpt } : null,
+                coverImage: coverImage || null,
                 authorId: authorId || null, published, featured,
                 headerPosition: headerPosition || null,
                 headerOrder: headerOrder || null,
@@ -377,7 +393,10 @@ export default function PulseArticleEditPage() {
                         <label>Kateqoriya *</label>
                         <select className={styles.input} value={category} onChange={e => setCategory(e.target.value)}>
                             <option value="">Seçin...</option>
-                            {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                            {categories.map(c => {
+                                const catName = typeof c.name === "string" ? c.name : (c.name?.az || Object.values(c.name)[0] || "");
+                                return <option key={c.id} value={catName}>{catName}</option>;
+                            })}
                         </select>
                     </div>
                     <div className={styles.field}>
@@ -390,7 +409,7 @@ export default function PulseArticleEditPage() {
                 </div>
                 <div className={styles.field}>
                     <label>Qısa məzmun</label>
-                    <textarea className={styles.input} rows={3} value={excerpt} onChange={e => setExcerpt(e.target.value)} />
+                    <textarea className={styles.input} rows={3} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Məqalənin qısa təsviri" />
                 </div>
 
                 <div className={styles.field}>
@@ -437,12 +456,14 @@ export default function PulseArticleEditPage() {
                         {selectedArticleIds.map(aid => {
                             const art = allArticles.find(a => a.id === aid);
                             if (!art) return null;
+                            const artTitle = getLocalizedName(art.title);
+                            const artCat = getLocalizedName(art.category);
                             return (
                                 <div key={aid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", border: "1.5px solid #2563eb", borderRadius: 8, background: "#eff6ff" }}>
                                     {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 4 }} />}
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 13, fontWeight: 500, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{art.title}</div>
-                                        {art.category && <div style={{ fontSize: 11, color: "#64748b" }}>{art.category}</div>}
+                                        <div style={{ fontSize: 13, fontWeight: 500, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{artTitle}</div>
+                                        {artCat && <div style={{ fontSize: 11, color: "#64748b" }}>{artCat}</div>}
                                     </div>
                                     <button type="button" onClick={() => toggleSelectedArticle(aid)}
                                         style={{ padding: "4px 10px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, flexShrink: 0 }}>Sil</button>
@@ -454,6 +475,7 @@ export default function PulseArticleEditPage() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {availableArticles.map(art => {
                         const isSelected = selectedArticleIds.includes(art.id);
+                        const artTitle = getLocalizedName(art.title);
                         return (
                             <button key={art.id} type="button" disabled={!isSelected && selectedArticleIds.length >= 4}
                                 onClick={() => toggleSelectedArticle(art.id)}
@@ -466,7 +488,7 @@ export default function PulseArticleEditPage() {
                                     opacity: !isSelected && selectedArticleIds.length >= 4 ? 0.5 : 1,
                                 }}>
                                 {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3 }} />}
-                                {art.title.length > 40 ? art.title.slice(0, 40) + "..." : art.title}
+                                {artTitle.length > 40 ? artTitle.slice(0, 40) + "..." : artTitle}
                             </button>
                         );
                     })}
