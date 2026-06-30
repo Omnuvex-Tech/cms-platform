@@ -75,13 +75,38 @@ export default function SeoPage() {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
+  // Schema state-ləri
+  const [schemaByLang, setSchemaByLang] = useState<Record<string, any>>({});
+  const [schemaText, setSchemaText] = useState("");
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [schemaGenerating, setSchemaGenerating] = useState(false);
+  const [schemaSaving, setSchemaSaving] = useState(false);
+  const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
+
+  // Səhifə dəyişəndə bütün məlumatları yüklə
   useEffect(() => {
     setLoading(true);
+    setSchemaError(null);
     apiFetch(`/page-meta/${selectedKey}`)
-      .then((d) => setData(d ?? {}))
-      .catch(() => setData({}))
+      .then((d) => {
+        setData(d ?? {});
+        const schemaObj = d?.schema ?? {};
+        setSchemaByLang(schemaObj);
+        setSchemaText(schemaObj[activeLang] ? JSON.stringify(schemaObj[activeLang], null, 2) : "");
+      })
+      .catch(() => {
+        setData({});
+        setSchemaByLang({});
+        setSchemaText("");
+      })
       .finally(() => setLoading(false));
   }, [selectedKey]);
+
+  // Dil dəyişəndə schema mətnini yenilə
+  useEffect(() => {
+    setSchemaText(schemaByLang[activeLang] ? JSON.stringify(schemaByLang[activeLang], null, 2) : "");
+    setSchemaError(null);
+  }, [activeLang]);
 
   const updateField = (
     field: "seoTitle" | "seoDescription" | "seoKeywords",
@@ -108,6 +133,76 @@ export default function SeoPage() {
     } finally {
       setSaving(false);
       setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  };
+
+  // ── Schema funksiyaları ──
+
+  const handleSchemaChange = (val: string) => {
+    setSchemaText(val);
+    setSchemaError(null);
+    try {
+      if (val.trim()) JSON.parse(val);
+    } catch {
+      setSchemaError("JSON formatı səhvdir");
+    }
+  };
+
+  const generateSchema = async () => {
+    setSchemaGenerating(true);
+    setSchemaError(null);
+    try {
+      const generated = await apiFetch(`/page-meta/${selectedKey}/schema/preview`);
+      const langSchema = generated[activeLang];
+      setSchemaText(JSON.stringify(langSchema, null, 2));
+      setSchemaByLang((prev) => ({ ...prev, [activeLang]: langSchema }));
+    } catch {
+      setSchemaError("Schema yaradılarkən xəta baş verdi");
+    } finally {
+      setSchemaGenerating(false);
+    }
+  };
+
+  const saveSchema = async () => {
+    if (schemaError) return;
+    setSchemaSaving(true);
+    setSchemaSaveStatus("idle");
+    try {
+      let parsed = null;
+      if (schemaText.trim()) {
+        parsed = JSON.parse(schemaText);
+      }
+      const updatedSchema = { ...schemaByLang, [activeLang]: parsed };
+      await apiFetch(`/page-meta/${selectedKey}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema: updatedSchema }),
+      });
+      setSchemaByLang(updatedSchema);
+      setSchemaSaveStatus("success");
+    } catch {
+      setSchemaSaveStatus("error");
+    } finally {
+      setSchemaSaving(false);
+      setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+    }
+  };
+
+  const resetSchema = async () => {
+    setSchemaError(null);
+    try {
+      const generated = await apiFetch(`/page-meta/${selectedKey}/schema/preview`);
+      const langSchema = generated[activeLang];
+      setSchemaText(JSON.stringify(langSchema, null, 2));
+      const updatedSchema = { ...schemaByLang, [activeLang]: langSchema };
+      setSchemaByLang(updatedSchema);
+      await apiFetch(`/page-meta/${selectedKey}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema: updatedSchema }),
+      });
+      setSchemaSaveStatus("success");
+      setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+    } catch {
+      setSchemaError("Sıfırlanarkən xəta baş verdi");
     }
   };
 
@@ -198,6 +293,78 @@ export default function SeoPage() {
                   onChange={(e) => updateField("seoKeywords", activeLang, e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Schema bölməsi */}
+            <div className={styles.fullDrawerSection}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
+                  JSON-LD Schema ({activeLang.toUpperCase()})
+                </h3>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={resetSchema}
+                    style={{
+                      padding: "4px 12px", borderRadius: 6, fontSize: 13,
+                      border: "1.5px solid #333", background: "transparent",
+                      color: "#888", cursor: "pointer",
+                    }}
+                  >
+                    Sıfırla
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generateSchema}
+                    disabled={schemaGenerating}
+                    style={{
+                      padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                      border: "1.5px solid #3b82f6", background: "#1e3a5f",
+                      color: "#fff", cursor: "pointer",
+                    }}
+                  >
+                    {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveSchema}
+                    disabled={schemaSaving || !!schemaError}
+                    style={{
+                      padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+                      border: "1.5px solid #16a34a", background: "#14532d",
+                      color: "#fff", cursor: "pointer",
+                    }}
+                  >
+                    {schemaSaving ? "Saxlanır..." : "Saxla"}
+                  </button>
+                </div>
+              </div>
+
+              {schemaSaveStatus === "success" && (
+                <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>
+              )}
+              {schemaSaveStatus === "error" && (
+                <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>
+              )}
+
+              <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+                ℹ Hər dil üçün ayrı schema generasiya olunur. "Generate Et" ilə yarat, lazım gəlsə redaktə et, "Saxla" ilə yadda saxla. "Sıfırla" kodun avtomatik yaratdığına qaytarır və dərhal saxlayır.
+              </p>
+
+              <div className={styles.field}>
+                <textarea
+                  className={styles.input}
+                  rows={16}
+                  value={schemaText}
+                  placeholder='{"@context": "https://schema.org", ...}'
+                  onChange={(e) => handleSchemaChange(e.target.value)}
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+              </div>
+
+              {schemaError && (
+                <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>
+              )}
             </div>
 
           </div>

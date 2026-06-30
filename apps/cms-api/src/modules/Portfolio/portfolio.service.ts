@@ -5,6 +5,7 @@ import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { ReorderPortfolioDto } from './dto/reorder-portfolio.dto';
 import { CreatePortfolioSettingsDto } from './dto/create-portfolio-settings.dto';
 import { UpdatePortfolioSettingsDto } from './dto/update-portfolio-settings.dto';
+import { generatePortfolioSchema } from './portfolio-schema-generator';
 
 @Injectable()
 export class PortfolioService {
@@ -47,6 +48,17 @@ export class PortfolioService {
     return this.repo.update(id, dto);
   }
 
+  async generateSchema(id: number) {
+    const portfolio = await this.findOne(id);
+const baseUrl = process.env.SITE_URL!;
+    return generatePortfolioSchema(portfolio, baseUrl);
+  }
+
+  async saveSchema(id: number, schema: Record<string, any> | null) {
+    await this.findOne(id);
+    return this.repo.saveSchema(id, schema);
+  }
+  
   async toggleVisibility(id: number, isVisible: boolean) {
     await this.findOne(id);
     return this.repo.toggleVisibility(id, isVisible);

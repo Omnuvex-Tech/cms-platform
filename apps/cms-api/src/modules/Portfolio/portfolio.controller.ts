@@ -13,28 +13,29 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
+
 @Controller('portfolio')
 export class PortfolioController {
-  constructor(private readonly service: PortfolioService) {}
+  constructor(private readonly service: PortfolioService) { }
 
   // SETTINGS
-@Get('settings')
-getSettings() {
-  return this.service.getPortfolioSettings();
-}
+  @Get('settings')
+  getSettings() {
+    return this.service.getPortfolioSettings();
+  }
 
-@Post('settings')
-createSettings(@Body() dto: CreatePortfolioSettingsDto) {
-  return this.service.createPortfolioSettings(dto);
-}
+  @Post('settings')
+  createSettings(@Body() dto: CreatePortfolioSettingsDto) {
+    return this.service.createPortfolioSettings(dto);
+  }
 
-@Put('settings/:id')
-updateSettings(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() dto: UpdatePortfolioSettingsDto,
-) {
-  return this.service.updatePortfolioSettings(id, dto);
-}
+  @Put('settings/:id')
+  updateSettings(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePortfolioSettingsDto,
+  ) {
+    return this.service.updatePortfolioSettings(id, dto);
+  }
 
   // PUBLIC
   @Get('public')
@@ -56,6 +57,12 @@ updateSettings(
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string) {
     return this.service.findBySlug(slug);
+  }
+
+  // ⚠️ Spesifik :id alt-route-lar HƏMİŞƏ sadə :id-dən ƏVVƏL olmalıdır
+  @Get(':id/schema/preview')
+  previewSchema(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateSchema(id);
   }
 
   @Get(':id')
@@ -84,12 +91,11 @@ updateSettings(
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'image/webp')
-          return cb(new Error('Yalnız WebP formatı qəbul edilir'), false);
-
+        if (!['image/webp', 'image/gif'].includes(file.mimetype))
+          return cb(new Error('Yalnız WebP və GIF formatları qəbul edilir'), false);
         cb(null, true);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 50 * 1024 * 1024 },
     }),
   )
   uploadImage(@UploadedFile() file: Express.Multer.File) {
@@ -102,6 +108,14 @@ updateSettings(
     @Body() dto: UpdatePortfolioDto,
   ) {
     return this.service.update(id, dto);
+  }
+
+  @Patch(':id/schema')
+  saveSchema(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveSchema(id, schema);
   }
 
   @Patch('reorder')

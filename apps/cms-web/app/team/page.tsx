@@ -398,8 +398,13 @@ export default function BlogAuthorsPage() {
   const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [schemaText, setSchemaText] = useState("");
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [schemaGenerating, setSchemaGenerating] = useState(false);
+  const [schemaSaving, setSchemaSaving] = useState(false);
+  const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [avatar, setAvatar] = useState("");
   const [avatarAlt, setAvatarAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [linkedinHref, setLinkedinHref] = useState("");
@@ -418,7 +423,14 @@ const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: ""
     finally { setLoading(false); }
   };
 
+
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    setSchemaText(editItem?.schema?.[activeLang] ? JSON.stringify(editItem.schema[activeLang], null, 2) : "");
+    setSchemaError(null);
+  }, [modalOpen, editItem, activeLang]);
 
   const openCreate = () => {
     setEditItem(null); setActiveLang("az");
@@ -426,11 +438,13 @@ const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: ""
     setAvatar(""); setAvatarAlt({ az: "", en: "", ru: "" });
     setLinkedinHref(""); setBio({ az: "", en: "", ru: "" });
     setSeoTitle({ az: "", en: "", ru: "" });
-setSeoDescription({ az: "", en: "", ru: "" });
-setSeoKeywords({ az: "", en: "", ru: "" });
+    setSeoDescription({ az: "", en: "", ru: "" });
+    setSeoKeywords({ az: "", en: "", ru: "" });
     setSkillsTitle({ az: "SKILLS", en: "SKILLS", ru: "SKILLS" });
     setSkills([]); setLinkedinIcon(""); setSlug("");
     setIsVisible(true); setIsOurTeam(false);
+    setSchemaText("");
+    setSchemaError(null);
     setModalOpen(true);
   };
 
@@ -439,8 +453,8 @@ setSeoKeywords({ az: "", en: "", ru: "" });
     setName(typeof a.name === "object" ? a.name : { az: a.name ?? "", en: "", ru: "" });
     setRole(typeof a.role === "object" ? a.role : { az: a.role ?? "", en: "", ru: "" });
     setSeoTitle(a.seoTitle ?? { az: "", en: "", ru: "" });
-setSeoDescription(a.seoDescription ?? { az: "", en: "", ru: "" });
-setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
+    setSeoDescription(a.seoDescription ?? { az: "", en: "", ru: "" });
+    setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
     setAvatar(a.avatar ?? "");
     setAvatarAlt(typeof a.avatarAlt === "object" ? a.avatarAlt : { az: a.avatarAlt ?? "", en: "", ru: "" });
     setLinkedinHref(a.linkedinHref ?? "");
@@ -451,6 +465,8 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
     setSlug(a.slug ?? "");
     setIsVisible(a.isVisible ?? true);
     setIsOurTeam(a.isOurTeam ?? false);
+    setSchemaText(a.schema?.[activeLang] ? JSON.stringify(a.schema[activeLang], null, 2) : "");
+    setSchemaError(null);
     setModalOpen(true);
   };
 
@@ -458,12 +474,12 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
     if (!name.az?.trim()) return;
     setSaving(true);
     try {
-   const body = {
-  name, slug: slug || null, role, avatar: avatar || null, avatarAlt,
-  linkedinHref: linkedinHref || null, bio, skillsTitle, skills,
-  linkedinIcon: linkedinIcon || null, isVisible, isOurTeam,
-  seoTitle, seoDescription, seoKeywords,  // ← əlavə et
-};
+      const body = {
+        name, slug: slug || null, role, avatar: avatar || null, avatarAlt,
+        linkedinHref: linkedinHref || null, bio, skillsTitle, skills,
+        linkedinIcon: linkedinIcon || null, isVisible, isOurTeam,
+        seoTitle, seoDescription, seoKeywords,  // ← əlavə et
+      };
       if (editItem) await apiFetch(`/blog/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
       else await apiFetch("/blog/authors", { method: "POST", body: JSON.stringify(body) });
       setModalOpen(false); load();
@@ -512,6 +528,53 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
     setSkills(prev => prev.map((s, idx) => idx === i ? { ...s, [lang]: val } : s));
   const removeSkill = (i: number) =>
     setSkills(prev => prev.filter((_, idx) => idx !== i));
+
+  const generateSchema = async () => {
+    if (!editItem) return;
+    setSchemaGenerating(true);
+    setSchemaError(null);
+    try {
+      const generated = await apiFetch(`/blog/authors/${editItem.id}/schema/preview`);
+      setSchemaText(JSON.stringify(generated[activeLang], null, 2));
+    } catch {
+      setSchemaError("Schema yaradılarkən xəta baş verdi");
+    } finally {
+      setSchemaGenerating(false);
+    }
+  };
+
+  const handleSchemaChange = (val: string) => {
+    setSchemaText(val);
+    setSchemaError(null);
+    try {
+      if (val.trim()) JSON.parse(val);
+    } catch {
+      setSchemaError("JSON formatı səhvdir");
+    }
+  };
+
+  const saveSchema = async () => {
+    if (!editItem || schemaError) return;
+    setSchemaSaving(true);
+    setSchemaSaveStatus("idle");
+    try {
+      let parsed = null;
+      if (schemaText.trim()) parsed = JSON.parse(schemaText);
+      const current = editItem.schema ?? {};
+      const updatedSchema = { ...current, [activeLang]: parsed };
+      await apiFetch(`/blog/authors/${editItem.id}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema: updatedSchema }),
+      });
+      setEditItem((prev: any) => ({ ...prev, schema: updatedSchema }));
+      setSchemaSaveStatus("success");
+    } catch {
+      setSchemaSaveStatus("error");
+    } finally {
+      setSchemaSaving(false);
+      setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -669,7 +732,7 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
                   + Skill əlavə et
                 </button>
               </div>
-                <div style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+              <div style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
                 <label style={{ fontWeight: 700, fontSize: 14, display: "block", marginBottom: 12 }}>SEO</label>
                 <div className={styles.field}>
                   <label>SEO Title ({activeLang.toUpperCase()})</label>
@@ -690,6 +753,38 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
                     placeholder={`açar söz 1, açar söz 2 (${activeLang})`} />
                 </div>
               </div>
+
+              <div style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <label style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Schema ({activeLang.toUpperCase()})</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editItem}
+                      style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                      {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                    </button>
+                    <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editItem}
+                      style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                      {schemaSaving ? "Saxlanır..." : "Saxla"}
+                    </button>
+                  </div>
+                </div>
+                {!editItem && (
+                  <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
+                    ℹ Schema yaratmaq üçün əvvəlcə authoru saxlamalısınız
+                  </p>
+                )}
+                {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+                {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+                <textarea
+                  className={styles.input}
+                  rows={12}
+                  value={schemaText}
+                  placeholder='{"@context": "https://schema.org", ...}'
+                  onChange={(e) => handleSchemaChange(e.target.value)}
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+                {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
+              </div>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setModalOpen(false)}>Ləğv et</button>
@@ -699,13 +794,11 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
             </div>
           </div>
 
-          
+
         </div>
 
-        
-      )}
 
-      {/* ── Delete Confirm ── */}
+      )}
       {deleteId && (
         <div className={styles.overlay} onClick={() => setDeleteId(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -724,7 +817,7 @@ setSeoKeywords(a.seoKeywords ?? { az: "", en: "", ru: "" });
         </div>
       )}
 
-      
+
     </div>
   );
 }

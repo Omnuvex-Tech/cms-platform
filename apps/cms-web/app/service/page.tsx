@@ -597,6 +597,11 @@ export default function ServicePage() {
     const [detailButtonLink, setDetailButtonLink] = useState("");
     const [detailButtonNewTab, setDetailButtonNewTab] = useState(false);
     const [sections, setSections] = useState<any[]>([]);
+    const [schemaText, setSchemaText] = useState("");
+    const [schemaError, setSchemaError] = useState<string | null>(null);
+    const [schemaGenerating, setSchemaGenerating] = useState(false);
+    const [schemaSaving, setSchemaSaving] = useState(false);
+    const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
     const sensors = useSensors(useSensor(PointerSensor));
 
@@ -609,6 +614,13 @@ export default function ServicePage() {
     };
 
     useEffect(() => { load(); }, []);
+
+    useEffect(() => {
+        if (editItem) {
+            setSchemaText(editItem.schema?.[activeLang] ? JSON.stringify(editItem.schema[activeLang], null, 2) : "");
+            setSchemaError(null);
+        }
+    }, [activeLang]);
 
     const resetForm = () => {
         setNumber(""); setTitle({ az: "", en: "", ru: "" }); setSlug("");
@@ -624,6 +636,7 @@ export default function ServicePage() {
         setSeoKeywords({ az: "", en: "", ru: "" });
         setDetailButtonLink(""); setDetailButtonNewTab(false);
         setSections([]);
+        setSchemaText("");
     };
 
     const openCreate = () => { setEditItem(null); resetForm(); setDrawerOpen(true); };
@@ -657,6 +670,7 @@ export default function ServicePage() {
         setSeoKeywords(s.seoKeywords ?? { az: "", en: "", ru: "" });
         setDetailButtonLink(s.detailButtonLink ?? "");
         setDetailButtonNewTab(s.detailButtonNewTab ?? false);
+        setSchemaText(s.schema?.[activeLang] ? JSON.stringify(s.schema[activeLang], null, 2) : "");
         setSections(s.sections ?? []);
         setDrawerOpen(true);
     };
@@ -685,6 +699,53 @@ export default function ServicePage() {
     const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
     const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
     const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
+    
+    const generateSchema = async () => {
+        if (!editItem) return;
+        setSchemaGenerating(true);
+        setSchemaError(null);
+        try {
+            const generated = await apiFetch(`/services/${editItem.id}/schema/preview`);
+            setSchemaText(JSON.stringify(generated[activeLang], null, 2));
+        } catch {
+            setSchemaError("Schema yaradılarkən xəta baş verdi");
+        } finally {
+            setSchemaGenerating(false);
+        }
+    };
+
+    const handleSchemaChange = (val: string) => {
+        setSchemaText(val);
+        setSchemaError(null);
+        try {
+            if (val.trim()) JSON.parse(val);
+        } catch {
+            setSchemaError("JSON formatı səhvdir");
+        }
+    };
+
+    const saveSchema = async () => {
+        if (!editItem || schemaError) return;
+        setSchemaSaving(true);
+        setSchemaSaveStatus("idle");
+        try {
+            let parsed = null;
+            if (schemaText.trim()) parsed = JSON.parse(schemaText);
+            const current = editItem.schema ?? {};
+            const updatedSchema = { ...current, [activeLang]: parsed };
+            await apiFetch(`/services/${editItem.id}/schema`, {
+                method: "PATCH",
+                body: JSON.stringify({ schema: updatedSchema }),
+            });
+            setEditItem((prev: any) => ({ ...prev, schema: updatedSchema }));
+            setSchemaSaveStatus("success");
+        } catch {
+            setSchemaSaveStatus("error");
+        } finally {
+            setSchemaSaving(false);
+            setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+        }
+    };
 
     const save = async () => {
         if (!title.az || !slug) return;
@@ -928,6 +989,42 @@ export default function ServicePage() {
                                     placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
                                 />
                             </div>
+                        </div>
+
+                        <div className={styles.fullDrawerSection}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
+                                    JSON-LD Schema ({activeLang.toUpperCase()})
+                                </h3>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editItem}
+                                        style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                                        {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                                    </button>
+                                    <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editItem}
+                                        style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                                        {schemaSaving ? "Saxlanır..." : "Saxla"}
+                                    </button>
+                                </div>
+                            </div>
+                            {!editItem && (
+                                <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
+                                    ℹ Schema yaratmaq üçün əvvəlcə xidməti saxlamalısınız
+                                </p>
+                            )}
+                            {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+                            {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+                            <div className={styles.field}>
+                                <textarea
+                                    className={styles.input}
+                                    rows={14}
+                                    value={schemaText}
+                                    placeholder='{"@context": "https://schema.org", ...}'
+                                    onChange={(e) => handleSchemaChange(e.target.value)}
+                                    style={{ fontFamily: "monospace", fontSize: 12 }}
+                                />
+                            </div>
+                            {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
                         </div>
                     </div>
                 </div>

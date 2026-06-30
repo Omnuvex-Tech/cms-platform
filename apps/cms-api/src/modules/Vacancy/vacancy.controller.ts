@@ -136,12 +136,17 @@ fileFilter: (req, file, cb) => {
     return this.service.getVacancyBySlug(slug);
   }
 
-  // ─── :id — həmişə ən sonda ───────────────────────────────
+
+  @Get(':id/schema/preview')
+  previewSchema(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateSchema(id);
+  }
+
   @Get(':id')
   getVacancyById(@Param('id', ParseIntPipe) id: number) {
     return this.service.getVacancyById(id);
   }
-
+ 
   @Put(':id')
   updateVacancy(
     @Param('id', ParseIntPipe) id: number,
@@ -171,5 +176,13 @@ fileFilter: (req, file, cb) => {
     @Body('isNew') isNew: boolean,
   ) {
     return this.service.toggleNew(id, isNew);
+  }
+
+  @Patch(':id/schema')
+  saveSchema(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveSchema(id, schema);
   }
 }

@@ -3,6 +3,7 @@ import { ServiceRepository } from './service.repository';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ReorderServiceDto } from './dto/reorder-service.dto';
+import { generateServiceSchema } from './service-schema-generator';
 
 @Injectable()
 export class ServiceService {
@@ -50,5 +51,17 @@ export class ServiceService {
 
   reorder(dto: ReorderServiceDto) {
     return this.repo.reorder(dto.ids);
+  }
+
+
+  async generateSchema(id: number) {
+    const service = await this.findOne(id);
+    const baseUrl = process.env.SITE_URL!;
+    return generateServiceSchema(service, baseUrl);
+  }
+
+  async saveSchema(id: number, schema: Record<string, any> | null) {
+    await this.findOne(id);
+    return this.repo.saveSchema(id, schema);
   }
 }

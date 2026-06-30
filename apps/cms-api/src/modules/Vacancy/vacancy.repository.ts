@@ -66,13 +66,17 @@ export class VacancyRepository {
     });
   }
 
-  async createVacancy(dto: CreateVacancyDto) {
+async createVacancy(dto: CreateVacancyDto) {
     try {
+      const { schema, ...rest } = dto;
       return await this.prisma.vacancy.create({
         data: {
-          ...dto,
+          ...rest,
           startDate: dto.startDate ? new Date(dto.startDate) : undefined,
           closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
+          ...(schema !== undefined && {
+            schema: schema === null ? Prisma.JsonNull : schema,
+          }),
         },
         include: { category: true },
       });
@@ -84,14 +88,18 @@ export class VacancyRepository {
     }
   }
 
-  async updateVacancy(id: number, dto: UpdateVacancyDto) {
+ async updateVacancy(id: number, dto: UpdateVacancyDto) {
     try {
+      const { schema, ...rest } = dto;
       return await this.prisma.vacancy.update({
         where: { id },
         data: {
-          ...dto,
+          ...rest,
           startDate: dto.startDate ? new Date(dto.startDate) : undefined,
           closingDate: dto.closingDate ? new Date(dto.closingDate) : undefined,
+          ...(schema !== undefined && {
+            schema: schema === null ? Prisma.JsonNull : schema,
+          }),
         },
         include: { category: true },
       });
@@ -101,6 +109,13 @@ export class VacancyRepository {
       }
       throw err;
     }
+  }
+
+  saveSchema(id: number, schema: Record<string, any> | null) {
+    return this.prisma.vacancy.update({
+      where: { id },
+      data: { schema: schema === null ? Prisma.JsonNull : schema },
+    });
   }
 
   deleteVacancy(id: number) {

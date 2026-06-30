@@ -9,6 +9,8 @@ import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { ReorderBlogDto } from './dto/reorder-blog.dto';
 import{UpdateBlogSettingsDto} from './dto/update-blog-settings.dto';
 import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
+import { generateBlogSchema } from './blog-schema-generator';
+import { generateBlogAuthorSchema } from './blog-author-schema-generator';
 
 @Injectable()
 export class BlogService {
@@ -34,6 +36,18 @@ export class BlogService {
     return this.repo.deleteAuthor(id);
   }
 
+  async generateAuthorSchema(id: number) {
+    const author = await this.findAuthorById(id);
+    const baseUrl = process.env.SITE_URL!;
+    return generateBlogAuthorSchema(author, baseUrl);
+  }
+
+  async saveAuthorSchema(id: number, schema: Record<string, any> | null) {
+    await this.findAuthorById(id);
+    return this.repo.saveAuthorSchema(id, schema);
+  }
+
+  
   findAllCategories() { return this.repo.findAllCategories(); }
 
   async findCategoryById(id: number) {
@@ -96,6 +110,19 @@ export class BlogService {
 
   reorder(dto: ReorderBlogDto) { return this.repo.reorder(dto.ids); }
 
+
+  async generateSchema(id: number) {
+    const blog = await this.findOne(id);
+    const baseUrl = process.env.SITE_URL!;
+    return generateBlogSchema(blog, baseUrl);
+  }
+
+  async saveSchema(id: number, schema: Record<string, any> | null) {
+    await this.findOne(id);
+    return this.repo.saveSchema(id, schema);
+  }
+
+  
 async findFeatured() {
   const blogs = await this.repo.findFeatured();
   const main = blogs.find(b => b.isFeaturedMain) ?? null;

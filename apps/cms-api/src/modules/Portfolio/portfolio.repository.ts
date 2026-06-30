@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePortfolioDto } from './dto/create-portfolio.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { CreatePortfolioSettingsDto } from './dto/create-portfolio-settings.dto';
 import { UpdatePortfolioSettingsDto } from './dto/update-portfolio-settings.dto';
-
 
 @Injectable()
 export class PortfolioRepository {
@@ -22,38 +22,35 @@ export class PortfolioRepository {
       orderBy: { order: 'asc' },
     });
   }
-findHomepage() {
-  return this.prisma.portfolio.findMany({
-    where: { isHomepage: true, isVisible: true },
-    orderBy: { order: 'asc' },
-    take: 6, 
-  });
-}
 
-getPortfolioSettings() {
-  return this.prisma.portfolioSettings.findFirst();
-}
+  findHomepage() {
+    return this.prisma.portfolio.findMany({
+      where: { isHomepage: true, isVisible: true },
+      orderBy: { order: 'asc' },
+      take: 6,
+    });
+  }
 
-createPortfolioSettings(dto: CreatePortfolioSettingsDto) {
-  return this.prisma.portfolioSettings.create({
-    data: dto,
-  });
-}
+  getPortfolioSettings() {
+    return this.prisma.portfolioSettings.findFirst();
+  }
 
-updatePortfolioSettings(
-  id: number,
-  dto: UpdatePortfolioSettingsDto,
-) {
-  return this.prisma.portfolioSettings.update({
-    where: { id },
-    data: dto,
-  });
-}
+  createPortfolioSettings(dto: CreatePortfolioSettingsDto) {
+    return this.prisma.portfolioSettings.create({
+      data: dto,
+    });
+  }
 
-toggleHomepage(id: number, isHomepage: boolean) {
-  return this.prisma.portfolio.update({ where: { id }, data: { isHomepage } });
-}
+  updatePortfolioSettings(id: number, dto: UpdatePortfolioSettingsDto) {
+    return this.prisma.portfolioSettings.update({
+      where: { id },
+      data: dto,
+    });
+  }
 
+  toggleHomepage(id: number, isHomepage: boolean) {
+    return this.prisma.portfolio.update({ where: { id }, data: { isHomepage } });
+  }
 
   findOne(id: number) {
     return this.prisma.portfolio.findUnique({ where: { id } });
@@ -73,7 +70,23 @@ toggleHomepage(id: number, isHomepage: boolean) {
   }
 
   update(id: number, dto: UpdatePortfolioDto) {
-    return this.prisma.portfolio.update({ where: { id }, data: dto });
+    const { schema, ...rest } = dto;
+    return this.prisma.portfolio.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(schema !== undefined && {
+          schema: schema === null ? Prisma.JsonNull : schema,
+        }),
+      },
+    });
+  }
+
+  saveSchema(id: number, schema: Record<string, any> | null) {
+    return this.prisma.portfolio.update({
+      where: { id },
+      data: { schema: schema === null ? Prisma.JsonNull : schema },
+    });
   }
 
   toggleVisibility(id: number, isVisible: boolean) {

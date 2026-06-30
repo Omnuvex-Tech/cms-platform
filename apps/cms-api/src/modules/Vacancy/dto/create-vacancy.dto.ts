@@ -92,4 +92,6 @@ export class CreateVacancyDto {
   @IsOptional()
   @IsObject()
   seoKeywords?: Record<string, string>;
+  @IsOptional()
+  schema?: Record<string, any> | null;
 }

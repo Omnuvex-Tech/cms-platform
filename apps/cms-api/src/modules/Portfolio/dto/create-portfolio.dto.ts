@@ -15,6 +15,10 @@ export class CreatePortfolioDto {
   coverImage: string;
 
   @IsOptional()
+  @IsString()
+  gif?: string;
+
+  @IsOptional()
   @IsObject()
   coverImageAlt?: Record<string, string>;
 

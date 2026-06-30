@@ -21,7 +21,6 @@ import * as fs from 'fs';
 export class BlogController {
   constructor(private readonly service: BlogService) { }
 
-  // ── Upload ───────────────────────────────────────────
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
@@ -47,7 +46,6 @@ export class BlogController {
     return { url: `/uploads/blog/${file.filename}` };
   }
 
-  // ── Authors ──────────────────────────────────────────
   @Get('authors/slug/:slug')
   findAuthorBySlug(@Param('slug') slug: string) {
     return this.service.findAuthorBySlug(slug);
@@ -83,7 +81,19 @@ export class BlogController {
   @Delete('authors/:id')
   deleteAuthor(@Param('id', ParseIntPipe) id: number) { return this.service.deleteAuthor(id); }
 
-  // ── Our Team Settings ────────────────────────────────
+  @Get('authors/:id/schema/preview')
+  previewAuthorSchema(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateAuthorSchema(id);
+  }
+
+  @Patch('authors/:id/schema')
+  saveAuthorSchema(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveAuthorSchema(id, schema);
+  }
+  
   @Get('our-team-settings')
   getOurTeamSettings() { return this.service.findOurTeamSettings(); }
 
@@ -91,8 +101,6 @@ export class BlogController {
   updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
     return this.service.updateOurTeamSettings(dto);
   }
-
-  // ── Categories ───────────────────────────────────────
   @Get('categories')
   findAllCategories() { return this.service.findAllCategories(); }
 
@@ -107,7 +115,6 @@ export class BlogController {
   @Delete('categories/:id')
   deleteCategory(@Param('id', ParseIntPipe) id: number) { return this.service.deleteCategory(id); }
 
-  // ── Blogs (literal routes first) ─────────────────────
   @Get('public')
   findAllVisible() { return this.service.findAllVisible(); }
 
@@ -140,9 +147,14 @@ export class BlogController {
   @Post()
   create(@Body() dto: CreateBlogDto) { return this.service.create(dto); }
 
-  // ── Blogs (wildcard :id routes last) ─────────────────
+  @Get(':id/schema/preview')
+  previewSchema(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateSchema(id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
+
 
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBlogDto) {
@@ -157,6 +169,14 @@ export class BlogController {
     return this.service.toggleVisibility(id, Boolean(isVisible));
   }
 
+  @Patch(':id/schema')
+  saveSchema(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveSchema(id, schema);
+  }
+  
   @Delete(':id')
   delete(@Param('id', ParseIntPipe) id: number) { return this.service.delete(id); }
 }

@@ -619,6 +619,11 @@ export default function PortfolioPage() {
   const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [schemaText, setSchemaText] = useState("");
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [schemaGenerating, setSchemaGenerating] = useState(false);
+  const [schemaSaving, setSchemaSaving] = useState(false);
+  const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
   const [portfolioTitle, setPortfolioTitle] = useState<LocalizedString>({
     az: "",
@@ -639,6 +644,7 @@ export default function PortfolioPage() {
   });
   const coverInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
+  const [gif, setGif] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -665,6 +671,14 @@ export default function PortfolioPage() {
 
   useEffect(() => { load(); loadSettings(); }, []);
 
+
+  useEffect(() => {
+    if (editItem) {
+      setSchemaText(editItem.schema?.[activeLang] ? JSON.stringify(editItem.schema[activeLang], null, 2) : "");
+      setSchemaError(null);
+    }
+  }, [activeLang]);
+
   const openCreate = () => {
     setEditItem(null);
     setTitle({ az: "", en: "", ru: "" });
@@ -673,6 +687,8 @@ export default function PortfolioPage() {
     setSeoTitle({ az: "", en: "", ru: "" });
     setSeoDescription({ az: "", en: "", ru: "" });
     setSeoKeywords({ az: "", en: "", ru: "" });
+    setSchemaText("");
+    setGif("");
     setSections([]);
     setDrawerOpen(true);
 
@@ -684,6 +700,7 @@ export default function PortfolioPage() {
     setSeoTitle(p.seoTitle ?? { az: "", en: "", ru: "" });
     setSeoDescription(p.seoDescription ?? { az: "", en: "", ru: "" });
     setSeoKeywords(p.seoKeywords ?? { az: "", en: "", ru: "" });
+    setSchemaText(p.schema?.[activeLang] ? JSON.stringify(p.schema[activeLang], null, 2) : "");
     setSlug(p.slug ?? "");
     setTags(p.tags?.join(", ") ?? "");
     setCoverImage(p.coverImage ?? "");
@@ -692,6 +709,7 @@ export default function PortfolioPage() {
         ? (p.coverImageAlt ?? { az: "", en: "", ru: "" })
         : { az: p.coverImageAlt ?? "", en: "", ru: "" }
     );
+    setGif(p.gif ?? "");
     setSections(p.sections ?? []);
     setDrawerOpen(true);
   };
@@ -715,6 +733,55 @@ export default function PortfolioPage() {
   const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
   const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
 
+
+  const generateSchema = async () => {
+    if (!editItem) return;
+    setSchemaGenerating(true);
+    setSchemaError(null);
+    try {
+      const generated = await apiFetch(`/portfolio/${editItem.id}/schema/preview`);
+      setSchemaText(JSON.stringify(generated[activeLang], null, 2));
+    } catch {
+      setSchemaError("Schema yaradılarkən xəta baş verdi");
+    } finally {
+      setSchemaGenerating(false);
+    }
+  };
+
+  const handleSchemaChange = (val: string) => {
+    setSchemaText(val);
+    setSchemaError(null);
+    try {
+      if (val.trim()) JSON.parse(val);
+    } catch {
+      setSchemaError("JSON formatı səhvdir");
+    }
+  };
+
+  const saveSchema = async () => {
+    if (!editItem || schemaError) return;
+    setSchemaSaving(true);
+    setSchemaSaveStatus("idle");
+    try {
+      let parsed = null;
+      if (schemaText.trim()) parsed = JSON.parse(schemaText);
+      const current = editItem.schema ?? {};
+      const updatedSchema = { ...current, [activeLang]: parsed };
+      await apiFetch(`/portfolio/${editItem.id}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema: updatedSchema }),
+      });
+      setEditItem((prev: any) => ({ ...prev, schema: updatedSchema }));
+      setSchemaSaveStatus("success");
+    } catch {
+      setSchemaSaveStatus("error");
+    } finally {
+      setSchemaSaving(false);
+      setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+    }
+  };
+
+
   const save = async () => {
     if (!title.az || !slug) return;
     setSaving(true);
@@ -722,7 +789,7 @@ export default function PortfolioPage() {
       const payload = {
         title, slug,
         tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-        coverImage, coverImageAlt, sections, seoTitle, seoDescription, seoKeywords,
+        coverImage, coverImageAlt, gif: gif || null, sections, seoTitle, seoDescription, seoKeywords,
       };
       if (editItem) {
         await apiFetch(`/portfolio/${editItem.id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -861,6 +928,7 @@ export default function PortfolioPage() {
         </div>
       </div>
 
+
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Portfolio</h1>
@@ -943,6 +1011,37 @@ export default function PortfolioPage() {
                   onChange={e => setCoverImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))}
                   placeholder="Marina Village layihəsi cover şəkli" />
               </div>
+              <div className={styles.field}>
+                <label>GIF (optional)</label>
+                <input
+                  type="file"
+                  accept="image/gif,image/webp"
+                  style={{ display: "none" }}
+                  id="gif-upload"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const url = await uploadFile(file);
+                    setGif(url);
+                  }}
+                />
+                <div className={styles.coverUploadArea} onClick={() => document.getElementById("gif-upload")?.click()}>
+                  {gif ? (
+                    <div style={{ position: "relative", display: "inline-block" }}>
+                      <img src={toAbsUrl(gif)} alt="gif" className={styles.coverPreview} />
+                      <button type="button" className={styles.imageRemoveBtn}
+                        onClick={e => { e.stopPropagation(); setGif(""); }}>✕</button>
+                    </div>
+                  ) : (
+                    <div className={styles.imagePlaceholder}>
+                      <span>🎞️</span><span>GIF seçin</span><small>GIF / WebP</small>
+                    </div>
+                  )}
+                </div>
+              </div>
+          
+          
+          
             </div>
 
             <div className={styles.fullDrawerSection}>
@@ -991,6 +1090,43 @@ export default function PortfolioPage() {
                   placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
                 />
               </div>
+            </div>
+
+
+            <div className={styles.fullDrawerSection}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
+                  JSON-LD Schema ({activeLang.toUpperCase()})
+                </h3>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editItem}
+                    style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                    {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                  </button>
+                  <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editItem}
+                    style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                    {schemaSaving ? "Saxlanır..." : "Saxla"}
+                  </button>
+                </div>
+              </div>
+              {!editItem && (
+                <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
+                  ℹ Schema yaratmaq üçün əvvəlcə portfolio-nu saxlamalısınız
+                </p>
+              )}
+              {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+              {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+              <div className={styles.field}>
+                <textarea
+                  className={styles.input}
+                  rows={14}
+                  value={schemaText}
+                  placeholder='{"@context": "https://schema.org", ...}'
+                  onChange={(e) => handleSchemaChange(e.target.value)}
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+              </div>
+              {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
             </div>
           </div>
         </div>

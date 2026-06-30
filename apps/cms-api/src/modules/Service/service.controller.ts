@@ -26,6 +26,11 @@ export class ServiceController {
     return this.service.findBySlug(slug);
   }
 
+  @Get(':id/schema/preview')
+  previewSchema(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateSchema(id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
@@ -79,6 +84,14 @@ export class ServiceController {
     return this.service.toggleVisibility(id, Boolean(isVisible));
   }
 
+  @Patch(':id/schema')
+  saveSchema(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveSchema(id, schema);
+  }
+  
   @Delete(':id')
   delete(@Param('id', ParseIntPipe) id: number) {
     return this.service.delete(id);

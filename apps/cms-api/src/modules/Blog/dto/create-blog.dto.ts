@@ -33,4 +33,7 @@ export class CreateBlogDto {
   @IsOptional() @IsInt() authorId?: number;
   @IsOptional() @IsInt() categoryId?: number;
   @IsOptional() @IsInt() order?: number;
+    @IsOptional()
+  @IsString()
+  gif?: string;
 }

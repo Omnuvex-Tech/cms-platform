@@ -93,6 +93,7 @@ model Vacancy {
    seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
+  schema             Json?
 }
 
 model VacancyPageHeader {
@@ -155,16 +156,16 @@ model Portfolio {
   slug          String   @unique
   tags          String[]
   coverImage    String
+  gif                   String?
   coverImageAlt Json     @default("{}")
   sections      Json     @default("[]")
   order         Int      @default(0)
   isVisible     Boolean  @default(true)
   isHomepage    Boolean  @default(false)
-
   seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
-
+  schema         Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -229,6 +230,7 @@ model Service {
   seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
+  schema                Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -254,6 +256,7 @@ model BlogAuthor {
     seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
+  schema         Json?
   isOurTeam    Boolean  @default(false)
   isVisible    Boolean  @default(true)
   blogs        Blog[]
@@ -276,6 +279,7 @@ model Blog {
   badge              Json          @default("{}")
   excerpt            Json          @default("{}")
   coverImage         Json @default("{}")
+  gif                   String?
   coverImageAlt      Json          @default("{}")
   publishedAt        DateTime      @default(now())
   isVisible          Boolean       @default(true)
@@ -288,9 +292,10 @@ model Blog {
   authorId           Int?
   categoryId         Int?
   order              Int           @default(0)
-   seoTitle       Json?
-  seoDescription Json?
-  seoKeywords    Json?
+  seoTitle                         Json?
+  seoDescription                   Json?
+  seoKeywords                      Json?
+  schema                           Json?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   isAuthorList       Boolean       @default(false)
@@ -301,6 +306,8 @@ model Blog {
   category           BlogCategory? @relation(fields: [categoryId], references: [id])
   @@map("blogs")
 }
+
+
 model BlogSettings {
   id            Int      @id @default(autoincrement())
   pageTitle     Json     @default("{}")
@@ -555,6 +562,7 @@ model PageMeta {
   seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
+  schema         Json?  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

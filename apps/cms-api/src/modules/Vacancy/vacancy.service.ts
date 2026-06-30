@@ -9,13 +9,14 @@ import { ReorderVacancyDto } from './dto/reorder-vacancy.dto';
 import { UpdateVacancySettingsDto } from './dto/update-vacancy-settings.dto';
 import { MailService } from '../mail/mail.service';
 import { CreateVacancySubmissionDto } from './dto/create-vacancy-submission.dto';
+import { generateVacancySchema } from './vacancy-schema-generator';
 
 
 @Injectable()
 export class VacancyService {
   constructor(private readonly repo: VacancyRepository,
-              private readonly mailService: MailService, 
-  ) {}
+    private readonly mailService: MailService,
+  ) { }
 
   // ─── Category ────────────────────────────────────────────
   getAllCategories() { return this.repo.findAllCategories(); }
@@ -82,42 +83,52 @@ export class VacancyService {
   }
 
   async getVacancyBySlug(slug: string) {
-  const v = await this.repo.findVacancyBySlug(slug);
-  if (!v) throw new NotFoundException('Vacancy not found');
-  return v;
-}
-
-// vacancy.service.ts — MailService inject et, bunları əlavə et
-
-async getSettings() {
-  const s = await this.repo.getSettings();
-  if (s) return s;
-  return this.repo.createSettings();
-}
-
-async updateSettings(dto: UpdateVacancySettingsDto) {
-  const s = await this.repo.getSettings();
-  if (!s) {
-    const created = await this.repo.createSettings();
-    return this.repo.updateSettings(created.id, dto);
+    const v = await this.repo.findVacancyBySlug(slug);
+    if (!v) throw new NotFoundException('Vacancy not found');
+    return v;
   }
-  return this.repo.updateSettings(s.id, dto);
-}
 
-async createSubmission(dto: CreateVacancySubmissionDto) {
-  const submission = await this.repo.createSubmission(dto);
-  try {
-    await this.mailService.sendVacancySubmission({
-      ...dto,
-      submittedAt: submission.createdAt,
-    });
-  } catch {
-    // mail xətası prosesi bloklamamalıdır
+  // vacancy.service.ts — MailService inject et, bunları əlavə et
+
+  async getSettings() {
+    const s = await this.repo.getSettings();
+    if (s) return s;
+    return this.repo.createSettings();
   }
-  return submission;
-}
 
-async findAllSubmissions() {
-  return this.repo.findAllSubmissions();
-}
+  async updateSettings(dto: UpdateVacancySettingsDto) {
+    const s = await this.repo.getSettings();
+    if (!s) {
+      const created = await this.repo.createSettings();
+      return this.repo.updateSettings(created.id, dto);
+    }
+    return this.repo.updateSettings(s.id, dto);
+  }
+
+  async createSubmission(dto: CreateVacancySubmissionDto) {
+    const submission = await this.repo.createSubmission(dto);
+    try {
+      await this.mailService.sendVacancySubmission({
+        ...dto,
+        submittedAt: submission.createdAt,
+      });
+    } catch {
+    }
+    return submission;
+  }
+
+  async findAllSubmissions() {
+    return this.repo.findAllSubmissions();
+  }
+
+  async generateSchema(id: number) {
+    const vacancy = await this.getVacancyById(id);
+    const baseUrl = process.env.SITE_URL!;
+    return generateVacancySchema(vacancy, baseUrl);
+  }
+
+  async saveSchema(id: number, schema: Record<string, any> | null) {
+    await this.getVacancyById(id);
+    return this.repo.saveSchema(id, schema);
+  }
 }

@@ -8,6 +8,7 @@ import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto'
 import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BlogRepository {
@@ -30,10 +31,25 @@ export class BlogRepository {
     });
   }
 
-  updateAuthor(id: number, dto: UpdateBlogAuthorDto) {
-    return this.prisma.blogAuthor.update({ where: { id }, data: dto });
+updateAuthor(id: number, dto: UpdateBlogAuthorDto) {
+    const { schema, ...rest } = dto;
+    return this.prisma.blogAuthor.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(schema !== undefined && {
+          schema: schema === null ? Prisma.JsonNull : schema,
+        }),
+      },
+    });
   }
 
+  saveAuthorSchema(id: number, schema: Record<string, any> | null) {
+    return this.prisma.blogAuthor.update({
+      where: { id },
+      data: { schema: schema === null ? Prisma.JsonNull : schema },
+    });
+  }
   deleteAuthor(id: number) {
     return this.prisma.blogAuthor.delete({ where: { id } });
   }
@@ -113,17 +129,28 @@ export class BlogRepository {
     });
   }
 
-  update(id: number, dto: UpdateBlogDto) {
+update(id: number, dto: UpdateBlogDto) {
+    const { schema, ...rest } = dto;
     return this.prisma.blog.update({
       where: { id },
       data: {
-        ...dto,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
+        ...rest,
+        publishedAt: rest.publishedAt ? new Date(rest.publishedAt) : undefined,
+        ...(schema !== undefined && {
+          schema: schema === null ? Prisma.JsonNull : schema,
+        }),
       },
       include: { author: true, category: true },
     });
   }
 
+  saveSchema(id: number, schema: Record<string, any> | null) {
+    return this.prisma.blog.update({
+      where: { id },
+      data: { schema: schema === null ? Prisma.JsonNull : schema },
+    });
+  }
+  
   toggleVisibility(id: number, isVisible: boolean) {
     return this.prisma.blog.update({ where: { id }, data: { isVisible } });
   }

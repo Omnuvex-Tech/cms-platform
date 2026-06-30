@@ -22,4 +22,6 @@ export class UpdateServiceDto {
   @IsOptional() @IsObject() seoDescription?: Record<string, string>;
   @IsOptional() @IsObject() seoKeywords?: Record<string, string>;
   @IsOptional() sections?: any[];
+    @IsOptional()
+  schema?: Record<string, any> | null;
 }

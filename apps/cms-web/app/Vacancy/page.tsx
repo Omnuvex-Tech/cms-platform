@@ -48,6 +48,7 @@ interface Vacancy {
   seoTitle?: LocalizedString;
   seoDescription?: LocalizedString;
   seoKeywords?: LocalizedString;
+  schema?: Record<string, any> | null;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -254,13 +255,18 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
   const [seoTitle, setSeoTitle] = useState<LocalizedString>({ ...EMPTY_L });
   const [seoDescription, setSeoDescription] = useState<LocalizedString>({ ...EMPTY_L });
   const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ ...EMPTY_L });
+  const [schemaText, setSchemaText] = useState("");
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [schemaGenerating, setSchemaGenerating] = useState(false);
+  const [schemaSaving, setSchemaSaving] = useState(false);
+  const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [responsible, setResponsible] = useState<LocalizedString[]>([]);
   const [responsibleType, setResponsibleType] = useState<BulletType>("BULLET");
   const [requirements, setRequirements] = useState<LocalizedString[]>([]);
   const [requirementsType, setRequirementsType] = useState<BulletType>("BULLET");
   const [skills, setSkills] = useState<LocalizedString[]>([]);
 
-  useEffect(() => {
+useEffect(() => {
     if (!open) return;
     setTab("main");
     setLang("az");
@@ -300,6 +306,13 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
     }
   }, [open, editVac]);
 
+  useEffect(() => {
+    if (!open) return;
+    setSchemaText(editVac?.schema?.[lang] ? JSON.stringify(editVac.schema[lang], null, 2) : "");
+    setSchemaError(null);
+  }, [open, editVac, lang]);
+
+  
   const handleTitleChange = (val: string) => {
     setTitle((prev) => ({ ...prev, [lang]: val }));
     if (lang === "az") setSlug(generateSlug(val));
@@ -311,6 +324,53 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
     if (!categoryId) return "Kateqoriya seçilməlidir";
     return null;
   };
+
+  const generateSchema = async () => {
+    if (!editVac) return;
+    setSchemaGenerating(true);
+    setSchemaError(null);
+    try {
+      const generated = await apiFetch(`/vacancy/${editVac.id}/schema/preview`);
+      setSchemaText(JSON.stringify(generated[lang], null, 2));
+    } catch {
+      setSchemaError("Schema yaradılarkən xəta baş verdi");
+    } finally {
+      setSchemaGenerating(false);
+    }
+  };
+
+  const handleSchemaChange = (val: string) => {
+    setSchemaText(val);
+    setSchemaError(null);
+    try {
+      if (val.trim()) JSON.parse(val);
+    } catch {
+      setSchemaError("JSON formatı səhvdir");
+    }
+  };
+
+  const saveSchema = async () => {
+    if (!editVac || schemaError) return;
+    setSchemaSaving(true);
+    setSchemaSaveStatus("idle");
+    try {
+      let parsed = null;
+      if (schemaText.trim()) parsed = JSON.parse(schemaText);
+      const current = editVac.schema ?? {};
+      const updatedSchema = { ...current, [lang]: parsed };
+      await apiFetch(`/vacancy/${editVac.id}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema: updatedSchema }),
+      });
+      setSchemaSaveStatus("success");
+    } catch {
+      setSchemaSaveStatus("error");
+    } finally {
+      setSchemaSaving(false);
+      setTimeout(() => setSchemaSaveStatus("idle"), 3000);
+    }
+  };
+
 
   const save = async () => {
     setFormError(null);
@@ -518,6 +578,37 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
               onChange={e => setSeoKeywords(prev => ({ ...prev, [lang]: e.target.value }))}
               placeholder={`açar söz 1, açar söz 2 (${lang})`}
             />
+          </div>
+          <div className={styles.field} style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <label style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Schema ({lang.toUpperCase()})</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editVac}
+                  style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                  {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                </button>
+                <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editVac}
+                  style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                  {schemaSaving ? "Saxlanır..." : "Saxla"}
+                </button>
+              </div>
+            </div>
+            {!editVac && (
+              <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
+                ℹ Schema yaratmaq üçün əvvəlcə vakansiyanı saxlamalısınız
+              </p>
+            )}
+            {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+            {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+            <textarea
+              className={styles.textarea}
+              rows={12}
+              value={schemaText}
+              placeholder='{"@context": "https://schema.org", ...}'
+              onChange={(e) => handleSchemaChange(e.target.value)}
+              style={{ fontFamily: "monospace", fontSize: 12 }}
+            />
+            {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
           </div>
         </div>
 

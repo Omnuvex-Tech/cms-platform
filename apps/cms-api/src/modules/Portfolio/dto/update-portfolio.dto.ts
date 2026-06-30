@@ -18,6 +18,11 @@ export class UpdatePortfolioDto {
   @IsString()
   coverImage?: string;
 
+
+    @IsOptional()
+  @IsString()
+  gif?: string;
+  
   @IsOptional()
   @IsObject()
   coverImageAlt?: Record<string, string>;
@@ -45,4 +50,6 @@ export class UpdatePortfolioDto {
   @IsOptional()
   @IsObject()
   seoKeywords?: Record<string, string>;
+    @IsOptional()
+  schema?: Record<string, any> | null;
 }

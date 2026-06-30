@@ -10,6 +10,18 @@ export class PageMetaController {
   findOne(@Param('pageKey') pageKey: string) {
     return this.pageMetaService.findByKey(pageKey);
   }
+  @Get(':pageKey/schema/preview')
+previewSchema(@Param('pageKey') pageKey: string) {
+  return this.pageMetaService.generateSchema(pageKey);
+}
+
+@Patch(':pageKey/schema')
+saveSchema(
+  @Param('pageKey') pageKey: string,
+  @Body('schema') schema: Record<string, any> | null,
+) {
+  return this.pageMetaService.saveSchema(pageKey, schema);
+}
 
   @Patch(':pageKey')
   upsert(

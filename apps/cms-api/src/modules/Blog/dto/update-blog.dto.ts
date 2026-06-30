@@ -21,6 +21,8 @@ export class UpdateBlogDto {
   @IsOptional() @IsInt() order?: number;
   @IsOptional() authorListPinnedAt?: string | null;
   @IsOptional() @IsObject() seoTitle?: Record<string, string>;
-@IsOptional() @IsObject() seoDescription?: Record<string, string>;
-@IsOptional() @IsObject() seoKeywords?: Record<string, string>;
+  @IsOptional() @IsObject() seoDescription?: Record<string, string>;
+  @IsOptional() @IsObject() seoKeywords?: Record<string, string>;
+  @IsOptional() @IsString() gif?: string;
+  @IsOptional() schema?: Record<string, any> | null;
 }
