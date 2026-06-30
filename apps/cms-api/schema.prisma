@@ -637,3 +637,18 @@ model CallbackRequest {
 
   @@map("callback_requests")
 }
+
+model BrokerRegistration {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String
+  phone      String
+  city       String?
+  brokerType String?
+  experience String?
+  website    String?
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@map("broker_registrations")
+}

@@ -34,7 +34,7 @@ export class LayihelerimizController {
       }
       cb(null, true);
     },
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 },
   }))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/layihelerimiz/${file.filename}` };

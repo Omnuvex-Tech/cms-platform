@@ -97,6 +97,7 @@ const NAV_ITEMS = [
         children: [
             { label: "Contact Submissions", href: "/contact-submissions" },
             { label: "Callback Requests", href: "/callback-requests" },
+            { label: "Broker Registrations", href: "/broker-registrations" },
         ],
     },
 

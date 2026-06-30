@@ -8,6 +8,8 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ extended: true, limit: '50mb' }));
 
   const corsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
