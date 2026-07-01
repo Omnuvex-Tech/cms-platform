@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { LangInput, getLocalized } from "@/components/LangInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
-const TREVA_API = process.env.NEXT_PUBLIC_TREVA_API_URL;
 
 type LocalizedValue = Record<string, string> | string | null | undefined;
 
@@ -12,14 +11,6 @@ function toObj(val: LocalizedValue): Record<string, string> {
   if (!val) return { az: "", en: "", ru: "" };
   if (typeof val === "string") return { az: val, en: val, ru: val };
   return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
-}
-
-interface OffPlanCategory {
-  id: string;
-  title: string;
-  name: string;
-  slug: string;
-  image?: string | null;
 }
 
 interface CmsDisplayData {
@@ -37,7 +28,6 @@ interface CmsDisplayData {
 
 interface MergedCategory {
   id: string;
-  offPlanId: string;
   title: string;
   slug: string;
   image: string | null;
@@ -120,37 +110,20 @@ export default function LayihelerimizPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [offPlanCategories, cmsCategories]: [OffPlanCategory[], CmsDisplayData[]] = await Promise.all([
-        fetch(`${TREVA_API}/categories`).then((r) => {
-          if (!r.ok) throw new Error("Treva API not available");
-          return r.json();
-        }).catch(() => [] as OffPlanCategory[]),
-        cmsApiFetch("/layihelerimiz/categories"),
-      ]);
+      const cmsCategories: CmsDisplayData[] = await cmsApiFetch("/layihelerimiz/categories");
 
       const cmsBySlug: Record<string, CmsDisplayData> = {};
       for (const cat of cmsCategories) {
         cmsBySlug[cat.slug] = cat;
       }
 
-      const mergedSource: OffPlanCategory[] = offPlanCategories.length
-        ? offPlanCategories
-        : cmsCategories.map((cat) => ({
-            id: cat.id,
-            title: getLocalized(cat.title, "az") || cat.slug,
-            name: getLocalized(cat.title, "az") || cat.slug,
-            slug: cat.slug,
-            image: cat.image,
-          }));
-
-      const merged: MergedCategory[] = mergedSource.map((cat) => {
+      const merged: MergedCategory[] = cmsCategories.map((cat) => {
         const cms = cmsBySlug[cat.slug];
         return {
           id: cat.id,
-          offPlanId: cat.id,
-          title: cat.title,
+          title: getLocalized(cat.title, "az") || cat.slug,
           slug: cat.slug,
-          image: cms?.image || cat.image || null,
+          image: cms?.image || null,
           brandImage: cms?.brandImage || null,
           cmsId: cms?.id || null,
           description: cms?.description || null,
