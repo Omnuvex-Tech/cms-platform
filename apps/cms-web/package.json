@@ -4,9 +4,9 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "dev": "next dev --port 10020",
-        "build": "next build",
-        "start": "next start -p 10020",
+        "dev": "node ../../scripts/run-with-env.cjs .env.development next/dist/bin/next dev --port 10020",
+        "build": "node ../../scripts/run-with-env.cjs .env.production next/dist/bin/next build",
+        "start": "node ../../scripts/run-with-env.cjs .env.production next/dist/bin/next start -p 10020",
         "lint": "eslint --max-warnings 0",
         "check-types": "next typegen && tsc --noEmit"
     },
