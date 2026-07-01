@@ -1033,7 +1033,7 @@ export default function BlogPage() {
 
     useEffect(() => { load(); }, []);
 
-useEffect(() => {
+    useEffect(() => {
         if (editItem) {
             setSchemaText(editItem.schema?.[activeLang] ? JSON.stringify(editItem.schema[activeLang], null, 2) : "");
             setSchemaError(null);
@@ -1405,41 +1405,39 @@ useEffect(() => {
                             <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
                                 ℹ Article section-larındakı hashtaglar avtomatik keyword-lərə əlavə olunacaq
                             </p>
-                            <div className={styles.fullDrawerSection}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                                <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
-                                    JSON-LD Schema ({activeLang.toUpperCase()})
-                                </h3>
-                                <div style={{ display: "flex", gap: 8 }}>
-                                    <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editItem}
-                                        style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
-                                        {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
-                                    </button>
-                                    <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editItem}
-                                        style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
-                                        {schemaSaving ? "Saxlanır..." : "Saxla"}
-                                    </button>
+                         
+                        {editItem && (
+                                <div className={styles.fullDrawerSection}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                        <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
+                                            JSON-LD Schema ({activeLang.toUpperCase()})
+                                        </h3>
+                                        <div style={{ display: "flex", gap: 8 }}>
+                                            <button type="button" onClick={generateSchema} disabled={schemaGenerating}
+                                                style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                                                {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                                            </button>
+                                            <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError}
+                                                style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                                                {schemaSaving ? "Saxlanır..." : "Saxla"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+                                    {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+                                    <div className={styles.field}>
+                                        <textarea
+                                            className={styles.input}
+                                            rows={14}
+                                            value={schemaText}
+                                            placeholder='{"@context": "https://schema.org", ...}'
+                                            onChange={(e) => handleSchemaChange(e.target.value)}
+                                            style={{ fontFamily: "monospace", fontSize: 12 }}
+                                        />
+                                    </div>
+                                    {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
                                 </div>
-                            </div>
-                            {!editItem && (
-                                <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
-                                    ℹ Schema yaratmaq üçün əvvəlcə blogu saxlamalısınız
-                                </p>
                             )}
-                            {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
-                            {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
-                            <div className={styles.field}>
-                                <textarea
-                                    className={styles.input}
-                                    rows={14}
-                                    value={schemaText}
-                                    placeholder='{"@context": "https://schema.org", ...}'
-                                    onChange={(e) => handleSchemaChange(e.target.value)}
-                                    style={{ fontFamily: "monospace", fontSize: 12 }}
-                                />
-                            </div>
-                            {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
-                        </div>
                         </div>
                     </div>
                 </div>

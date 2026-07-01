@@ -579,37 +579,34 @@ useEffect(() => {
               placeholder={`açar söz 1, açar söz 2 (${lang})`}
             />
           </div>
-          <div className={styles.field} style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <label style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Schema ({lang.toUpperCase()})</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" onClick={generateSchema} disabled={schemaGenerating || !editVac}
-                  style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
-                  {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
-                </button>
-                <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError || !editVac}
-                  style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
-                  {schemaSaving ? "Saxlanır..." : "Saxla"}
-                </button>
+          {editVac && (
+            <div className={styles.field} style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <label style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Schema ({lang.toUpperCase()})</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={generateSchema} disabled={schemaGenerating}
+                    style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #3b82f6", background: "#1e3a5f", color: "#fff", cursor: "pointer" }}>
+                    {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
+                  </button>
+                  <button type="button" onClick={saveSchema} disabled={schemaSaving || !!schemaError}
+                    style={{ padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+                    {schemaSaving ? "Saxlanır..." : "Saxla"}
+                  </button>
+                </div>
               </div>
+              {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
+              {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
+              <textarea
+                className={styles.textarea}
+                rows={12}
+                value={schemaText}
+                placeholder='{"@context": "https://schema.org", ...}'
+                onChange={(e) => handleSchemaChange(e.target.value)}
+                style={{ fontFamily: "monospace", fontSize: 12 }}
+              />
+              {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
             </div>
-            {!editVac && (
-              <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>
-                ℹ Schema yaratmaq üçün əvvəlcə vakansiyanı saxlamalısınız
-              </p>
-            )}
-            {schemaSaveStatus === "success" && <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>}
-            {schemaSaveStatus === "error" && <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>}
-            <textarea
-              className={styles.textarea}
-              rows={12}
-              value={schemaText}
-              placeholder='{"@context": "https://schema.org", ...}'
-              onChange={(e) => handleSchemaChange(e.target.value)}
-              style={{ fontFamily: "monospace", fontSize: 12 }}
-            />
-            {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
-          </div>
+          )}
         </div>
 
         <div className={styles.modalFooter}>
@@ -623,7 +620,6 @@ useEffect(() => {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────
 export default function VacancyPage() {
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -795,8 +791,6 @@ export default function VacancyPage() {
           ⚠ {listError}
         </p>
       )}
-
-      {/* Səhifə Başlığı */}
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionCardTitle}>Səhifə Başlığı</h2>
         <div className={styles.field}>
@@ -817,7 +811,6 @@ export default function VacancyPage() {
         </div>
       </div>
 
-      {/* Kateqoriyalar */}
       <div className={styles.sectionCard}>
         <div className={styles.sectionCardHeader}>
           <h2 className={styles.sectionCardTitle}>Kateqoriyalar</h2>
@@ -851,7 +844,6 @@ export default function VacancyPage() {
         )}
       </div>
 
-      {/* Vakansiyalar */}
       <div className={styles.sectionCard}>
         <div className={styles.sectionCardHeader}>
           <h2 className={styles.sectionCardTitle}>Vakansiyalar</h2>
@@ -893,7 +885,6 @@ export default function VacancyPage() {
       <VacancyModal open={vacModalOpen} onClose={() => setVacModalOpen(false)}
         editVac={editVac} categories={categories} onSaved={load} />
 
-      {/* Category Modal */}
       {catModalOpen && (
         <div className={styles.overlay} onClick={() => setCatModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -926,8 +917,6 @@ export default function VacancyPage() {
           </div>
         </div>
       )}
-
-      {/* Delete Modals */}
       {deleteCatId && (
         <div className={styles.overlay} onClick={() => { setDeleteCatId(null); setDeleteCatError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

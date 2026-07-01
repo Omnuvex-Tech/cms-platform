@@ -226,7 +226,6 @@ export default function SeoPage() {
         </div>
       </div>
 
-      {/* Səhifə seçimi */}
       <div className={styles.fullDrawerSection} style={{ marginBottom: 24 }}>
         <h3 className={styles.drawerSectionTitle}>Səhifə seçin</h3>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -295,7 +294,6 @@ export default function SeoPage() {
               </div>
             </div>
 
-            {/* Schema bölməsi */}
             <div className={styles.fullDrawerSection}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>

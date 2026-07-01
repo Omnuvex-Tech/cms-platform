@@ -64,7 +64,6 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
             transition: "box-shadow 0.15s",
             boxShadow: isOpen ? "0 2px 12px rgba(0,0,0,0.08)" : "none",
         }}>
-            {/* Header */}
             <div onClick={onToggle} style={{
                 display: "flex", alignItems: "center",
                 justifyContent: "space-between",
@@ -103,7 +102,6 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
                 </div>
             </div>
 
-            {/* Body */}
             {isOpen && (
                 <div style={{
                     padding: "0 20px 20px",

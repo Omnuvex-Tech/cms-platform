@@ -180,7 +180,6 @@
 
 .deleteBtn:hover { background: #fecaca; }
 
-/* Modal */
 .overlay {
   position: fixed;
   inset: 0;

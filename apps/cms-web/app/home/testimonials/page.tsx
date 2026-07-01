@@ -411,8 +411,6 @@ export default function TestimonialsPage() {
                     </div>
                 )}
             </div>
-
-            {/* Section məlumatları */}
             <div className={styles.sectionCard}>
                 <h2 className={styles.sectionCardTitle}>Bölmə Məlumatları</h2>
                 <LangTabs active={sectionActiveLang} onChange={setSectionActiveLang} />
@@ -452,8 +450,6 @@ export default function TestimonialsPage() {
                     </button>
                 </div>
             </div>
-
-            {/* Testimonials cədvəli */}
             {section && (
                 <div className={styles.tableWrap}>
                     {testimonials.length === 0 ? (
@@ -483,7 +479,6 @@ export default function TestimonialsPage() {
                 </div>
             )}
 
-            {/* Testimonial Modal */}
             {modalOpen && (
                 <div className={styles.overlay} onClick={closeModal}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -575,8 +570,6 @@ export default function TestimonialsPage() {
                     </div>
                 </div>
             )}
-
-            {/* Silmə təsdiq modalı */}
             {deleteId && (
                 <div className={styles.overlay} onClick={() => { setDeleteId(null); setDeleteError(null); }}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

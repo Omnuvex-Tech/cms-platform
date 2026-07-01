@@ -219,7 +219,6 @@ export default function VacancySettingPage() {
           { key: "locationLabel", label: "Ünvan bölməsinin adı", hint: "\"Location\" yazısı" },
           { key: "location", label: "Ünvan", hint: "Göstərilən ünvan mətni" },
         ])}
-        {/* String qalan sahələr */}
         {(["email", "emailHref", "phone", "phoneHref"] as const).map((key) => (
           <div className={styles.field} key={key}>
             <label>{key}</label>

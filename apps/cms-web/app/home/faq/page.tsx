@@ -296,7 +296,6 @@ export default function FaqPage() {
         </div>
       </div>
 
-      {/* Cədvəl dil seçimi */}
       <div style={{ marginBottom: 16 }}>
         <LangTabs active={tableLang} onChange={setTableLang} />
       </div>
@@ -344,7 +343,6 @@ export default function FaqPage() {
         )}
       </div>
 
-      {/* Create / Edit Modal */}
       {modalOpen && (
         <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -395,7 +393,6 @@ export default function FaqPage() {
         </div>
       )}
 
-      {/* Delete Confirm Modal */}
       {deleteId && (
         <div className={styles.overlay} onClick={() => { setDeleteId(null); setDeleteError(null); }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

@@ -124,18 +124,12 @@
   margin-top: 4px;
 }
 
-
-
-/* ── Mövcud faylın sonuna əlavə edin ── */
-
-/* Badge group (isHomepage + isVisible yan-yana) */
 .badgeGroup {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-/* Rich text editor wrapper */
 .richEditorWrap {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -144,7 +138,6 @@
   background: #fff;
 }
 
-/* Toolbar */
 .richToolbar {
   display: flex;
   align-items: center;
@@ -182,7 +175,6 @@
   margin: 0 4px;
 }
 
-/* Editable content area */
 .richEditor {
   min-height: 100px;
   padding: 10px 12px;
@@ -204,7 +196,6 @@
   text-decoration: underline;
 }
 
-/* Link popup */
 .linkPopup {
   position: absolute;
   top: 44px;
@@ -279,9 +270,9 @@
 .authorName h5,
 .authorName h6,
 .authorName p {
-  font-size: inherit !important; /* CSS-dəki əsas .authorName ölçüsünü məcburi götürür */
+  font-size: inherit !important;
   font-weight: inherit !important;
   margin: 0 !important;
   padding: 0 !important;
-  display: inline; /* Alt sətirə düşməsin deyə inline edirik */
+  display: inline; 
 }

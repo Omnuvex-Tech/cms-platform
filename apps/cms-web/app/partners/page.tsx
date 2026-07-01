@@ -545,8 +545,6 @@ export default function PartnersPage() {
           ⚠ {listError}
         </p>
       )}
-
-      {/* ── Section məlumatları ── */}
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionCardTitle}>Home Tərəfdaşlarımız</h2>
         <LangTabs active={activeLang} onChange={setActiveLang} />
