@@ -11,6 +11,7 @@ import{UpdateBlogSettingsDto} from './dto/update-blog-settings.dto';
 import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 import { generateBlogSchema } from './blog-schema-generator';
 import { generateBlogAuthorSchema } from './blog-author-schema-generator';
+import { UpdateAuthorSettingsDto } from './dto/update-author-settings.dto';
 
 @Injectable()
 export class BlogService {
@@ -47,7 +48,10 @@ export class BlogService {
     return this.repo.saveAuthorSchema(id, schema);
   }
 
-  
+  findAuthorSettings() { return this.repo.findAuthorSettings(); }
+updateAuthorSettings(dto: UpdateAuthorSettingsDto) {
+  return this.repo.updateAuthorSettings(dto);
+}
   findAllCategories() { return this.repo.findAllCategories(); }
 
   async findCategoryById(id: number) {

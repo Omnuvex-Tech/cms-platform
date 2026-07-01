@@ -338,6 +338,89 @@ function OurTeamSettingsPanel() {
   );
 }
 
+function AuthorSettingsPanel() {
+  const [activeLang, setActiveLang] = useState<Lang>("az");
+  const [readArticleLabel, setReadArticleLabel] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [recentBlogsTitle, setRecentBlogsTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [otherBlogsTitle, setOtherBlogsTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiFetch("/blog/author-settings");
+        setReadArticleLabel(data.readArticleLabel ?? { az: "", en: "", ru: "" });
+        setRecentBlogsTitle(data.recentBlogsTitle ?? { az: "", en: "", ru: "" });
+        setOtherBlogsTitle(data.otherBlogsTitle ?? { az: "", en: "", ru: "" });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setSaveStatus("idle");
+    try {
+      await apiFetch("/blog/author-settings", {
+        method: "PUT",
+        body: JSON.stringify({ readArticleLabel, recentBlogsTitle, otherBlogsTitle }),
+      });
+      setSaveStatus("success");
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  };
+
+  if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+
+  return (
+    <div className={styles.settingsCard} style={{ marginBottom: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <h3 className={styles.settingsGroupTitle} style={{ margin: 0 }}>
+          Author Detail Səhifəsi 
+        </h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {saveStatus === "success" && <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>}
+          {saveStatus === "error" && <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>}
+          <button className={styles.saveBtn} onClick={save} disabled={saving}>
+            {saving ? "Saxlanır..." : "Saxla"}
+          </button>
+        </div>
+      </div>
+
+      <LangTabs active={activeLang} onChange={setActiveLang} />
+
+      <div className={styles.field}>
+        <label>Məqaləni oxu (buton) ({activeLang.toUpperCase()})</label>
+        <input className={styles.input} value={readArticleLabel[activeLang] || ""}
+          onChange={e => setReadArticleLabel(prev => ({ ...prev, [activeLang]: e.target.value }))}
+          placeholder="Məqaləni oxu" />
+      </div>
+
+      <div className={styles.field} style={{ marginTop: 16 }}>
+        <label>Son bloglar (başlıq) ({activeLang.toUpperCase()})</label>
+        <input className={styles.input} value={recentBlogsTitle[activeLang] || ""}
+          onChange={e => setRecentBlogsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+          placeholder="Son bloglar" />
+      </div>
+
+      <div className={styles.field} style={{ marginTop: 16 }}>
+        <label>Digər bloglar (başlıq) ({activeLang.toUpperCase()})</label>
+        <input className={styles.input} value={otherBlogsTitle[activeLang] || ""}
+          onChange={e => setOtherBlogsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
+          placeholder="Digər bloglar" />
+      </div>
+    </div>
+  );
+}
+
+
 function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOurTeam }: {
   a: any; onEdit: (a: any) => void; onDelete: (id: number) => void;
   onToggleVisibility: (a: any) => void; onToggleOurTeam: (a: any) => void;
@@ -585,10 +668,9 @@ export default function BlogAuthorsPage() {
         </div>
       </div>
 
-      {/* ── Our Team Settings: başlıq + açıqlama ── */}
       <OurTeamSettingsPanel />
+      <AuthorSettingsPanel />
 
-      {/* ── Author cədvəli ── */}
       <div className={styles.tabHeader}>
         <div className={styles.headerRight}>
           {reordering && <span className={styles.reorderingText}>Saxlanır...</span>}
@@ -816,8 +898,6 @@ export default function BlogAuthorsPage() {
           </div>
         </div>
       )}
-
-
     </div>
   );
 }

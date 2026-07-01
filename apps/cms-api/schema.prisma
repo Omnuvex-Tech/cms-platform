@@ -556,6 +556,17 @@ model HomeSettings {
   @@map("home_settings")
 }
 
+model AuthorSettings {
+  id                Int      @id @default(autoincrement())
+  readArticleLabel  Json     @default("{}")
+  recentBlogsTitle  Json     @default("{}")
+  otherBlogsTitle   Json     @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("author_settings")
+}
+
 model PageMeta {
   id             String   @id @default(cuid())
   pageKey        String   @unique

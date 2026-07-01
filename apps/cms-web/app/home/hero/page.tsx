@@ -279,7 +279,7 @@ export default function HeroSettingsPage() {
                 placeholder="Bizimlə əlaqə" />
             </div>
             <div className={styles.field}>
-              <label>Link</label>
+              <label>Link(əgər boş buraxılsa səhifənin aşağısındaki Contacta scroll olacaq)</label>
               <input className={styles.input}
                 value={primaryBtnLink}
                 onChange={e => setPrimaryBtnLink(e.target.value)}

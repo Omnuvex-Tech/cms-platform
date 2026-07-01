@@ -8,6 +8,8 @@ import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { UpdateBlogCategoryDto } from './dto/update-blog-category.dto';
 import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto'
 import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
+import { UpdateAuthorSettingsDto } from './dto/update-author-settings.dto';
+
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -68,6 +70,21 @@ updateAuthor(id: number, dto: UpdateBlogAuthorDto) {
       include: { author: true, category: true },
     });
   }
+
+
+  async findAuthorSettings() {
+  let s = await this.prisma.authorSettings.findFirst();
+  if (!s) s = await this.prisma.authorSettings.create({ data: {} });
+  return s;
+}
+
+async updateAuthorSettings(dto: UpdateAuthorSettingsDto) {
+  const s = await this.findAuthorSettings();
+  return this.prisma.authorSettings.update({
+    where: { id: s.id },
+    data: dto,
+  });
+}
 
   findAllCategories() {
     return this.prisma.blogCategory.findMany({ orderBy: { order: 'asc' } });

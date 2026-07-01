@@ -13,6 +13,7 @@ import { UpdateOurTeamSettingsDto } from './dto/update-our-team-settings.dto';
 import { ReorderBlogDto } from './dto/reorder-blog.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateBlogSettingsDto } from './dto/update-blog-settings.dto';
+import { UpdateAuthorSettingsDto } from './dto/update-author-settings.dto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
@@ -93,6 +94,7 @@ export class BlogController {
   ) {
     return this.service.saveAuthorSchema(id, schema);
   }
+
   
   @Get('our-team-settings')
   getOurTeamSettings() { return this.service.findOurTeamSettings(); }
@@ -101,6 +103,17 @@ export class BlogController {
   updateOurTeamSettings(@Body() dto: UpdateOurTeamSettingsDto) {
     return this.service.updateOurTeamSettings(dto);
   }
+
+@Get('author-settings')
+getAuthorSettings() { return this.service.findAuthorSettings(); }
+
+@Put('author-settings')
+updateAuthorSettings(@Body() dto: UpdateAuthorSettingsDto) {
+  return this.service.updateAuthorSettings(dto);
+}
+
+
+
   @Get('categories')
   findAllCategories() { return this.service.findAllCategories(); }
 

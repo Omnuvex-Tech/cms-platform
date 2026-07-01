@@ -8,14 +8,14 @@ import { Prisma } from '@prisma/client';
 export class ServiceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.service.findMany({ orderBy: { order: 'asc' } });
+findAll() {
+    return this.prisma.service.findMany({ orderBy: [{ order: 'asc' }, { id: 'asc' }] });
   }
 
   findAllVisible() {
     return this.prisma.service.findMany({
       where: { isVisible: true },
-      orderBy: { order: 'asc' },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
   }
 
