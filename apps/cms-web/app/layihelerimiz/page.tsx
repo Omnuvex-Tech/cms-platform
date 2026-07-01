@@ -24,6 +24,7 @@ interface OffPlanCategory {
 
 interface CmsDisplayData {
   id: string;
+  title?: LocalizedValue;
   slug: string;
   image: string | null;
   brandImage: string | null;
@@ -132,7 +133,17 @@ export default function LayihelerimizPage() {
         cmsBySlug[cat.slug] = cat;
       }
 
-      const merged: MergedCategory[] = offPlanCategories.map((cat) => {
+      const mergedSource: OffPlanCategory[] = offPlanCategories.length
+        ? offPlanCategories
+        : cmsCategories.map((cat) => ({
+            id: cat.id,
+            title: getLocalized(cat.title, "az") || cat.slug,
+            name: getLocalized(cat.title, "az") || cat.slug,
+            slug: cat.slug,
+            image: cat.image,
+          }));
+
+      const merged: MergedCategory[] = mergedSource.map((cat) => {
         const cms = cmsBySlug[cat.slug];
         return {
           id: cat.id,
