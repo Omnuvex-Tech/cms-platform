@@ -2,6 +2,10 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+function wrap(value: string) {
+  return { az: value, en: value, ru: value };
+}
+
 const categories = [
   {
     title: "Reportage Heights",
@@ -84,7 +88,19 @@ async function main() {
       continue;
     }
 
-    await prisma.layihelerimizCategory.create({ data: cat });
+    await prisma.layihelerimizCategory.create({
+      data: {
+        id: cat.slug,
+        title: wrap(cat.title),
+        slug: cat.slug,
+        image: cat.image,
+        description: wrap(cat.description),
+        brand: wrap(`${cat.brand} ${cat.brandSub}`.trim()),
+        brandTextColor: "white",
+        order: cat.order,
+        isVisible: cat.isVisible,
+      },
+    });
     console.log(`  Created: ${cat.title}`);
   }
 

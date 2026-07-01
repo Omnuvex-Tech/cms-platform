@@ -17,7 +17,12 @@
     "start:debug": "node ../../scripts/run-with-env.cjs .env.development @nestjs/cli/bin/nest.js start --debug --watch",
     "start:prod": "node ../../scripts/run-with-env.cjs .env.production ./dist/src/main.js",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "seed": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed.ts"
+    "seed": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed.ts",
+    "seed:layihelerimiz": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-layihelerimiz.ts",
+    "seed:multilingual": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-multilingual.ts",
+    "seed:project-details": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-project-details.ts",
+    "seed:pulse": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-pulse.ts",
+    "seed:all": "npm run seed:layihelerimiz && npm run seed:multilingual && npm run seed:project-details && npm run seed:pulse && npm run seed"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
