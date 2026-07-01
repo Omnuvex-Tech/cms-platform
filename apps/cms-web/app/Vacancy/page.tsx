@@ -734,7 +734,7 @@ export default function VacancyPage() {
             {catReordering && <span className={styles.reorderingText}>Saxlanır...</span>}
             <button className={styles.addBtn}
               onClick={() => { setEditCat(null); setCatName({ ...EMPTY_L }); setCatLang("az"); setCatError(null); setCatModalOpen(true); }}>
-              + Yeni Kateqoriya
+              + Yeni Layihə
             </button>
           </div>
         </div>

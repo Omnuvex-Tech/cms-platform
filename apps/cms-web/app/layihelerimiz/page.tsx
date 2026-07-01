@@ -7,13 +7,13 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 type LocalizedValue = Record<string, string> | string | null | undefined;
 
-function toObj(val: LocalizedValue): Record<string, string> {
+function toObj(val: LocalizedValue): { az: string; en: string; ru: string } {
   if (!val) return { az: "", en: "", ru: "" };
   if (typeof val === "string") return { az: val, en: val, ru: val };
   return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
 }
 
-interface CmsDisplayData {
+interface LayihelerimizCategory {
   id: string;
   title?: LocalizedValue;
   slug: string;
@@ -24,20 +24,7 @@ interface CmsDisplayData {
   brandTextColor: string | null;
   order: number;
   isVisible: boolean;
-}
-
-interface MergedCategory {
-  id: string;
-  title: string;
-  slug: string;
-  image: string | null;
-  brandImage: string | null;
-  cmsId: string | null;
-  description: LocalizedValue;
-  brand: LocalizedValue;
-  brandTextColor: string | null;
-  order: number;
-  isVisible: boolean;
+  createdAt?: string;
 }
 
 function getToken() {
@@ -85,24 +72,49 @@ function toAbsUrl(path: string) {
   return `${API}${path}`;
 }
 
+interface FormState {
+  title: Record<string, string>;
+  slug: string;
+  image: string;
+  imageFile: File | null;
+  imagePreview: string;
+  brandImage: string;
+  brandImageFile: File | null;
+  brandImagePreview: string;
+  description: Record<string, string>;
+  brand: Record<string, string>;
+  brandTextColor: string;
+  order: number;
+  isVisible: boolean;
+}
+
+const emptyForm: FormState = {
+  title: { az: "", en: "", ru: "" },
+  slug: "",
+  image: "",
+  imageFile: null,
+  imagePreview: "",
+  brandImage: "",
+  brandImageFile: null,
+  brandImagePreview: "",
+  description: { az: "", en: "", ru: "" },
+  brand: { az: "", en: "", ru: "" },
+  brandTextColor: "white",
+  order: 0,
+  isVisible: true,
+};
+
 export default function LayihelerimizPage() {
-  const [items, setItems] = useState<MergedCategory[]>([]);
+  const [items, setItems] = useState<LayihelerimizCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MergedCategory | null>(null);
+  const [editingItem, setEditingItem] = useState<LayihelerimizCategory | null>(null);
+  const [isNew, setIsNew] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [image, setImage] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [form, setForm] = useState(emptyForm);
   const [imageUploading, setImageUploading] = useState(false);
-  const [brandImage, setBrandImage] = useState("");
-  const [brandImageFile, setBrandImageFile] = useState<File | null>(null);
-  const [brandImagePreview, setBrandImagePreview] = useState("");
   const [brandImageUploading, setBrandImageUploading] = useState(false);
-  const [description, setDescription] = useState<Record<string, string>>({ az: "", en: "", ru: "" });
-  const [brand, setBrand] = useState<Record<string, string>>({ az: "", en: "", ru: "" });
-  const [brandTextColor, setBrandTextColor] = useState("white");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const brandFileInputRef = useRef<HTMLInputElement>(null);
@@ -110,32 +122,9 @@ export default function LayihelerimizPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const cmsCategories: CmsDisplayData[] = await cmsApiFetch("/layihelerimiz/categories");
-
-      const cmsBySlug: Record<string, CmsDisplayData> = {};
-      for (const cat of cmsCategories) {
-        cmsBySlug[cat.slug] = cat;
-      }
-
-      const merged: MergedCategory[] = cmsCategories.map((cat) => {
-        const cms = cmsBySlug[cat.slug];
-        return {
-          id: cat.id,
-          title: getLocalized(cat.title, "az") || cat.slug,
-          slug: cat.slug,
-          image: cms?.image || null,
-          brandImage: cms?.brandImage || null,
-          cmsId: cms?.id || null,
-          description: cms?.description || null,
-          brand: cms?.brand || null,
-          brandTextColor: cms?.brandTextColor || 'white',
-          order: cms?.order ?? 0,
-          isVisible: cms?.isVisible ?? true,
-        };
-      });
-
-      merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setItems(merged);
+      const data: LayihelerimizCategory[] = await cmsApiFetch("/layihelerimiz/categories");
+      data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      setItems(data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -147,17 +136,31 @@ export default function LayihelerimizPage() {
     load();
   }, []);
 
-  const openEdit = (item: MergedCategory) => {
+  const openNew = () => {
+    setEditingItem(null);
+    setIsNew(true);
+    setForm({ ...emptyForm });
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: LayihelerimizCategory) => {
     setEditingItem(item);
-    setImage(item.image || "");
-    setImageFile(null);
-    setImagePreview(item.image ? toAbsUrl(item.image) : "");
-    setBrandImage(item.brandImage || "");
-    setBrandImageFile(null);
-    setBrandImagePreview(item.brandImage ? toAbsUrl(item.brandImage) : "");
-    setDescription(toObj(item.description));
-    setBrand(toObj(item.brand));
-    setBrandTextColor(item.brandTextColor || "white");
+    setIsNew(false);
+    setForm({
+      title: toObj(item.title),
+      slug: item.slug,
+      image: item.image || "",
+      imageFile: null,
+      imagePreview: item.image ? toAbsUrl(item.image) : "",
+      brandImage: item.brandImage || "",
+      brandImageFile: null,
+      brandImagePreview: item.brandImage ? toAbsUrl(item.brandImage) : "",
+      description: toObj(item.description),
+      brand: toObj(item.brand),
+      brandTextColor: item.brandTextColor || "white",
+      order: item.order ?? 0,
+      isVisible: item.isVisible ?? true,
+    });
     setModalOpen(true);
   };
 
@@ -169,8 +172,7 @@ export default function LayihelerimizPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    setForm((f) => ({ ...f, imageFile: file, imagePreview: URL.createObjectURL(file) }));
   };
 
   const handleBrandImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,78 +183,124 @@ export default function LayihelerimizPage() {
       if (brandFileInputRef.current) brandFileInputRef.current.value = "";
       return;
     }
-    setBrandImageFile(file);
-    setBrandImagePreview(URL.createObjectURL(file));
+    setForm((f) => ({ ...f, brandImageFile: file, brandImagePreview: URL.createObjectURL(file) }));
   };
 
   const handleSave = async () => {
-    if (!editingItem) return;
     setSaving(true);
     try {
-      let imageUrl = image;
-      if (imageFile) {
+      let imageUrl = form.image;
+      if (form.imageFile) {
         setImageUploading(true);
-        imageUrl = await uploadFile(imageFile);
+        imageUrl = await uploadFile(form.imageFile);
         setImageUploading(false);
       }
 
-      let brandImageUrl = brandImage;
-      if (brandImageFile) {
+      let brandImageUrl = form.brandImage;
+      if (form.brandImageFile) {
         setBrandImageUploading(true);
-        brandImageUrl = await uploadFile(brandImageFile);
+        brandImageUrl = await uploadFile(form.brandImageFile);
         setBrandImageUploading(false);
       }
 
-      const payload = {
-        title: editingItem.title,
-        slug: editingItem.slug,
+      const payload: Record<string, unknown> = {
+        title: (form.title.az || form.title.en || form.title.ru) ? form.title : null,
         image: imageUrl || null,
         brandImage: brandImageUrl || null,
-        description: (description.az || description.en || description.ru) ? description : null,
-        brand: (brand.az || brand.en || brand.ru) ? brand : null,
-        brandTextColor: brandTextColor,
-        order: editingItem.order,
-        isVisible: editingItem.isVisible,
+        description: (form.description.az || form.description.en || form.description.ru) ? form.description : null,
+        brand: (form.brand.az || form.brand.en || form.brand.ru) ? form.brand : null,
+        brandTextColor: form.brandTextColor,
+        order: form.order,
+        isVisible: form.isVisible,
       };
 
-      if (editingItem.cmsId) {
-        await cmsApiFetch(`/layihelerimiz/categories/${editingItem.cmsId}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
-      } else {
+      if (isNew) {
+        if (form.slug) payload.slug = form.slug;
         await cmsApiFetch("/layihelerimiz/categories", {
           method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } else if (editingItem) {
+        if (form.slug) payload.slug = form.slug;
+        await cmsApiFetch(`/layihelerimiz/categories/${editingItem.id}`, {
+          method: "PATCH",
           body: JSON.stringify(payload),
         });
       }
 
       setModalOpen(false);
       load();
-    } catch (e: any) {
-      alert("Xəta: " + e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert("Xəta: " + msg);
     } finally {
       setSaving(false);
       setImageUploading(false);
+      setBrandImageUploading(false);
+    }
+  };
+
+  const handleDelete = async (item: LayihelerimizCategory) => {
+    const name = getLocalized(item.title, "az") || item.slug;
+    const confirmed = window.confirm(`"${name}" silinsin?`);
+    if (!confirmed) return;
+    try {
+      const token = getToken();
+      const res = await fetch(`${API}/layihelerimiz/categories/${item.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || err?.error || `HTTP ${res.status}`);
+      }
+      load();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      window.alert("Xəta: " + msg);
     }
   };
 
   return (
     <div style={{ padding: 32 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Layihelerimiz</h1>
-        <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-          Kateqoriyalar off-plan-dan avtomatik gəlir. Şəkil və brand məlumatlarını buradan əlavə edin.
-        </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Layihelerimiz</h1>
+          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+            Layiheleri buradan idarə edin. Kateqoriyalar müstəqildir.
+          </p>
+        </div>
+        <button
+          onClick={openNew}
+          style={{
+            padding: "10px 20px",
+            background: "#1e3a5f",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          + Yeni Layihə
+        </button>
       </div>
 
       {loading ? (
         <p>Yüklənir...</p>
+      ) : items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 60, color: "#9ca3af" }}>
+          <p style={{ fontSize: 16 }}>Hələ heç bir kateqoriya yoxdur</p>
+          <p style={{ fontSize: 13, marginTop: 8 }}>Yuxarıdakı "Yeni Kateqoriya" düyməsinə klikləyin</p>
+        </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {items.map((item) => (
             <div
-              key={item.slug}
+              key={item.id}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -266,7 +314,7 @@ export default function LayihelerimizPage() {
               {item.image ? (
                 <img
                   src={toAbsUrl(item.image)}
-                  alt={item.title}
+                  alt={getLocalized(item.title, "az") || ""}
                   style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 8 }}
                 />
               ) : (
@@ -287,40 +335,28 @@ export default function LayihelerimizPage() {
                 </div>
               )}
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{item.title}</div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>
+                  {getLocalized(item.title, "az") || item.slug}
+                </div>
                 <div style={{ fontSize: 13, color: "#6b7280" }}>
                   /{item.slug}
                   {item.brand && (
-                    <> · {getLocalized(item.brand, 'az')}</>
+                    <> · {getLocalized(item.brand, "az")}</>
                   )}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {item.cmsId ? (
-                  <span
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      fontSize: 12,
-                      background: "#dcfce7",
-                      color: "#166534",
-                    }}
-                  >
-                    Şəkil var
-                  </span>
-                ) : (
-                  <span
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      fontSize: 12,
-                      background: "#fef3c7",
-                      color: "#92400e",
-                    }}
-                  >
-                    Şəkil yoxdur
-                  </span>
-                )}
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    fontSize: 12,
+                    background: item.isVisible ? "#dcfce7" : "#fee2e2",
+                    color: item.isVisible ? "#166534" : "#991b1b",
+                  }}
+                >
+                  {item.isVisible ? "Görünür" : "Gizli"}
+                </span>
                 <button
                   onClick={() => openEdit(item)}
                   style={{
@@ -334,7 +370,7 @@ export default function LayihelerimizPage() {
                     fontWeight: 500,
                   }}
                 >
-                  {item.cmsId ? "Redaktə" : "Şəkil əlavə et"}
+                  Redaktə
                 </button>
                 <a
                   href={`/layihelerimiz/${item.slug}`}
@@ -352,6 +388,21 @@ export default function LayihelerimizPage() {
                 >
                   Layihə Detalları
                 </a>
+                <button
+                  onClick={() => handleDelete(item)}
+                  style={{
+                    padding: "6px 12px",
+                    background: "#dc2626",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  Sil
+                </button>
               </div>
             </div>
           ))}
@@ -359,7 +410,7 @@ export default function LayihelerimizPage() {
       )}
 
       {/* MODAL */}
-      {modalOpen && editingItem && (
+      {modalOpen && (
         <div
           style={{
             position: "fixed",
@@ -377,18 +428,28 @@ export default function LayihelerimizPage() {
               background: "#fff",
               borderRadius: 16,
               padding: 32,
-              width: 500,
+              width: 560,
               maxHeight: "85vh",
               overflow: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
-              {editingItem.title}
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>
+              {isNew ? "Yeni Kateqoriya" : "Kateqoriyanı Redaktə Et"}
             </h2>
-            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>
-              Slug: {editingItem.slug}
-            </p>
+
+            {/* Title (multilingual) */}
+            <LangInput label="Başlıq (Az/En/Ru)" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} />
+
+            {/* Slug */}
+            <label style={labelStyle}>Slug</label>
+            <input
+              type="text"
+              value={form.slug}
+              onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+              placeholder="avtomatik yaranacaq"
+              style={inputStyle}
+            />
 
             {/* Image */}
             <label style={labelStyle}>Şəkil</label>
@@ -411,19 +472,17 @@ export default function LayihelerimizPage() {
                 background: "#f9fafb",
               }}
             >
-              {imagePreview ? (
+              {form.imagePreview ? (
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <img
-                    src={imagePreview}
+                    src={form.imagePreview}
                     alt="Preview"
                     style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8 }}
                   />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setImage("");
-                      setImageFile(null);
-                      setImagePreview("");
+                      setForm((f) => ({ ...f, image: "", imageFile: null, imagePreview: "" }));
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                     style={{
@@ -446,7 +505,7 @@ export default function LayihelerimizPage() {
               ) : (
                 <div style={{ color: "#9ca3af" }}>
                   <p>Şəkil yükləmək üçün klikləyin</p>
-                  <small>WebP, JPEG, PNG (max 10MB)</small>
+                  <small>WebP, JPEG, PNG (max 50MB)</small>
                 </div>
               )}
             </div>
@@ -472,19 +531,17 @@ export default function LayihelerimizPage() {
                 background: "#f9fafb",
               }}
             >
-              {brandImagePreview ? (
+              {form.brandImagePreview ? (
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <img
-                    src={brandImagePreview}
+                    src={form.brandImagePreview}
                     alt="Brand Preview"
                     style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8 }}
                   />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setBrandImage("");
-                      setBrandImageFile(null);
-                      setBrandImagePreview("");
+                      setForm((f) => ({ ...f, brandImage: "", brandImageFile: null, brandImagePreview: "" }));
                       if (brandFileInputRef.current) brandFileInputRef.current.value = "";
                     }}
                     style={{
@@ -507,22 +564,22 @@ export default function LayihelerimizPage() {
               ) : (
                 <div style={{ color: "#9ca3af" }}>
                   <p>Brend loqosu yüklə</p>
-                  <small>WebP, JPEG, PNG (max 10MB)</small>
+                  <small>WebP, JPEG, PNG (max 50MB)</small>
                 </div>
               )}
             </div>
 
             {/* Description */}
-            <LangInput label="Təsvir" value={description} onChange={setDescription} type="textarea" placeholder="Qısa təsvir" />
+            <LangInput label="Təsvir" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} type="textarea" placeholder="Qısa təsvir" />
 
             {/* Brand */}
-            <LangInput label="Brand" value={brand} onChange={setBrand} placeholder="Reportage." />
+            <LangInput label="Brand" value={form.brand} onChange={(v) => setForm((f) => ({ ...f, brand: v }))} placeholder="Reportage." />
 
             {/* Brand Text Color */}
             <label style={labelStyle}>Brend Mətn Rəngi</label>
             <select
-              value={brandTextColor}
-              onChange={(e) => setBrandTextColor(e.target.value)}
+              value={form.brandTextColor}
+              onChange={(e) => setForm((f) => ({ ...f, brandTextColor: e.target.value }))}
               style={inputStyle}
             >
               <option value="white">Ağ (White)</option>
@@ -533,17 +590,28 @@ export default function LayihelerimizPage() {
             <label style={labelStyle}>Sıra (Order)</label>
             <input
               type="number"
-              value={editingItem.order}
-              onChange={(e) => setEditingItem({ ...editingItem, order: Number(e.target.value) })}
+              value={form.order}
+              onChange={(e) => setForm((f) => ({ ...f, order: Number(e.target.value) }))}
               placeholder="0"
               style={inputStyle}
             />
+
+            {/* Is Visible */}
+            <label style={labelStyle}>Görünür</label>
+            <select
+              value={form.isVisible ? "true" : "false"}
+              onChange={(e) => setForm((f) => ({ ...f, isVisible: e.target.value === "true" }))}
+              style={inputStyle}
+            >
+              <option value="true">Bəli</option>
+              <option value="false">Xeyr</option>
+            </select>
 
             {/* Buttons */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
               <button
                 onClick={handleSave}
-                disabled={saving || imageUploading}
+                disabled={saving || imageUploading || brandImageUploading}
                 style={{
                   flex: 1,
                   padding: "10px 20px",
@@ -554,10 +622,10 @@ export default function LayihelerimizPage() {
                   cursor: "pointer",
                   fontWeight: 600,
                   fontSize: 14,
-                  opacity: saving || imageUploading ? 0.6 : 1,
+                  opacity: saving || imageUploading || brandImageUploading ? 0.6 : 1,
                 }}
               >
-                {saving ? "Saxlanılır..." : imageUploading ? "Şəkil yüklənir..." : "Saxla"}
+                {saving ? "Saxlanılır..." : imageUploading ? "Şəkil yüklənir..." : brandImageUploading ? "Brand şəkli yüklənir..." : "Saxla"}
               </button>
               <button
                 onClick={() => setModalOpen(false)}

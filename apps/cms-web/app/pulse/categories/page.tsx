@@ -53,7 +53,7 @@ export default function PulseCategoriesPage() {
         <div>
             <div className={styles.tabHeader}>
                 <h2 className={styles.tabTitle}>Pulse Kateqoriyaları</h2>
-                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Kateqoriya</button>
+                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Layihə</button>
             </div>
             {loading ? <div className={styles.empty}>Yüklənir...</div>
                 : categories.length === 0 ? <div className={styles.empty}>Hələ kateqoriya yoxdur</div>

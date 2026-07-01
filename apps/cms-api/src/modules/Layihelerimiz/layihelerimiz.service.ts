@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { LayihelerimizRepository } from './layihelerimiz.repository';
 import { CreateLayihelerimizDto } from './dto/create-layihelerimiz.dto';
 import { UpdateLayihelerimizDto } from './dto/update-layihelerimiz.dto';
@@ -16,6 +16,23 @@ function slugify(text: string): string {
 @Injectable()
 export class LayihelerimizService {
   constructor(private readonly repo: LayihelerimizRepository) {}
+
+  private async validateSlugAgainstTrevaApi(slug: string): Promise<void> {
+    const trevaApiUrl = process.env.TREVA_API_URL || 'http://localhost:10011/api/v1';
+    try {
+      const res = await fetch(`${trevaApiUrl}/categories/slug/${slug}`);
+      if (!res.ok) {
+        throw new BadRequestException(
+          `Slug "${slug}" treva-api-də tapılmadı. Əvvəlcə treva-inventory-də bu slug ilə Category yaradın.`
+        );
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+      throw new BadRequestException(
+        `treva-api ilə əlaqə qurmaq mümkün olmadı. Slug yoxlanması aparılmadı.`
+      );
+    }
+  }
 
   findAll() {
     return this.repo.findAll();
@@ -41,14 +58,17 @@ export class LayihelerimizService {
     const slug = dto.slug || slugify(typeof dto.title === 'object' ? (dto.title?.az || Object.values(dto.title)[0] || '') : dto.title);
     const existing = await this.repo.findBySlug(slug);
     if (existing) throw new ConflictException('Bu slug artıq mövcuddur');
+    await this.validateSlugAgainstTrevaApi(slug);
     return this.repo.create({ ...dto, slug });
   }
 
   async update(id: string, dto: UpdateLayihelerimizDto) {
     await this.findOne(id);
-    if (dto.slug) {
-      const existing = await this.repo.findBySlug(dto.slug);
+    const newSlug = dto.slug;
+    if (newSlug) {
+      const existing = await this.repo.findBySlug(newSlug);
       if (existing && existing.id !== id) throw new ConflictException('Bu slug artıq mövcuddur');
+      await this.validateSlugAgainstTrevaApi(newSlug);
     }
     return this.repo.update(id, dto);
   }
