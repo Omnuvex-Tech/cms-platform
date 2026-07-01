@@ -9,14 +9,14 @@
     "dev": "node ../../scripts/run-with-env.cjs .env.development @nestjs/cli/bin/nest.js start --watch",
     "build": "node ../../scripts/run-with-env.cjs .env.production @nestjs/cli/bin/nest.js build",
     "format": "prettier --write \"src/**/*.ts\"",
+    "prisma:generate": "node ../../scripts/run-prisma.cjs development generate",
+    "prisma:migrate:dev": "node ../../scripts/run-prisma.cjs development migrate dev",
+    "prisma:migrate:deploy": "node ../../scripts/run-prisma.cjs production migrate deploy",
     "start": "node ../../scripts/run-with-env.cjs .env.production @nestjs/cli/bin/nest.js start",
     "start:dev": "node ../../scripts/run-with-env.cjs .env.development @nestjs/cli/bin/nest.js start --watch",
     "start:debug": "node ../../scripts/run-with-env.cjs .env.development @nestjs/cli/bin/nest.js start --debug --watch",
     "start:prod": "node ../../scripts/run-with-env.cjs .env.production ./dist/main.js",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "seed": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed.ts"
-  },
-  "prisma": {
     "seed": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed.ts"
   },
   "dependencies": {
@@ -57,6 +57,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "dotenv": "^17.2.2"
   }
 }
