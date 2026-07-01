@@ -34,6 +34,6 @@ async function bootstrap() {
 
   app.useStaticAssets(join(process.cwd(), 'public'));
 
-  await app.listen(process.env.PORT ?? 10021);
+  await app.listen(Number(process.env.PORT));
 }
 bootstrap();

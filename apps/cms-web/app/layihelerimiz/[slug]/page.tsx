@@ -6,7 +6,7 @@ import Link from "next/link";
 import { LangInput } from "@/components/LangInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
-const TREVA_API = "http://localhost:10011/api/v1";
+const TREVA_API = "https://api.admin.pre.treva.realestate/api/v1";
 
 type LocalizedValue = Record<string, string> | string | null | undefined;
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { LangInput, getLocalized } from "@/components/LangInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
-const TREVA_API = "http://localhost:10011/api/v1";
+const TREVA_API = process.env.NEXT_PUBLIC_TREVA_API_URL;
 
 type LocalizedValue = Record<string, string> | string | null | undefined;
 
