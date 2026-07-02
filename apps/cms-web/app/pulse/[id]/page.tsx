@@ -11,7 +11,7 @@ type Category = { id: string; name: string | { az?: string; en?: string; ru?: st
 type ArticleSummary = { id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; coverImage?: string; category?: string | { az?: string; en?: string; ru?: string } };
 
 type Block =
-    | { type: "heading"; level: 2 | 3; text: string }
+    | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; text: string }
     | { type: "paragraph"; text: string }
     | { type: "image"; url: string; alt: string; caption?: string }
     | { type: "list"; ordered: boolean; items: string[] }
@@ -112,9 +112,13 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                         <div className={styles.field}>
                             <label>Səviyyə</label>
                             <select className={styles.input} value={block.level}
-                                onChange={e => onChange({ ...block, level: Number(e.target.value) as 2 | 3 })}>
+                                 onChange={e => onChange({ ...block, level: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}>
+                                <option value={1}>H1</option>
                                 <option value={2}>H2</option>
                                 <option value={3}>H3</option>
+                                <option value={4}>H4</option>
+                                <option value={5}>H5</option>
+                                <option value={6}>H6</option>
                             </select>
                         </div>
                     </div>
