@@ -11,6 +11,12 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
 
+const maxFileSizeBytes = Number(
+  process.env.LAYIHELERIMIZ_UPLOAD_MAX_FILE_SIZE_BYTES ??
+    process.env.UPLOAD_MAX_FILE_SIZE_BYTES ??
+    50 * 1024 * 1024,
+);
+
 @Controller('layihelerimiz')
 export class LayihelerimizController {
   constructor(private readonly service: LayihelerimizService) {}
@@ -34,7 +40,7 @@ export class LayihelerimizController {
       }
       cb(null, true);
     },
-    limits: { fileSize: 50 * 1024 * 1024 },
+    limits: { fileSize: maxFileSizeBytes },
   }))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/layihelerimiz/${file.filename}` };
