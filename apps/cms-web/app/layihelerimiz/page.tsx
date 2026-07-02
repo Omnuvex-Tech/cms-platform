@@ -13,6 +13,57 @@ function toObj(val: LocalizedValue): { az: string; en: string; ru: string } {
   return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
 }
 
+async function prepareImageFile(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+
+  const maxDimension = 1920;
+  const quality = 0.85;
+
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+
+  try {
+    const { width, height } = bitmap;
+    if (!width || !height) return file;
+
+    const scale = Math.min(1, maxDimension / Math.max(width, height));
+    if (scale === 1 && file.type === "image/webp" && file.size <= 1_500_000)
+      return file;
+
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", quality);
+    });
+    if (!blob) return file;
+
+    if (blob.size >= file.size) return file;
+
+    const safeBaseName =
+      (file.name || "image")
+        .replace(/\.[^.]+$/, "")
+        .replace(/[^\w\-]+/g, "_")
+        .slice(0, 60) || "image";
+
+    return new File([blob], `${safeBaseName}.webp`, { type: blob.type });
+  } finally {
+    bitmap.close();
+  }
+}
+
 interface LayihelerimizCategory {
   id: string;
   title?: LocalizedValue;
@@ -62,7 +113,28 @@ async function uploadFile(file: File): Promise<string> {
     headers: { Authorization: `Bearer ${getToken()}` },
     body: formData,
   });
-  if (!res.ok) throw new Error("Fayl yükləmə uğursuz");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const trimmed = text.trim();
+    if (res.status === 413) {
+      throw new Error(
+        `Fayl çox böyük (HTTP 413). Server/proxy limitini artırın (nginx client_max_body_size). ${
+          trimmed ? `Cavab: ${trimmed.slice(0, 200)}` : ""
+        }`.trim(),
+      );
+    }
+    let message = `HTTP ${res.status}`;
+    try {
+      const json = trimmed ? JSON.parse(trimmed) : null;
+      message =
+        json?.message ||
+        json?.error ||
+        (typeof json === "string" ? json : message);
+    } catch {
+      if (trimmed) message = trimmed.slice(0, 200);
+    }
+    throw new Error(`Fayl yükləmə uğursuz: ${message}`);
+  }
   return (await res.json()).url;
 }
 
@@ -172,7 +244,14 @@ export default function LayihelerimizPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    setForm((f) => ({ ...f, imageFile: file, imagePreview: URL.createObjectURL(file) }));
+    void (async () => {
+      const prepared = await prepareImageFile(file);
+      setForm((f) => ({
+        ...f,
+        imageFile: prepared,
+        imagePreview: URL.createObjectURL(prepared),
+      }));
+    })();
   };
 
   const handleBrandImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,7 +262,14 @@ export default function LayihelerimizPage() {
       if (brandFileInputRef.current) brandFileInputRef.current.value = "";
       return;
     }
-    setForm((f) => ({ ...f, brandImageFile: file, brandImagePreview: URL.createObjectURL(file) }));
+    void (async () => {
+      const prepared = await prepareImageFile(file);
+      setForm((f) => ({
+        ...f,
+        brandImageFile: prepared,
+        brandImagePreview: URL.createObjectURL(prepared),
+      }));
+    })();
   };
 
   const handleSave = async () => {
