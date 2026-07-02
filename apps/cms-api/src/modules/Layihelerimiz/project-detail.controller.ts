@@ -11,6 +11,12 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
 
+const maxFileSizeBytes = Number(
+  process.env.LAYIHELERIMIZ_DETAILS_UPLOAD_MAX_FILE_SIZE_BYTES ??
+    process.env.UPLOAD_MAX_FILE_SIZE_BYTES ??
+    50 * 1024 * 1024,
+);
+
 @Controller('layihelerimiz/project-details')
 export class ProjectDetailController {
   constructor(private readonly service: ProjectDetailService) {}
@@ -29,17 +35,26 @@ export class ProjectDetailController {
       },
     }),
     fileFilter: (req, file, cb) => {
+      const ext = extname(file.originalname || '').toLowerCase();
       const allowed = [
         'image/webp', 'image/jpeg', 'image/png', 'image/jpg',
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ];
-      if (!allowed.includes(file.mimetype)) {
+      const extAllowed =
+        ext === '.pdf' ||
+        ext === '.docx' ||
+        ext === '.webp' ||
+        ext === '.jpg' ||
+        ext === '.jpeg' ||
+        ext === '.png';
+
+      if (!allowed.includes(file.mimetype) && !(file.mimetype === 'application/octet-stream' && extAllowed)) {
         return cb(new Error('Yalnız WebP, JPEG, PNG, PDF və DOCX formatları'), false);
       }
       cb(null, true);
     },
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: maxFileSizeBytes },
   }))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/layihelerimiz/details/${file.filename}` };

@@ -14,6 +14,55 @@ function toObj(val: LocalizedValue): Record<string, string> {
   return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
 }
 
+async function prepareImageFile(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+
+  const maxDimension = 1920;
+  const quality = 0.85;
+
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+
+  try {
+    const { width, height } = bitmap;
+    if (!width || !height) return file;
+
+    const scale = Math.min(1, maxDimension / Math.max(width, height));
+    if (scale === 1 && file.type === "image/webp" && file.size <= 1_500_000) return file;
+
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", quality);
+    });
+    if (!blob) return file;
+    if (blob.size >= file.size) return file;
+
+    const safeBaseName =
+      (file.name || "image")
+        .replace(/\.[^.]+$/, "")
+        .replace(/[^\w\-]+/g, "_")
+        .slice(0, 60) || "image";
+
+    return new File([blob], `${safeBaseName}.webp`, { type: blob.type });
+  } finally {
+    bitmap.close();
+  }
+}
+
 interface FeatureSection {
   id: string;
   titleItalic: string;
@@ -112,7 +161,28 @@ async function uploadFile(file: File): Promise<string> {
     headers: { Authorization: `Bearer ${getToken()}` },
     body: formData,
   });
-  if (!res.ok) throw new Error("Fayl yükləmə uğursuz");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const trimmed = text.trim();
+    if (res.status === 413) {
+      throw new Error(
+        `Fayl çox böyük (HTTP 413). Server/proxy limitini artırın (nginx client_max_body_size). ${
+          trimmed ? `Cavab: ${trimmed.slice(0, 200)}` : ""
+        }`.trim(),
+      );
+    }
+    let message = `HTTP ${res.status}`;
+    try {
+      const json = trimmed ? JSON.parse(trimmed) : null;
+      message =
+        json?.message ||
+        json?.error ||
+        (typeof json === "string" ? json : message);
+    } catch {
+      if (trimmed) message = trimmed.slice(0, 200);
+    }
+    throw new Error(`Fayl yükləmə uğursuz: ${message}`);
+  }
   return (await res.json()).url;
 }
 
@@ -247,7 +317,8 @@ export default function ProjectDetailEditor() {
 
   const handleFileUpload = async (field: string, file: File) => {
     try {
-      const url = await uploadFile(file);
+      const prepared = await prepareImageFile(file);
+      const url = await uploadFile(prepared);
       setDetail((prev) => ({ ...prev, [field]: url }));
     } catch (e: any) {
       alert("Yükləmə uğursuz: " + e.message);
@@ -256,7 +327,8 @@ export default function ProjectDetailEditor() {
 
   const handleMultiImageUpload = async (index: number, file: File) => {
     try {
-      const url = await uploadFile(file);
+      const prepared = await prepareImageFile(file);
+      const url = await uploadFile(prepared);
       setDetail((prev) => {
         const images = [...(prev.heroImages || [])];
         while (images.length <= index) images.push({ url: "", alt: "" });
@@ -565,7 +637,8 @@ export default function ProjectDetailEditor() {
                   currentUrl={sec.image}
                   onUpload={async (f) => {
                     try {
-                      const url = await uploadFile(f);
+                      const prepared = await prepareImageFile(f);
+                      const url = await uploadFile(prepared);
                       const sections = [...(detail.featuresSections || [])];
                       sections[sIdx] = { ...sections[sIdx], image: url } as FeatureSection;
                       updateField("featuresSections", sections);
@@ -705,6 +778,13 @@ function FileUploadButton({
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const absUrl = currentUrl ? toAbs(currentUrl) : "";
+  const lowerUrl = (currentUrl || "").toLowerCase();
+  const isFileOnly =
+    lowerUrl.endsWith(".pdf") ||
+    lowerUrl.endsWith(".docx") ||
+    lowerUrl.includes("/documents/") ||
+    lowerUrl.includes("brochure");
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -738,7 +818,13 @@ function FileUploadButton({
       </button>
       {currentUrl && (
         <>
-          <img src={toAbs(currentUrl)} alt="" style={{ width: 40, height: 30, objectFit: "cover", borderRadius: 4 }} />
+          {isFileOnly ? (
+            <a href={absUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#1e3a5f" }}>
+              Fayl
+            </a>
+          ) : (
+            <img src={absUrl} alt="" style={{ width: 40, height: 30, objectFit: "cover", borderRadius: 4 }} />
+          )}
           <button onClick={onRemove} style={removeBtn}>✕</button>
         </>
       )}
