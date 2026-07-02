@@ -509,11 +509,12 @@ model PulseArticle {
   author          PulseAuthor? @relation(fields: [authorId], references: [id])
   keywords        PulseKeyword[]
   blocks          Json     @default("[]")
+  socialLinks     Json?
   metaTitle       Json?
   metaDescription Json?
   featured        Boolean  @default(false)
   published       Boolean  @default(false)
-  headerPosition  String?
+  headerPositions Json     @default("[]")
   headerOrder     Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

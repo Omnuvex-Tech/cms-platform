@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
-type Article = { id: string; title: string | { az?: string; en?: string; ru?: string }; slug: string; coverImage?: string; headerPosition?: string; headerOrder?: number };
+type Article = { id: string; title: string | { az?: string; en?: string; ru?: string }; slug: string; coverImage?: string; headerPositions?: string[]; headerOrder?: number };
 type Section = { position: string; label: string; color: string; bg: string; border: string };
 
 function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {
@@ -33,29 +33,45 @@ export default function PulseLayoutPage() {
     useEffect(() => { load(); }, []);
 
     const getArticlesForPosition = (pos: string) =>
-        articles.filter(a => a.headerPosition === pos).sort((a, b) => (a.headerOrder || 0) - (b.headerOrder || 0));
+        articles.filter(a => a.headerPositions?.includes(pos)).sort((a, b) => (a.headerOrder || 0) - (b.headerOrder || 0));
 
-    const getUnassigned = () => articles.filter(a => !a.headerPosition);
+    const getUnassigned = () => articles.filter(a => !a.headerPositions || a.headerPositions.length === 0);
 
     const assignArticle = async (articleId: string, position: string) => {
         setSaving(true);
         try {
+            const article = articles.find(a => a.id === articleId);
+            const currentPositions = article?.headerPositions || [];
+            if (currentPositions.includes(position)) {
+                setSaving(false);
+                return;
+            }
+            const newPositions = [...currentPositions, position];
             const sectionArticles = getArticlesForPosition(position);
             const maxOrder = sectionArticles.length > 0 ? Math.max(...sectionArticles.map(a => a.headerOrder || 0)) : 0;
             await apiFetch(`/pulse/articles/${articleId}`, {
                 method: "PUT",
-                body: JSON.stringify({ headerPosition: position, headerOrder: maxOrder + 1 }),
+                body: JSON.stringify({ headerPositions: newPositions, headerOrder: maxOrder + 1 }),
             });
             await load();
         } finally { setSaving(false); }
     };
 
-    const removeArticle = async (articleId: string) => {
+    const removeArticle = async (articleId: string, position?: string) => {
         setSaving(true);
         try {
+            const article = articles.find(a => a.id === articleId);
+            if (!article) { setSaving(false); return; }
+            const currentPositions = article.headerPositions || [];
+            const newPositions = position
+                ? currentPositions.filter(p => p !== position)
+                : [];
             await apiFetch(`/pulse/articles/${articleId}`, {
                 method: "PUT",
-                body: JSON.stringify({ headerPosition: null, headerOrder: null }),
+                body: JSON.stringify({
+                    headerPositions: newPositions,
+                    headerOrder: newPositions.length === 0 ? null : undefined,
+                }),
             });
             await load();
         } finally { setSaving(false); }
@@ -63,9 +79,10 @@ export default function PulseLayoutPage() {
 
     const moveArticle = async (articleId: string, direction: "up" | "down") => {
         const article = articles.find(a => a.id === articleId);
-        if (!article || !article.headerPosition) return;
+        if (!article || !article.headerPositions || article.headerPositions.length === 0) return;
 
-        const sectionArticles = getArticlesForPosition(article.headerPosition);
+        const currentPosition = article.headerPositions[0];
+        const sectionArticles = getArticlesForPosition(currentPosition);
         const idx = sectionArticles.findIndex(a => a.id === articleId);
         if (idx === -1) return;
 
@@ -122,7 +139,7 @@ export default function PulseLayoutPage() {
                                         style={{ background: "none", border: "none", color: idx === 0 ? "#cbd5e1" : "#2563eb", cursor: idx === 0 ? "default" : "pointer", fontSize: 14, flexShrink: 0 }}>▲</button>
                                     <button onClick={() => moveArticle(a.id, "down")} disabled={idx === getArticlesForPosition(sec.position).length - 1}
                                         style={{ background: "none", border: "none", color: idx === getArticlesForPosition(sec.position).length - 1 ? "#cbd5e1" : "#2563eb", cursor: idx === getArticlesForPosition(sec.position).length - 1 ? "default" : "pointer", fontSize: 14, flexShrink: 0 }}>▼</button>
-                                    <button onClick={() => removeArticle(a.id)}
+                                    <button onClick={() => removeArticle(a.id, sec.position)}
                                         style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, padding: "2px 6px", borderRadius: 4, flexShrink: 0 }}>✕</button>
                                 </div>
                             ))}

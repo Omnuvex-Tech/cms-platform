@@ -49,9 +49,9 @@ export class UpdatePulseArticleDto {
   @IsOptional()
   published?: boolean;
 
-  @IsString()
+  @IsArray()
   @IsOptional()
-  headerPosition?: string;
+  headerPositions?: string[];
 
   @IsNumber()
   @IsOptional()
@@ -64,4 +64,8 @@ export class UpdatePulseArticleDto {
   @IsArray()
   @IsOptional()
   selectedArticleIds?: string[];
+
+  @IsObject()
+  @IsOptional()
+  socialLinks?: Record<string, string>;
 }

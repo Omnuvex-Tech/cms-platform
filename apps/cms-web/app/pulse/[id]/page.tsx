@@ -14,7 +14,7 @@ type Block =
     | { type: "heading"; level: 2 | 3; text: string }
     | { type: "paragraph"; text: string }
     | { type: "image"; url: string; alt: string; caption?: string }
-    | { type: "list"; items: string[] }
+    | { type: "list"; ordered: boolean; items: string[] }
     | { type: "faq"; question: string; answer: string }
     | { type: "quote"; text: string; author?: string }
     | { type: "video"; url: string }
@@ -35,6 +35,47 @@ function getLocalizedName(name: string | { az?: string; en?: string; ru?: string
     if (!name) return "";
     if (typeof name === "string") return name;
     return name.az || Object.values(name)[0] || "";
+}
+
+function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragraph" }; onChange: (b: Block) => void }) {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (ref.current && ref.current.innerHTML !== block.text)
+            ref.current.innerHTML = block.text;
+    }, []);
+
+    const wrapSelection = (tag: string) => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const range = sel.getRangeAt(0);
+        const el = document.createElement(tag);
+        try { range.surroundContents(el); sel.removeAllRanges(); } catch {}
+        const active = document.activeElement as HTMLElement;
+        if (active) onChange({ ...block, text: active.innerHTML });
+    };
+
+    return (
+        <div className={styles.field}>
+            <label>
+                Paraqraf mətni
+                <button type="button" onClick={() => wrapSelection("b")} style={{
+                    marginLeft: 12, padding: "2px 10px", borderRadius: 4,
+                    border: "1px solid #cbd5e1", background: "#f1f5f9",
+                    cursor: "pointer", fontSize: 13, fontWeight: 700,
+                }} title="Seçilmiş mətni qalın et (B)">B</button>
+                <button type="button" onClick={() => wrapSelection("i")} style={{
+                    marginLeft: 4, padding: "2px 10px", borderRadius: 4,
+                    border: "1px solid #cbd5e1", background: "#f1f5f9",
+                    cursor: "pointer", fontSize: 13, fontStyle: "italic",
+                }} title="Seçilmiş mətni kursiv et (I)">I</button>
+            </label>
+            <div ref={ref} contentEditable suppressHydrationWarning
+                className={styles.input}
+                style={{ minHeight: 80, whiteSpace: "pre-wrap" }}
+                onBlur={e => onChange({ ...block, text: e.currentTarget.innerHTML })}
+            />
+        </div>
+    );
 }
 
 function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
@@ -79,13 +120,7 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                     </div>
                 );
             case "paragraph":
-                return (
-                    <div className={styles.field}>
-                        <label>Paraqraf mətni</label>
-                        <textarea className={styles.input} rows={3} value={block.text}
-                            onChange={e => onChange({ ...block, text: e.target.value })} placeholder="Mətn yazın..." />
-                    </div>
-                );
+                return <ParagraphEditor block={block} onChange={onChange} />;
             case "image":
                 return (
                     <div className={styles.field}>
@@ -117,7 +152,26 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
             case "list":
                 return (
                     <div className={styles.field}>
-                        <label>Siyahı elementləri</label>
+                        <label>
+                            Siyahı elementləri
+                            <button
+                                type="button"
+                                onClick={() => onChange({ ...block, ordered: !block.ordered })}
+                                style={{
+                                    marginLeft: 12,
+                                    padding: "2px 10px",
+                                    borderRadius: 4,
+                                    border: "1px solid #cbd5e1",
+                                    background: block.ordered ? "#2563eb" : "#f1f5f9",
+                                    color: block.ordered ? "#fff" : "#475569",
+                                    cursor: "pointer",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                }}
+                            >
+                                {block.ordered ? "1. 2. 3." : "• • •"}
+                            </button>
+                        </label>
                         {block.items.map((item, i) => (
                             <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
                                 <input className={styles.input} value={item}
@@ -246,11 +300,14 @@ export default function PulseArticleEditPage() {
     const [authorId, setAuthorId] = useState("");
     const [published, setPublished] = useState(false);
     const [featured, setFeatured] = useState(false);
-    const [headerPosition, setHeaderPosition] = useState("");
+    const [headerPositions, setHeaderPositions] = useState<string[]>([]);
     const [headerOrder, setHeaderOrder] = useState<number>(0);
     const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
+    const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+    const [authorType, setAuthorType] = useState<"existing" | "custom">("existing");
+    const [customAuthorName, setCustomAuthorName] = useState("");
 
     const [authors, setAuthors] = useState<Author[]>([]);
     const [keywords, setKeywords] = useState<Keyword[]>([]);
@@ -273,17 +330,20 @@ export default function PulseArticleEditPage() {
             });
         if (!isNew) {
             apiFetch(`/pulse/articles/${id}`).then(a => {
-                setTitle(typeof a.title === "object" ? (a.title?.az || Object.values(a.title)[0] || "") : (a.title || ""));
+                setTitle(a.title && typeof a.title === "object" ? (a.title?.az || Object.values(a.title)[0] || "") : (a.title || ""));
                 setSlug(a.slug);
-                setCategory(typeof a.category === "object" ? (a.category?.az || Object.values(a.category)[0] || "") : (a.category || ""));
-                setExcerpt(typeof a.excerpt === "object" ? (a.excerpt?.az || Object.values(a.excerpt)[0] || "") : (a.excerpt || ""));
+                setCategory(a.category && typeof a.category === "object" ? (a.category?.az || Object.values(a.category)[0] || "") : (a.category || ""));
+                setExcerpt(a.excerpt && typeof a.excerpt === "object" ? (a.excerpt?.az || Object.values(a.excerpt)[0] || "") : (a.excerpt || ""));
                 setCoverImage(a.coverImage || "");
                 setAuthorId(a.authorId || ""); setPublished(a.published);
-                setFeatured(a.featured); setHeaderPosition(a.headerPosition || "");
+                setFeatured(a.featured); setHeaderPositions(Array.isArray(a.headerPositions) ? a.headerPositions : []);
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
                 setBlocks(Array.isArray(a.blocks) ? (a.blocks as Block[]) : []);
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
+                setSocialLinks(a.socialLinks || {});
+                if (a.authorId) setAuthorType("existing");
+                else if (a.socialLinks) setAuthorType("custom");
             }).finally(() => setLoading(false));
         }
     }, [id, isNew]);
@@ -302,7 +362,7 @@ export default function PulseArticleEditPage() {
             case "heading": newBlock = { type: "heading", level: 2, text: "" }; break;
             case "paragraph": newBlock = { type: "paragraph", text: "" }; break;
             case "image": newBlock = { type: "image", url: "", alt: "" }; break;
-            case "list": newBlock = { type: "list", items: [""] }; break;
+            case "list": newBlock = { type: "list", ordered: false, items: [""] }; break;
             case "faq": newBlock = { type: "faq", question: "", answer: "" }; break;
             case "quote": newBlock = { type: "quote", text: "", author: "" }; break;
             case "video": newBlock = { type: "video", url: "" }; break;
@@ -336,10 +396,15 @@ export default function PulseArticleEditPage() {
                 title: { az: title }, slug, category: { az: category },
                 excerpt: excerpt ? { az: excerpt } : null,
                 coverImage: coverImage || null,
-                authorId: authorId || null, published, featured,
-                headerPosition: headerPosition || null,
+                authorId: authorType === "existing" ? (authorId || null) : null,
+                published, featured,
+                headerPositions,
                 headerOrder: headerOrder || null,
                 blocks,
+                socialLinks: authorType === "custom" ? {
+                    ...socialLinks,
+                    ...(customAuthorName ? { name: customAuthorName } : {}),
+                } : undefined,
                 keywordIds: selectedKeywords,
                 selectedArticleIds,
             };
@@ -401,10 +466,56 @@ export default function PulseArticleEditPage() {
                     </div>
                     <div className={styles.field}>
                         <label>Müəllif</label>
-                        <select className={styles.input} value={authorId} onChange={e => setAuthorId(e.target.value)}>
-                            <option value="">Seçin...</option>
-                            {authors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                        </select>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                            <button type="button" onClick={() => setAuthorType("existing")}
+                                style={{
+                                    padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer",
+                                    border: "1.5px solid", fontWeight: authorType === "existing" ? 600 : 400,
+                                    borderColor: authorType === "existing" ? "#2563eb" : "#e2e8f0",
+                                    background: authorType === "existing" ? "#2563eb" : "transparent",
+                                    color: authorType === "existing" ? "#fff" : "#64748b",
+                                }}>Mövcud müəllif</button>
+                            <button type="button" onClick={() => setAuthorType("custom")}
+                                style={{
+                                    padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer",
+                                    border: "1.5px solid", fontWeight: authorType === "custom" ? 600 : 400,
+                                    borderColor: authorType === "custom" ? "#2563eb" : "#e2e8f0",
+                                    background: authorType === "custom" ? "#2563eb" : "transparent",
+                                    color: authorType === "custom" ? "#fff" : "#64748b",
+                                }}>Xüsusi + Sosial media</button>
+                        </div>
+                        {authorType === "existing" ? (
+                            <select className={styles.input} value={authorId} onChange={e => setAuthorId(e.target.value)}>
+                                <option value="">Seçin...</option>
+                                {authors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            </select>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <input className={styles.input} value={customAuthorName}
+                                    onChange={e => setCustomAuthorName(e.target.value)} placeholder="Müəllif adı" />
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                                    {[
+                                        { key: "facebook", icon: "f", color: "#1877F2", label: "Facebook" },
+                                        { key: "instagram", icon: "📷", color: "#E4405F", label: "Instagram" },
+                                        { key: "tiktok", icon: "♪", color: "#000000", label: "TikTok" },
+                                        { key: "website", icon: "🌐", color: "#4A90D9", label: "Vebsayt" },
+                                    ].map(platform => (
+                                        <div key={platform.key} style={{ display: "flex", alignItems: "center", gap: 4, flex: "1 1 180px" }}>
+                                            <span title={platform.label} style={{
+                                                width: 28, height: 28, borderRadius: "50%",
+                                                background: platform.color, color: "#fff",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: 12, fontWeight: 700, flexShrink: 0,
+                                            }}>{platform.icon}</span>
+                                            <input className={styles.input}
+                                                value={socialLinks[platform.key] || ""}
+                                                onChange={e => setSocialLinks(prev => ({ ...prev, [platform.key]: e.target.value }))}
+                                                placeholder={`${platform.label} URL`} style={{ flex: 1, fontSize: 12 }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className={styles.field}>

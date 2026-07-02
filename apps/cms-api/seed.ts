@@ -633,7 +633,7 @@ async function main() {
       authorId: ali?.id,
       published: true,
       featured: true,
-      headerPosition: 'left',
+      headerPositions: ['left'],
       headerOrder: 1,
       blocks: [
         { type: 'heading', content: 'Rəqəmsal Transformasiya', level: 2 },
@@ -649,7 +649,7 @@ async function main() {
       authorId: ali?.id,
       published: true,
       featured: true,
-      headerPosition: 'center',
+      headerPositions: ['center'],
       headerOrder: 1,
       blocks: [
         { type: 'heading', content: 'Startap Ekosistemi', level: 2 },
@@ -664,7 +664,7 @@ async function main() {
       authorId: ali?.id,
       published: true,
       featured: false,
-      headerPosition: 'right',
+      headerPositions: ['right'],
       headerOrder: 1,
       blocks: [
         { type: 'heading', content: 'Yay Kampaniyası', level: 2 },
@@ -679,7 +679,7 @@ async function main() {
       authorId: ali?.id,
       published: true,
       featured: true,
-      headerPosition: 'week',
+      headerPositions: ['week'],
       headerOrder: 1,
       blocks: [
         { type: 'heading', content: 'Süni İntellekt', level: 2 },
@@ -691,10 +691,10 @@ async function main() {
   for (const article of pulseArticles) {
     const existing = await prisma.pulseArticle.findUnique({ where: { slug: article.slug } });
     if (!existing) {
-      const { slug, title, category, excerpt, authorId, published, featured, headerPosition, headerOrder, blocks } = article;
+      const { slug, title, category, excerpt, authorId, published, featured, headerPositions, headerOrder, blocks } = article;
       await prisma.pulseArticle.create({
         data: {
-          slug, title, category, excerpt, authorId, published, featured, headerPosition, headerOrder, blocks,
+          slug, title, category, excerpt, authorId, published, featured, headerPositions, headerOrder, blocks,
           keywords: { connect: texnologiya ? [{ id: texnologiya.id }] : [] },
         },
       });

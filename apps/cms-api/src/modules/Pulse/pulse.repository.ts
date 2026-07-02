@@ -50,13 +50,21 @@ export class PulseRepository {
   }
 
   findHeaderArticles(position: string) {
-    return this.prisma.pulseArticle.findMany({
-      where: {
-        published: true,
-        headerPosition: position,
-      },
-      include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
-      orderBy: { headerOrder: 'asc' },
+    return this.prisma.$queryRaw`
+      SELECT * FROM "pulse_articles"
+      WHERE published = true
+      AND "headerPositions" @> ${JSON.stringify([position])}::jsonb
+      ORDER BY "headerOrder" ASC
+    `.then(async (articles: any[]) => {
+      // Attach relations for each article
+      const enriched = await Promise.all(articles.map(async (a: any) => {
+        const full = await this.prisma.pulseArticle.findUnique({
+          where: { id: a.id },
+          include: { author: true, keywords: true, selectedArticles: { include: { author: true, keywords: true } } },
+        });
+        return full;
+      }));
+      return enriched.filter(Boolean);
     });
   }
 
@@ -80,11 +88,12 @@ export class PulseRepository {
         excerpt: dto.excerpt,
         authorId: dto.authorId,
         blocks: dto.blocks ?? [],
+        socialLinks: (dto.socialLinks as any) ?? undefined,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
         featured: dto.featured ?? false,
         published: dto.published ?? false,
-        headerPosition: dto.headerPosition,
+        headerPositions: (dto.headerPositions as any) ?? [],
         headerOrder: dto.headerOrder,
         keywords: dto.keywordIds
           ? { connect: dto.keywordIds.map((id) => ({ id })) }
@@ -109,11 +118,12 @@ export class PulseRepository {
         ...(dto.excerpt !== undefined && { excerpt: dto.excerpt }),
         ...(dto.authorId !== undefined && { authorId: dto.authorId }),
         ...(dto.blocks !== undefined && { blocks: dto.blocks }),
+        ...(dto.socialLinks !== undefined && { socialLinks: dto.socialLinks as any }),
         ...(dto.metaTitle !== undefined && { metaTitle: dto.metaTitle }),
         ...(dto.metaDescription !== undefined && { metaDescription: dto.metaDescription }),
         ...(dto.featured !== undefined && { featured: dto.featured }),
         ...(dto.published !== undefined && { published: dto.published }),
-        ...(dto.headerPosition !== undefined && { headerPosition: dto.headerPosition }),
+        ...(dto.headerPositions !== undefined && { headerPositions: dto.headerPositions as any }),
         ...(dto.headerOrder !== undefined && { headerOrder: dto.headerOrder }),
         ...(dto.keywordIds !== undefined && {
           keywords: { set: dto.keywordIds.map((kid) => ({ id: kid })) },

@@ -9,7 +9,7 @@ type Article = {
     id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; category: string | { az?: string; en?: string; ru?: string };
     date: string; coverImage?: string; excerpt?: string;
     published: boolean; featured: boolean;
-    headerPosition?: string; headerOrder?: number;
+    headerPositions?: string[]; headerOrder?: number;
     author?: { name: string }; keywords?: { name: string }[];
 };
 
@@ -45,17 +45,21 @@ export default function PulseArticlesPage() {
         load();
     };
 
-    const positionBadge = (pos?: string) => {
-        if (!pos) return null;
+    const positionBadge = (positions?: string[]) => {
+        if (!positions || positions.length === 0) return null;
         const colors: Record<string, string> = { left: "#3b82f6", center: "#10b981", right: "#f59e0b", week: "#8b5cf6" };
         return (
-            <span style={{
-                display: "inline-block", padding: "2px 8px", borderRadius: 4,
-                fontSize: 11, fontWeight: 600, color: "#fff",
-                background: colors[pos] || "#6b7280",
-            }}>
-                {pos === "week" ? "Həftə" : pos.toUpperCase()}
-            </span>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {positions.map(pos => (
+                    <span key={pos} style={{
+                        display: "inline-block", padding: "2px 8px", borderRadius: 4,
+                        fontSize: 11, fontWeight: 600, color: "#fff",
+                        background: colors[pos] || "#6b7280",
+                    }}>
+                        {pos === "week" ? "Həftə" : pos.toUpperCase()}
+                    </span>
+                ))}
+            </div>
         );
     };
 
@@ -96,7 +100,7 @@ export default function PulseArticlesPage() {
                                             </td>
                                             <td><span className={styles.badgeTag}>{getLocalizedName(a.category)}</span></td>
                                             <td>{a.author?.name || "—"}</td>
-                                            <td>{positionBadge(a.headerPosition)}</td>
+                                            <td>{positionBadge(a.headerPositions)}</td>
                                             <td>
                                                 <span className={`${styles.statusBadge} ${a.published ? styles.badgeVisible : styles.badgeHidden}`}>
                                                     {a.published ? "Dərc olunub" : "Qaralama"}
