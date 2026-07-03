@@ -39,6 +39,10 @@ function getLocalizedName(name: string | { az?: string; en?: string; ru?: string
 
 function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragraph" }; onChange: (b: Block) => void }) {
     const ref = useRef<HTMLDivElement>(null);
+    const [showLinkPopup, setShowLinkPopup] = useState(false);
+    const [linkUrl, setLinkUrl] = useState("");
+    const [linkNewTab, setLinkNewTab] = useState(true);
+
     useEffect(() => {
         if (ref.current && ref.current.innerHTML !== block.text)
             ref.current.innerHTML = block.text;
@@ -52,6 +56,41 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
         try { range.surroundContents(el); sel.removeAllRanges(); } catch {}
         const active = document.activeElement as HTMLElement;
         if (active) onChange({ ...block, text: active.innerHTML });
+    };
+
+    const openLinkPopup = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) { alert("Əvvəlcə mətn seçin"); return; }
+        setLinkUrl("");
+        setLinkNewTab(true);
+        setShowLinkPopup(true);
+    };
+
+    const applyLink = () => {
+        setShowLinkPopup(false);
+        if (!linkUrl.trim()) return;
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const range = sel.getRangeAt(0);
+        const a = document.createElement("a");
+        a.href = linkUrl.trim();
+        if (linkNewTab) a.target = "_blank";
+        try { range.surroundContents(a); sel.removeAllRanges(); } catch {}
+        const active = document.activeElement as HTMLElement;
+        if (active) onChange({ ...block, text: active.innerHTML });
+    };
+
+    const removeLink = () => {
+        setShowLinkPopup(false);
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const node = sel.anchorNode?.parentElement?.closest?.("a");
+        if (node) {
+            node.replaceWith(...node.childNodes);
+            sel.removeAllRanges();
+            const active = document.activeElement as HTMLElement;
+            if (active) onChange({ ...block, text: active.innerHTML });
+        }
     };
 
     return (
@@ -68,7 +107,29 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
                     border: "1px solid #cbd5e1", background: "#f1f5f9",
                     cursor: "pointer", fontSize: 13, fontStyle: "italic",
                 }} title="Seçilmiş mətni kursiv et (I)">I</button>
+                <button type="button" onClick={openLinkPopup} style={{
+                    marginLeft: 4, padding: "2px 10px", borderRadius: 4,
+                    border: "1px solid #cbd5e1", background: "#f1f5f9",
+                    cursor: "pointer", fontSize: 13,
+                }} title="Link əlavə et (🔗)">🔗</button>
             </label>
+            {showLinkPopup && (
+                <div className={styles.linkPopup} style={{ marginTop: 6 }}>
+                    <input className={styles.linkInput} value={linkUrl}
+                        onChange={e => setLinkUrl(e.target.value)}
+                        placeholder="https://..." autoFocus
+                        onKeyDown={e => e.key === "Enter" && applyLink()}
+                    />
+                    <label className={styles.linkCheckbox}>
+                        <input type="checkbox" checked={linkNewTab}
+                            onChange={e => setLinkNewTab(e.target.checked)}
+                        /> Yeni səhifə
+                    </label>
+                    <button className={styles.linkApplyBtn} onClick={applyLink}>Tətbiq et</button>
+                    <button className={styles.linkRemoveBtn} onClick={removeLink}>Sil</button>
+                    <button className={styles.linkCancelBtn} onClick={() => setShowLinkPopup(false)}>Ləğv et</button>
+                </div>
+            )}
             <div ref={ref} contentEditable suppressHydrationWarning
                 className={styles.input}
                 style={{ minHeight: 80, whiteSpace: "pre-wrap" }}
@@ -346,6 +407,7 @@ export default function PulseArticleEditPage() {
                 setBlocks(Array.isArray(a.blocks) ? (a.blocks as Block[]) : []);
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
                 setSocialLinks(a.socialLinks || {});
+                setCustomAuthorName(a.socialLinks?.name || "");
                 if (a.authorId) setAuthorType("existing");
                 else if (a.socialLinks) setAuthorType("custom");
             }).finally(() => setLoading(false));

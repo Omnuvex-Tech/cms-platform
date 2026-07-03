@@ -22,12 +22,24 @@ export async function apiFetch(path: string, options?: RequestInit) {
 }
 
 export async function uploadFile(file: File): Promise<string> {
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE) throw new Error("Fayl ölçüsü 10 MB-dan çox olmamalıdır");
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch(`${API}/pulse/upload`, {
-        method: "POST", headers: { Authorization: `Bearer ${getToken()}` }, body: formData,
-    });
-    if (!res.ok) throw new Error("Fayl yükləmə uğursuz");
+    let res: Response;
+    try {
+        res = await fetch(`${API}/pulse/upload`, {
+            method: "POST", headers: { Authorization: `Bearer ${getToken()}` }, body: formData,
+        });
+    } catch {
+        throw new Error("Şəbəkə xətası — serverə qoşulmaq mümkün olmadı");
+    }
+    if (res.status === 401) throw new Error("İcazə yoxdur — yenidən daxil olun");
+    if (res.status === 413) throw new Error("Fayl çox böyükdür (maksimum 10 MB)");
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Yükləmə uğursuz (${res.status}): ${text || "Bilinməyən xəta"}`);
+    }
     return (await res.json()).url;
 }
 
