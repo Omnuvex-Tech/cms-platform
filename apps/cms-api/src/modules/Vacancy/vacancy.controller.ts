@@ -83,7 +83,42 @@ fileFilter: (req, file, cb) => {
     return this.service.findAllSubmissions();
   }
 
-  // ─── Categories ──────────────────────────────────────────
+// ─── Filter Tags ─────────────────────────────────────────
+  @Get('filter-tags')
+  getAllFilterTags() { return this.service.getAllFilterTags(); }
+
+  @Post('filter-tags')
+  createFilterTag(@Body('label') label: Record<string, string>) {
+    return this.service.createFilterTag(label);
+  }
+
+  @Put('filter-tags/reorder')
+  reorderFilterTags(@Body('items') items: { id: number; order: number }[]) {
+    return this.service.reorderFilterTags(items);
+  }
+
+@Put('filter-tags/:id')
+  updateFilterTag(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('label') label: Record<string, string>,
+  ) {
+    return this.service.updateFilterTag(id, label);
+  }
+
+  @Patch('filter-tags/:id/active')
+  toggleFilterTagActive(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.service.toggleFilterTagActive(id, isActive);
+  }
+  @Delete('filter-tags/:id')
+  @HttpCode(200)
+  async deleteFilterTag(@Param('id', ParseIntPipe) id: number) {
+    await this.service.deleteFilterTag(id);
+    return { success: true };
+  }
+
   @Get('categories')
   getAllCategories() { return this.service.getAllCategories(); }
 

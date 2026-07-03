@@ -29,6 +29,7 @@ interface Vacancy {
   title: LocalizedString;
   slug: string;
   tags: LocalizedString[];
+  filterTags?: { id: number; label: LocalizedString }[];
   isNew: boolean;
   newLabel: LocalizedString | null;
   isVisible: boolean;
@@ -202,12 +203,14 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
       </td>
       <td>{v.category.name?.[lang] || v.category.name?.az || ""}</td>
       <td>
-        <div className={styles.tagsCell}>
-          {v.tags.slice(0, 2).map((tag, i) => (
-            <span key={i} className={styles.tag}>{tag[lang] || tag.az || ""}</span>
-          ))}
-          {v.tags.length > 2 && <span className={styles.tag}>+{v.tags.length - 2}</span>}
-        </div>
+        <td>
+          <div className={styles.tagsCell}>
+            {(v.filterTags ?? []).slice(0, 2).map((ft, i) => (
+              <span key={i} className={styles.tag}>{ft.label?.[lang] || ft.label?.az || ""}</span>
+            ))}
+            {(v.filterTags ?? []).length > 2 && <span className={styles.tag}>+{(v.filterTags ?? []).length - 2}</span>}
+          </div>
+        </td>
       </td>
       <td>
         <span className={newLabelText ? styles.activeToggle : styles.inactiveToggle}>
@@ -230,10 +233,11 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
   );
 }
 
-function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
+function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved }: {
   open: boolean; onClose: () => void;
   editVac: Vacancy | null;
   categories: VacancyCategory[];
+  filterTags: { id: number; label: LocalizedString }[];
   onSaved: () => void;
 }) {
   const [tab, setTab] = useState<"main" | "detail">("main");
@@ -265,8 +269,9 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
   const [requirements, setRequirements] = useState<LocalizedString[]>([]);
   const [requirementsType, setRequirementsType] = useState<BulletType>("BULLET");
   const [skills, setSkills] = useState<LocalizedString[]>([]);
+  const [selectedFilterTagIds, setSelectedFilterTagIds] = useState<number[]>([]);
 
-useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     setTab("main");
     setLang("az");
@@ -291,6 +296,7 @@ useEffect(() => {
       setRequirements(editVac.requirements ?? []);
       setRequirementsType(editVac.requirementsType);
       setSkills(editVac.skills ?? []);
+      setSelectedFilterTagIds(((editVac as any).filterTags ?? []).map((ft: any) => ft.id));
     } else {
       setTitle({ ...EMPTY_L }); setSlug(""); setCategoryId(""); setTags([]);
       setNewLabel({ ...EMPTY_L }); setIsVisible(true);
@@ -303,6 +309,7 @@ useEffect(() => {
       setResponsible([]); setResponsibleType("BULLET");
       setRequirements([]); setRequirementsType("BULLET");
       setSkills([]);
+      setSelectedFilterTagIds([]);
     }
   }, [open, editVac]);
 
@@ -312,7 +319,7 @@ useEffect(() => {
     setSchemaError(null);
   }, [open, editVac, lang]);
 
-  
+
   const handleTitleChange = (val: string) => {
     setTitle((prev) => ({ ...prev, [lang]: val }));
     if (lang === "az") setSlug(generateSlug(val));
@@ -392,6 +399,7 @@ useEffect(() => {
         aboutRole: aboutRole.az?.trim() ? aboutRole : null,
         responsible, responsibleType,
         requirements, requirementsType, seoTitle, seoDescription, seoKeywords,
+        filterTagIds: selectedFilterTagIds,
       };
       if (editVac) {
         await apiFetch(`/vacancy/${editVac.id}`, { method: "PUT", body: JSON.stringify(body) });
@@ -471,7 +479,26 @@ useEffect(() => {
                 </select>
               </div>
 
-              <LocalizedTagInput label="Taqlər / Skills" items={tags} setItems={setTags} lang={lang} />
+              <div className={styles.field}>
+                <label>Filter Taglar <span className={styles.hint}>(bir neçə seçə bilərsiniz)</span></label>
+                <div className={styles.tagList}>
+                  {filterTags.length === 0 && <span className={styles.hint}>Hələ filter tag yaradılmayıb</span>}
+                  {filterTags.map((ft) => {
+                    const active = selectedFilterTagIds.includes(ft.id);
+                    return (
+                      <button key={ft.id} type="button"
+                        className={active ? styles.activeToggle : styles.inactiveToggle}
+                        onClick={() => setSelectedFilterTagIds((prev) =>
+                          active ? prev.filter((id) => id !== ft.id) : [...prev, ft.id]
+                        )}>
+                        {ft.label?.[lang] || ft.label?.az || ""}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+
 
               <div className={styles.field}>
                 <label>Badge mətni ({lang.toUpperCase()}) <span className={styles.hint}>(boş olsa badge görünməz)</span></label>
@@ -622,13 +649,21 @@ useEffect(() => {
 
 export default function VacancyPage() {
   const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("az");
   const [headerTitle, setHeaderTitle] = useState<LocalizedString>({ ...EMPTY_L });
   const [headerSaving, setHeaderSaving] = useState(false);
   const [headerError, setHeaderError] = useState<string | null>(null);
   const [categories, setCategories] = useState<VacancyCategory[]>([]);
-  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [filterTags, setFilterTags] = useState<{ id: number; label: LocalizedString; order: number; isActive: boolean }[]>([]); const [ftModalOpen, setFtModalOpen] = useState(false);
+  const [editFt, setEditFt] = useState<{ id: number; label: LocalizedString } | null>(null);
+  const [ftLabel, setFtLabel] = useState<LocalizedString>({ ...EMPTY_L });
+  const [ftLang, setFtLang] = useState<Lang>("az");
+  const [ftSaving, setFtSaving] = useState(false);
+  const [ftError, setFtError] = useState<string | null>(null);
+  const [deleteFtId, setDeleteFtId] = useState<number | null>(null);
+  const [deleteFtError, setDeleteFtError] = useState<string | null>(null); const [catModalOpen, setCatModalOpen] = useState(false);
   const [editCat, setEditCat] = useState<VacancyCategory | null>(null);
   const [catName, setCatName] = useState<LocalizedString>({ ...EMPTY_L });
   const [catLang, setCatLang] = useState<Lang>("az");
@@ -646,23 +681,27 @@ export default function VacancyPage() {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const load = async () => {
-    setLoading(true);
+const load = async () => {
+    if (!initialLoaded) setLoading(true);
     try {
-      const [headerData, catsData, vacsData] = await Promise.all([
+      const [headerData, catsData, vacsData, ftData] = await Promise.all([
         apiFetch("/vacancy/header"),
         apiFetch("/vacancy/categories"),
         apiFetch("/vacancy"),
+        apiFetch("/vacancy/filter-tags"),
       ]);
       setHeaderTitle(headerData?.title ?? { ...EMPTY_L });
       setCategories(catsData ?? []);
       setVacancies(vacsData ?? []);
+      setFilterTags(ftData ?? []);
       setListError(null);
     } catch (err: any) {
       setListError(err.message ?? "Məlumatlar yüklənərkən xəta baş verdi");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+      setInitialLoaded(true);
+    }
   };
-
   useEffect(() => { load(); }, []);
 
   const saveHeader = async () => {
@@ -715,6 +754,47 @@ export default function VacancyPage() {
       alert(err.message ?? "Sıralama saxlanılarkən xəta baş verdi");
       load();
     } finally { setVacReordering(false); }
+  };
+
+  const saveFilterTag = async () => {
+    setFtError(null);
+    if (!ftLabel.az?.trim()) {
+      setFtError("Ad (AZ) boş ola bilməz");
+      return;
+    }
+    setFtSaving(true);
+    try {
+      if (editFt) {
+        await apiFetch(`/vacancy/filter-tags/${editFt.id}`, { method: "PUT", body: JSON.stringify({ label: ftLabel }) });
+      } else {
+        await apiFetch("/vacancy/filter-tags", { method: "POST", body: JSON.stringify({ label: ftLabel }) });
+      }
+      setFtModalOpen(false);
+      load();
+    } catch (err: any) {
+      setFtError(err.message ?? "Tag saxlanılarkən xəta baş verdi");
+    } finally { setFtSaving(false); }
+  };
+
+  const handleDeleteFt = async () => {
+    if (!deleteFtId) return;
+    setDeleteFtError(null);
+    try {
+      await apiFetch(`/vacancy/filter-tags/${deleteFtId}`, { method: "DELETE" });
+      setDeleteFtId(null);
+      load();
+    } catch (err: any) {
+      setDeleteFtError(err.message ?? "Silinərkən xəta baş verdi");
+    }
+  };
+
+  const toggleFilterTagActive = async (id: number, val: boolean) => {
+    try {
+      await apiFetch(`/vacancy/filter-tags/${id}/active`, { method: "PATCH", body: JSON.stringify({ isActive: val }) });
+      load();
+    } catch (err: any) {
+      alert(err.message ?? "Status dəyişdirilərkən xəta baş verdi");
+    }
   };
 
   const saveCat = async () => {
@@ -846,6 +926,37 @@ export default function VacancyPage() {
 
       <div className={styles.sectionCard}>
         <div className={styles.sectionCardHeader}>
+          <h2 className={styles.sectionCardTitle}>Vacancy Taglar</h2>
+          <div className={styles.headerRight}>
+            <button className={styles.addBtn}
+              onClick={() => { setEditFt(null); setFtLabel({ ...EMPTY_L }); setFtLang("az"); setFtError(null); setFtModalOpen(true); }}>
+              + Yeni Tag
+            </button>
+          </div>
+        </div>
+        {filterTags.length === 0 ? (
+          <div className={styles.empty}>Hələ filter tag yoxdur</div>
+        ) : (
+          <div className={styles.tagList}>
+            {filterTags.map((ft) => (
+              <span key={ft.id} className={styles.tagChip}>
+                {ft.label?.[lang] || ft.label?.az || ""}
+                <button type="button"
+                  className={(ft as any).isActive ? styles.activeToggle : styles.inactiveToggle}
+                  style={{ marginLeft: 6, padding: "2px 8px", fontSize: 11 }}
+                  onClick={() => toggleFilterTagActive(ft.id, !(ft as any).isActive)}>
+                  {(ft as any).isActive ? "Saytda" : "Gizli"}
+                </button>
+                <button type="button" onClick={() => { setEditFt(ft); setFtLabel(ft.label); setFtLang("az"); setFtError(null); setFtModalOpen(true); }}>✎</button>
+                <button type="button" onClick={() => setDeleteFtId(ft.id)}>✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.sectionCard}>
+        <div className={styles.sectionCardHeader}>
           <h2 className={styles.sectionCardTitle}>Vakansiyalar</h2>
           <div className={styles.headerRight}>
             {vacReordering && <span className={styles.reorderingText}>Saxlanır...</span>}
@@ -883,7 +994,61 @@ export default function VacancyPage() {
       </div>
 
       <VacancyModal open={vacModalOpen} onClose={() => setVacModalOpen(false)}
-        editVac={editVac} categories={categories} onSaved={load} />
+        editVac={editVac} categories={categories} filterTags={filterTags} onSaved={load} />
+
+      {ftModalOpen && (
+        <div className={styles.overlay} onClick={() => setFtModalOpen(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>{editFt ? "Tag-ı Düzəlt" : "Yeni Filter Tag"}</h2>
+              <button className={styles.closeBtn} onClick={() => setFtModalOpen(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <LangTabs active={ftLang} onChange={setFtLang} />
+              {ftError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                  ⚠ {ftError}
+                </p>
+              )}
+              <div className={styles.field}>
+                <label>Ad ({ftLang.toUpperCase()})</label>
+                <input className={styles.input} value={ftLabel[ftLang] ?? ""}
+                  onChange={(e) => setFtLabel((prev) => ({ ...prev, [ftLang]: e.target.value }))}
+                  placeholder="Motion, SMM..." />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setFtModalOpen(false)}>Ləğv et</button>
+              <button className={styles.saveBtn} onClick={saveFilterTag} disabled={ftSaving}>
+                {ftSaving ? "Saxlanır..." : "Saxla"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteFtId && (
+        <div className={styles.overlay} onClick={() => { setDeleteFtId(null); setDeleteFtError(null); }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Tag-ı sil</h2>
+              <button className={styles.closeBtn} onClick={() => { setDeleteFtId(null); setDeleteFtError(null); }}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p>Bu filter tag-ı silmək istədiyinizə əminsiniz?</p>
+              {deleteFtError && (
+                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                  ⚠ {deleteFtError}
+                </p>
+              )}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => { setDeleteFtId(null); setDeleteFtError(null); }}>Ləğv et</button>
+              <button className={styles.deleteConfirmBtn} onClick={handleDeleteFt}>Sil</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {catModalOpen && (
         <div className={styles.overlay} onClick={() => setCatModalOpen(false)}>

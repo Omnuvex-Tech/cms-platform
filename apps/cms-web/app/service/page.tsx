@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import {
     SortableContext, verticalListSortingStrategy,
-    useSortable, arrayMove,
+    useSortable, arrayMove, horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/service.module.css";
@@ -20,6 +20,7 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
+type LocalizedImages = Partial<Record<Lang, string[]>>;
 
 function getToken() {
     return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
@@ -65,6 +66,24 @@ function generateSlug(title: string) {
         .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c")
         .replace(/[^a-z0-9\s-]/g, "")
         .replace(/\s+/g, "-").trim();
+}
+
+// --- Localized images helpers -------------------------------------------
+// Köhnə (flat) formatları LocalizedImages formatına çevirir ki, köhnə
+// sectionlar sınmasın. Admin formada YALNIZ aktiv dilin şəkli göstərilir/
+// redaktə olunur — dillər arası fallback yalnız canlı saytın render
+// tərəfində tətbiq olunmalıdır.
+
+function normalizeImages(images: any): LocalizedImages {
+    if (Array.isArray(images)) return images.length ? { az: images } : {};
+    return images ?? {};
+}
+
+// Tək şəkil sahələri (heroImage, quoteImage və s.) köhnədən sadə string idi;
+// bunu LocalizedImages-ə (maks. 1 element) çeviririk.
+function normalizeMainImage(img: any): LocalizedImages {
+    if (typeof img === "string") return img ? { az: [img] } : {};
+    return normalizeImages(img);
 }
 
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
@@ -136,7 +155,6 @@ function SingleImageUpload({ value, onChange, accept = "image/webp", label }: {
     const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!file.type.match(/image\/(webp|gif)/)) { alert("Yalnız WebP və ya GIF"); return; }
         const url = await uploadFile(file);
         onChange(url);
         if (inputRef.current) inputRef.current.value = "";
@@ -148,7 +166,18 @@ function SingleImageUpload({ value, onChange, accept = "image/webp", label }: {
             <div className={styles.singleUploadArea} onClick={() => inputRef.current?.click()}>
                 {value ? (
                     <div className={styles.singleUploadPreviewWrap}>
-                        <img src={toAbsUrl(value)} alt="" className={styles.singleUploadPreview} />
+                        {value.toLowerCase().endsWith('.mp4') ? (
+                            <video
+                                src={toAbsUrl(value)}
+                                className={styles.singleUploadPreview}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img src={toAbsUrl(value)} alt="" className={styles.singleUploadPreview} />
+                        )}
                         <button type="button" className={styles.imageRemoveBtn}
                             onClick={e => { e.stopPropagation(); onChange(""); }}>✕</button>
                     </div>
@@ -159,6 +188,89 @@ function SingleImageUpload({ value, onChange, accept = "image/webp", label }: {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+function SortableImage({ id, src, onRemove }: { id: string; src: string; onRemove: () => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    return (
+        <div ref={setNodeRef}
+            style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+            className={styles.imageItem}>
+            <div className={styles.imageDragHandle} {...attributes} {...listeners}>⠿</div>
+            <img src={toAbsUrl(src)} alt="" className={styles.imageThumb} />
+            <button type="button" className={styles.imageRemoveBtn} onClick={onRemove}>✕</button>
+        </div>
+    );
+}
+
+// Dilə görə fərqlənən şəkil sahələri üçün (Hero şəkil, Sitat şəkli, Alt şəkil
+// və s.). Admin panelində hər dil YALNIZ öz şəkillərini göstərir/redaktə edir.
+// maxImages=1 verilən yerlərdə tək şəkil sahəsi kimi işləyir (SingleImageUpload
+// əvəzinə), amma hər dil üçün ayrıca şəkil saxlamağa imkan verir.
+function ImageUploadArea({ images, onChange, maxImages, activeLang, label, accept = "image/webp" }: {
+    images: LocalizedImages;
+    onChange: (imgs: LocalizedImages) => void;
+    maxImages?: number;
+    activeLang: Lang;
+    label?: string;
+    accept?: string;
+}) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const sensors = useSensors(useSensor(PointerSensor));
+
+    const currentList = images?.[activeLang] ?? [];
+
+    const setLangImages = (list: string[]) => {
+        onChange({ ...images, [activeLang]: list });
+    };
+
+    const handleSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        const base = currentList;
+        const urls: string[] = [];
+        for (const file of files) {
+            if (maxImages && base.length + urls.length >= maxImages) break;
+            const url = await uploadFile(file);
+            urls.push(url);
+        }
+        setLangImages(maxImages === 1 ? urls.slice(-1) : [...base, ...urls]);
+        if (inputRef.current) inputRef.current.value = "";
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldIndex = currentList.findIndex((_, i) => `img-${i}` === active.id);
+        const newIndex = currentList.findIndex((_, i) => `img-${i}` === over.id);
+        setLangImages(arrayMove(currentList, oldIndex, newIndex));
+    };
+
+    const removeAt = (i: number) => {
+        setLangImages(currentList.filter((_, idx) => idx !== i));
+    };
+
+    return (
+        <div className={styles.field}>
+            {label && <label>{label} ({activeLang.toUpperCase()})</label>}
+            <div className={styles.imageUploadWrap}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={currentList.map((_, i) => `img-${i}`)} strategy={horizontalListSortingStrategy}>
+                        <div className={styles.imageGrid}>
+                            {currentList.map((img, i) => (
+                                <SortableImage key={`img-${i}`} id={`img-${i}`} src={img} onRemove={() => removeAt(i)} />
+                            ))}
+                            {(!maxImages || currentList.length < maxImages) && (
+                                <div className={styles.imageAddBtn} onClick={() => inputRef.current?.click()}>
+                                    <span>+</span><small>{accept.includes("gif") ? "GIF/WebP əlavə et" : "WebP əlavə et"}</small>
+                                </div>
+                            )}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </div>
+            <input ref={inputRef} type="file" accept={accept} multiple={maxImages !== 1} style={{ display: "none" }} onChange={handleSelect} />
         </div>
     );
 }
@@ -249,13 +361,23 @@ function HeroSectionEditor({ data, onChange, activeLang }: { data: any; onChange
                         ]
                     })} />
             </div>
-            <SingleImageUpload label="Hero şəkil" value={data.heroImage ?? ""} onChange={v => onChange({ ...data, heroImage: v })} />
+            <ImageUploadArea
+                label="Hero şəkil"
+                images={normalizeMainImage(data.heroImage)}
+                onChange={imgs => onChange({ ...data, heroImage: imgs })}
+                maxImages={1}
+                activeLang={activeLang} />
             <div className={styles.field}><label>Hero şəkil alt mətn ({activeLang.toUpperCase()})</label>
                 <input className={styles.input}
                     value={data.heroImageAlt?.[activeLang] || ""}
                     onChange={e => onChange({ ...data, heroImageAlt: { ...data.heroImageAlt, [activeLang]: e.target.value } })} />
             </div>
-            <SingleImageUpload label="Alt şəkil" value={data.bottomImage ?? ""} onChange={v => onChange({ ...data, bottomImage: v })} />
+            <ImageUploadArea
+                label="Alt şəkil"
+                images={normalizeMainImage(data.bottomImage)}
+                onChange={imgs => onChange({ ...data, bottomImage: imgs })}
+                maxImages={1}
+                activeLang={activeLang} />
             <div className={styles.field}><label>Alt şəkil alt mətn ({activeLang.toUpperCase()})</label>
                 <input className={styles.input}
                     value={data.bottomImageAlt?.[activeLang] || ""}
@@ -307,7 +429,7 @@ function ContentSectionEditor({ data, onChange, activeLang }: { data: any; onCha
     const addItem = () => onChange({
         ...data, items: [...items, {
             number: "", badge: {}, title: {}, descriptions: [{}, {}],
-            quote: {}, quoteImage: "", subText: {}, image: "", imageAlt: {}
+            quote: {}, quoteImage: {}, subText: {}, image: {}, imageAlt: {}
         }]
     });
     const removeItem = (i: number) => onChange({ ...data, items: items.filter((_: any, idx: number) => idx !== i) });
@@ -364,8 +486,12 @@ function ContentSectionEditor({ data, onChange, activeLang }: { data: any; onCha
                             <LocalizedRichEditor value={item.quote ?? {}} lang={activeLang}
                                 onChange={v => updateItem(i, "quote", v)} />
                         </div>
-                        <SingleImageUpload label="Sitat şəkli" value={item.quoteImage ?? ""}
-                            onChange={v => updateItem(i, "quoteImage", v)} />
+                        <ImageUploadArea
+                            label="Sitat şəkli"
+                            images={normalizeMainImage(item.quoteImage)}
+                            onChange={imgs => updateItem(i, "quoteImage", imgs)}
+                            maxImages={1}
+                            activeLang={activeLang} />
                         <div className={styles.field}><label>subText ({activeLang.toUpperCase()})</label>
                             <LocalizedRichEditor value={item.subText ?? {}} lang={activeLang}
                                 onChange={v => updateItem(i, "subText", v)} />
@@ -373,8 +499,12 @@ function ContentSectionEditor({ data, onChange, activeLang }: { data: any; onCha
                     </>}
 
                     {i !== 0 && <>
-                        <SingleImageUpload label="Alt şəkil" value={item.image ?? ""}
-                            onChange={v => updateItem(i, "image", v)} />
+                        <ImageUploadArea
+                            label="Alt şəkil"
+                            images={normalizeMainImage(item.image)}
+                            onChange={imgs => updateItem(i, "image", imgs)}
+                            maxImages={1}
+                            activeLang={activeLang} />
                         <div className={styles.field}><label>Alt mətn ({activeLang.toUpperCase()})</label>
                             <input className={styles.input}
                                 value={item.imageAlt?.[activeLang] || ""}
@@ -431,8 +561,12 @@ function QuoteSectionEditor({ data, onChange, activeLang }: { data: any; onChang
                 <LocalizedRichEditor value={data.quoteText ?? {}} lang={activeLang}
                     onChange={v => onChange({ ...data, quoteText: v })} />
             </div>
-            <SingleImageUpload label="Sitat şəkli" value={data.quoteImage ?? ""}
-                onChange={v => onChange({ ...data, quoteImage: v })} />
+            <ImageUploadArea
+                label="Sitat şəkli"
+                images={normalizeMainImage(data.quoteImage)}
+                onChange={imgs => onChange({ ...data, quoteImage: imgs })}
+                maxImages={1}
+                activeLang={activeLang} />
             <div className={styles.field}><label>Sitat şəkil alt mətn ({activeLang.toUpperCase()})</label>
                 <input className={styles.input}
                     value={data.quoteImageAlt?.[activeLang] || ""}
@@ -454,8 +588,12 @@ function OverlaySectionEditor({ data, onChange, activeLang }: { data: any; onCha
                 <LocalizedRichEditor value={data.title ?? {}} lang={activeLang}
                     onChange={v => onChange({ ...data, title: v })} />
             </div>
-            <SingleImageUpload label="Şəkil" value={data.image ?? ""}
-                onChange={v => onChange({ ...data, image: v })} />
+            <ImageUploadArea
+                label="Şəkil"
+                images={normalizeMainImage(data.image)}
+                onChange={imgs => onChange({ ...data, image: imgs })}
+                maxImages={1}
+                activeLang={activeLang} />
             <div className={styles.field}><label>Şəkil alt mətn ({activeLang.toUpperCase()})</label>
                 <input className={styles.input}
                     value={data.imageAlt?.[activeLang] || ""}
@@ -698,7 +836,7 @@ export default function ServicePage() {
     const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
     const updateSection = (i: number, data: any) => setSections(prev => { const arr = [...prev]; arr[i] = data; return arr; });
     const removeSection = (i: number) => setSections(prev => prev.filter((_, idx) => idx !== i));
-    
+
     const generateSchema = async () => {
         if (!editItem) return;
         setSchemaGenerating(true);
@@ -878,7 +1016,7 @@ export default function ServicePage() {
                                     value={imageAlt[activeLang] || ""}
                                     onChange={e => setImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))} />
                             </div>
-                            <SingleImageUpload label="GIF (optional)" value={gif} onChange={setGif} accept="image/gif,image/webp" />
+                            <SingleImageUpload label="GIF (optional)" value={gif} onChange={setGif} accept="image/gif,image/webp,video/mp4" />
                         </div>
 
                         <div className={styles.fullDrawerSection}>
@@ -990,7 +1128,7 @@ export default function ServicePage() {
                             </div>
                         </div>
 
-                         {editItem && (
+                        {editItem && (
                             <div className={styles.fullDrawerSection}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                                     <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>

@@ -90,9 +90,9 @@ export class PortfolioController {
           cb(null, unique + extname(file.originalname));
         },
       }),
-      fileFilter: (req, file, cb) => {
-        if (!['image/webp', 'image/gif'].includes(file.mimetype))
-          return cb(new Error('Yalnız WebP və GIF formatları qəbul edilir'), false);
+   fileFilter: (req, file, cb) => {
+        if (!['image/webp', 'image/gif', 'video/mp4'].includes(file.mimetype))
+          return cb(new Error('Yalnız WebP, GIF və MP4 formatları qəbul edilir'), false);
         cb(null, true);
       },
       limits: { fileSize: 50 * 1024 * 1024 },

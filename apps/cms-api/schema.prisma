@@ -90,6 +90,7 @@ model Vacancy {
   startDate          DateTime?
   slug               String          @unique
   category           VacancyCategory @relation(fields: [categoryId], references: [id])
+  filterTags         VacancyFilterTag[] @relation("VacancyFilterTags")
    seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
@@ -148,6 +149,15 @@ model VacancySubmission {
   createdAt    DateTime @default(now())
 
   @@map("vacancy_submissions")
+}
+
+model VacancyFilterTag {
+  id        Int       @id @default(autoincrement())
+  label     Json
+  order     Int       @default(0)
+  isActive  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  vacancies Vacancy[] @relation("VacancyFilterTags")
 }
 
 model Portfolio {

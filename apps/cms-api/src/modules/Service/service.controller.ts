@@ -55,8 +55,8 @@ export class ServiceController {
       },
     }),
     fileFilter: (req, file, cb) => {
-      if (!['image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype)) {
-        return cb(new Error('Yalnız WebP, GIF və SVG formatları qəbul edilir'), false);
+      if (!['image/webp', 'image/gif', 'image/svg+xml' ,'video/mp4'].includes(file.mimetype)) {
+        return cb(new Error('Yalnız WebP, GIF, MP4 və SVG formatları qəbul edilir'), false);
       }
       cb(null, true);
     },

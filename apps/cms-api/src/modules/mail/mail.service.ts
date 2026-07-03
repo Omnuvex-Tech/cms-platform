@@ -1,21 +1,64 @@
-
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  private getTransporter() {
-    return nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
+  private async getAccessToken(): Promise<string> {
+    const url = `https://login.microsoftonline.com/${process.env.GRAPH_TENANT_ID}/oauth2/v2.0/token`;
+
+    const body = new URLSearchParams({
+      client_id: process.env.GRAPH_CLIENT_ID!,
+      client_secret: process.env.GRAPH_CLIENT_SECRET!,
+      scope: 'https://graph.microsoft.com/.default',
+      grant_type: 'client_credentials',
     });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(`Token alınmadı: ${JSON.stringify(data)}`);
+    }
+
+    return data.access_token;
+  }
+
+  private async sendMail(
+    from: string,
+    to: string,
+    subject: string,
+    html: string,
+  ) {
+    const token = await this.getAccessToken();
+
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${from}/sendMail`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            subject,
+            body: { contentType: 'HTML', content: html },
+            toRecipients: [{ emailAddress: { address: to } }],
+          },
+        }),
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => res.statusText);
+      throw new Error(`Mail göndərilmədi: ${JSON.stringify(err)}`);
+    }
   }
 
   async sendContactSubmission(data: {
@@ -28,22 +71,20 @@ export class MailService {
     message: string;
     submittedAt: Date;
   }) {
-    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'aitajjf2@gmail.com';
+    const from = 'we@trenders.team';
+    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'we@trenders.team';
+
     const html = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
   <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-    
-    <!-- Header -->
     <div style="padding:32px 40px;background:#0a0a0a;">
       <p style="margin:0 0 6px;font-size:11px;font-weight:600;letter-spacing:0.12em;color:#666;text-transform:uppercase;">Yeni müraciət</p>
       <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">${data.name}</h1>
       <p style="margin:6px 0 0;font-size:13px;color:#888;">${data.email}</p>
     </div>
-
-    <!-- Body -->
     <div style="padding:32px 40px;">
       <table style="width:100%;border-collapse:collapse;">
         <tr>
@@ -89,27 +130,19 @@ export class MailService {
         </tr>` : ''}
       </table>
     </div>
-
-    <!-- Footer -->
-    <div style="padding:20px 40px;background:#f9f9f9;border-top:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;">
+    <div style="padding:20px 40px;background:#f9f9f9;border-top:1px solid #f0f0f0;">
       <span style="font-size:15px;font-weight:700;color:#0a0a0a;letter-spacing:-0.01em;">Trenders</span>
-      <span style="font-size:11px;color:#aaa;">${data.submittedAt.toLocaleString('az-AZ')}</span>
+      <span style="font-size:11px;color:#aaa;float:right;">${data.submittedAt.toLocaleString('az-AZ')}</span>
     </div>
-
   </div>
 </body>
-</html>
-`;
+</html>`;
+
     try {
-      await this.getTransporter().sendMail({
-        from: `"Trenders" <${process.env.MAIL_USER}>`,
-        to,
-        subject: `Yeni müraciət — ${data.name}`,
-        html,
-      });
-      this.logger.log(`Mail göndərildi: ${to}`);
+      await this.sendMail(from, to, `Yeni müraciət — ${data.name}`, html);
+      this.logger.log(`Contact mail göndərildi: ${to}`);
     } catch (err) {
-      this.logger.error('Mail göndərilmədi', err);
+      this.logger.error('Contact mail göndərilmədi', err);
       throw err;
     }
   }
@@ -123,19 +156,18 @@ export class MailService {
     vacancyTitle?: string;
     submittedAt: Date;
   }) {
-    const to = process.env.CONTACT_RECEIVER_EMAIL ?? 'aitajjf2@gmail.com';
+    const from = 'hr@trenders.team';
+    const to = process.env.HR_RECEIVER_EMAIL ?? 'hr@trenders.team';
 
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
       <h2 style="color: #1a1a1a; margin-bottom: 24px; font-size: 20px;">
         📋 Yeni vakansiya müraciəti — Trenders
       </h2>
-
       ${data.vacancyTitle ? `
       <p style="margin-bottom: 16px; padding: 10px 16px; background: #f0f9ff; border-radius: 6px; font-size: 14px; color: #0369a1;">
         Vakansiya: <strong>${data.vacancyTitle}</strong>
       </p>` : ''}
-
       <table style="width: 100%; border-collapse: collapse;">
         <tr style="border-bottom: 1px solid #f3f4f6;">
           <td style="padding: 10px 0; color: #6b7280; font-size: 13px; width: 140px;">Ad</td>
@@ -158,24 +190,22 @@ export class MailService {
         <tr>
           <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">CV</td>
           <td style="padding: 10px 0; font-size: 14px;">
-<a href="${process.env.API_URL}${data.cvUrl}" style="color: #2563eb;">CV-yə bax / yüklə</a>
+            <a href="${process.env.API_URL}${data.cvUrl}" style="color: #2563eb;">CV-yə bax / yüklə</a>
           </td>
         </tr>
       </table>
-
       <p style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
         Göndərilmə tarixi: ${data.submittedAt.toLocaleString('az-AZ')}
       </p>
-    </div>
-  `;
+    </div>`;
 
     try {
-      await this.getTransporter().sendMail({
-        from: `"Trenders CMS" <${process.env.MAIL_USER}>`,
+      await this.sendMail(
+        from,
         to,
-        subject: `Vakansiya müraciəti: ${data.name}${data.vacancyTitle ? ` — ${data.vacancyTitle}` : ''}`,
+        `Vakansiya müraciəti: ${data.name}${data.vacancyTitle ? ` — ${data.vacancyTitle}` : ''}`,
         html,
-      });
+      );
       this.logger.log(`Vakansiya mail göndərildi: ${to}`);
     } catch (err) {
       this.logger.error('Vakansiya mail göndərilmədi', err);

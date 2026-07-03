@@ -131,4 +131,36 @@ export class VacancyService {
     await this.getVacancyById(id);
     return this.repo.saveSchema(id, schema);
   }
+
+  // ─── Filter Tags ──────────────────────────────────────
+  getAllFilterTags() { return this.repo.findAllFilterTags(); }
+
+  async getFilterTagById(id: number) {
+    const ft = await this.repo.findFilterTagById(id);
+    if (!ft) throw new NotFoundException('Filter tag not found');
+    return ft;
+  }
+
+  createFilterTag(label: Record<string, string>) {
+    return this.repo.createFilterTag(label);
+  }
+
+async updateFilterTag(id: number, label: Record<string, string>) {
+    await this.getFilterTagById(id);
+    return this.repo.updateFilterTag(id, label);
+  }
+
+  async toggleFilterTagActive(id: number, isActive: boolean) {
+    await this.getFilterTagById(id);
+    return this.repo.toggleFilterTagActive(id, isActive);
+  }
+  
+  async deleteFilterTag(id: number) {
+    await this.getFilterTagById(id);
+    return this.repo.deleteFilterTag(id);
+  }
+
+  reorderFilterTags(items: { id: number; order: number }[]) {
+    return this.repo.reorderFilterTags(items);
+  }
 }

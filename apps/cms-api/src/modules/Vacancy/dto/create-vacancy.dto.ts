@@ -89,9 +89,15 @@ export class CreateVacancyDto {
   @IsObject()
   seoDescription?: Record<string, string>;
 
-  @IsOptional()
+@IsOptional()
   @IsObject()
   seoKeywords?: Record<string, string>;
+
   @IsOptional()
   schema?: Record<string, any> | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  filterTagIds?: number[];
 }

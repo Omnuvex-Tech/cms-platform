@@ -36,7 +36,7 @@ export class BlogController {
       },
     }),
     fileFilter: (req, file, cb) => {
-      if (!['image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype)) {
+      if (!['image/webp', 'image/gif', 'image/svg+xml', 'video/mp4'].includes(file.mimetype)) {
         return cb(new Error('Yalnız WebP, GIF və SVG formatları'), false);
       }
       cb(null, true);
