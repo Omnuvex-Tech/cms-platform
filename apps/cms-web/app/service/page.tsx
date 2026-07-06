@@ -57,30 +57,27 @@ function toAbsUrl(path: string) {
     if (path.startsWith("http") || path.startsWith("blob:")) return path;
     return `${API}${path}`;
 }
-
 function generateSlug(title: string) {
     return title
         .toLowerCase()
         .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ").replace(/&amp;/g, "and")
         .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
         .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c")
         .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-").trim();
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .trim();
 }
 
-// --- Localized images helpers -------------------------------------------
-// Köhnə (flat) formatları LocalizedImages formatına çevirir ki, köhnə
-// sectionlar sınmasın. Admin formada YALNIZ aktiv dilin şəkli göstərilir/
-// redaktə olunur — dillər arası fallback yalnız canlı saytın render
-// tərəfində tətbiq olunmalıdır.
 
 function normalizeImages(images: any): LocalizedImages {
     if (Array.isArray(images)) return images.length ? { az: images } : {};
     return images ?? {};
 }
 
-// Tək şəkil sahələri (heroImage, quoteImage və s.) köhnədən sadə string idi;
-// bunu LocalizedImages-ə (maks. 1 element) çeviririk.
+
 function normalizeMainImage(img: any): LocalizedImages {
     if (typeof img === "string") return img ? { az: [img] } : {};
     return normalizeImages(img);
