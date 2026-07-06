@@ -467,13 +467,13 @@ function StrategySectionEditor({ data, onChange, activeLang }: { data: any; onCh
           lang={activeLang}
           onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? {}, { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }] })} />
       </div>
-      <div className={styles.field}><label>Sitat şəkli</label>
+     <div className={styles.field}><label>Sitat şəkli</label>
         <ImageUploadArea
-          images={normalizeImages(data.images)}
-          onChange={imgs => onChange({ ...data, images: imgs })}
-          altText={data.imagesAlt ?? {}}
-          onAltTextChange={v => onChange({ ...data, imagesAlt: v })}
-          altPlaceholder="Bütün şəkillər üçün alt text"
+          images={normalizeImages(data.quoteImages)}
+          onChange={imgs => onChange({ ...data, quoteImages: imgs })}
+          altText={data.quoteImagesAlt ?? {}}
+          onAltTextChange={v => onChange({ ...data, quoteImagesAlt: v })}
+          altPlaceholder="Sitat şəkli üçün alt text"
           activeLang={activeLang} />
       </div>
       <div className={styles.field}><label>Əsas şəkil</label>
