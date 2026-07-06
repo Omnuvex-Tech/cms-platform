@@ -383,7 +383,7 @@ function AuthorSettingsPanel() {
     <div className={styles.settingsCard} style={{ marginBottom: 32 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <h3 className={styles.settingsGroupTitle} style={{ margin: 0 }}>
-          Author Detail Səhifəsi 
+          Author Detail Səhifəsi
         </h3>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {saveStatus === "success" && <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>}
@@ -441,7 +441,7 @@ function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOu
           <img src={toAbsUrl(a.avatar)} alt="" className={styles.authorAvatar} />
         )}
       </td>
-      <td>{nameAz}</td>
+      <td style={{ whiteSpace: "pre-line" }}>{nameAz}</td>
       <td>{roleAz || "—"}</td>
       <td>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -748,14 +748,24 @@ export default function BlogAuthorsPage() {
               </div>
               <div className={styles.twoCol}>
                 <div className={styles.field}>
-                  <label>Ad Soyad * ({activeLang.toUpperCase()})</label>
-                  <input className={styles.input} value={name[activeLang] || ""}
+                  <label>Ad Soyad * ({activeLang.toUpperCase()}) <small style={{ color: "#94a3b8" }}>Shift+Enter = yeni sətir</small></label>
+                  <textarea
+                    className={styles.input}
+                    rows={2}
+                    value={name[activeLang] || ""}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                      }
+                    }}
                     onChange={e => {
                       const val = e.target.value;
                       setName(prev => ({ ...prev, [activeLang]: val }));
                       if (activeLang === "az") setSlug(generateSlug(val));
                     }}
-                    placeholder="Almaz Abdullayeva" />
+                    placeholder={"Rena\nCeferova"}
+                    style={{ resize: "vertical", minHeight: 44, fontFamily: "inherit" }}
+                  />
                 </div>
                 <div className={styles.field}>
                   <label>Slug</label>
@@ -836,7 +846,7 @@ export default function BlogAuthorsPage() {
                 </div>
               </div>
 
-             {editItem && (
+              {editItem && (
                 <div style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <label style={{ fontWeight: 700, fontSize: 14 }}>JSON-LD Schema ({activeLang.toUpperCase()})</label>
