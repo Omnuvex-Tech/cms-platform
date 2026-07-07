@@ -2606,10 +2606,9 @@ export default function BlogPage() {
         isFeaturedMain: false, isPickOfWeek: false, isPreview: false,
         isGrid: true, isAuthorPreview: false, isAuthorList: false, isHomeVisible: false,
     });
-    const [sections, setSections] = useState<any[]>([]);
+   const [sections, setSections] = useState<any[]>([]);
     const [gif, setGif] = useState("");
-
-
+    const [searchQuery, setSearchQuery] = useState("");
     const sensors = useSensors(useSensor(PointerSensor));
     const load = async () => {
         setLoading(true);
@@ -2801,7 +2800,21 @@ export default function BlogPage() {
         } finally { setReordering(false); }
     };
 
-    const usedTypes = sections.map(s => s.type);
+   const usedTypes = sections.map(s => s.type);
+
+    const normalize = (s: string) =>
+        s.toLowerCase()
+            .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
+            .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c");
+
+    const filteredBlogs = blogs.filter(b => {
+        if (!searchQuery.trim()) return true;
+        const q = normalize(searchQuery);
+        const titleAz = normalize((typeof b.title === "object" ? (b.title?.az || "") : (b.title || "")).replace(/<[^>]*>/g, ""));
+        const badgeAz = normalize(typeof b.badge === "object" ? (b.badge?.az || "") : (b.badge || ""));
+        const slugVal = normalize(b.slug || "");
+        return titleAz.includes(q) || badgeAz.includes(q) || slugVal.includes(q);
+    });
 
     return (
         <div className={styles.page}>
@@ -2824,31 +2837,51 @@ export default function BlogPage() {
             {activeTab === "categories" && <CategoriesTab />}
             {activeTab === "settings" && <SettingsTab />}
 
-            {activeTab === "blogs" && (
+          {activeTab === "blogs" && (
                 <>
                     <div className={styles.tabHeader}>
+                        <input
+                            className={styles.input}
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder="Başlıq, badge və ya slug-a görə axtar..."
+                            style={{ maxWidth: 320 }}
+                        />
                         <div className={styles.headerRight}>
                             {reordering && <span className={styles.reorderingText}>Saxlanır...</span>}
                             <button className={styles.addBtn} onClick={openCreate}>+ Yeni Blog</button>
                         </div>
                     </div>
                     <div className={styles.tableWrap}>
-                        {loading ? <div className={styles.empty}>Yüklənir...</div>
-                            : blogs.length === 0 ? <div className={styles.empty}>Hələ blog yoxdur</div>
-                                : (
-                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                        <SortableContext items={blogs.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                                            <table className={styles.table}>
-                                                <thead><tr><th></th><th>Blog</th><th>Badge</th><th>Placement</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
-                                                <tbody>
-                                                    {blogs.map(b => (
-                                                        <SortableBlogRow key={b.id} b={b} onEdit={openEdit} onToggle={toggleVisibility} onDelete={setDeleteId} />
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </SortableContext>
-                                    </DndContext>
-                                )}
+                        {loading ? (
+                            <div className={styles.empty}>Yüklənir...</div>
+                        ) : blogs.length === 0 ? (
+                            <div className={styles.empty}>Hələ blog yoxdur</div>
+                        ) : filteredBlogs.length === 0 ? (
+                            <div className={styles.empty}>Axtarışa uyğun nəticə tapılmadı</div>
+                        ) : searchQuery.trim() ? (
+                            <table className={styles.table}>
+                                <thead><tr><th></th><th>Blog</th><th>Badge</th><th>Placement</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
+                                <tbody>
+                                    {filteredBlogs.map(b => (
+                                        <SortableBlogRow key={b.id} b={b} onEdit={openEdit} onToggle={toggleVisibility} onDelete={setDeleteId} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={blogs.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                                    <table className={styles.table}>
+                                        <thead><tr><th></th><th>Blog</th><th>Badge</th><th>Placement</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
+                                        <tbody>
+                                            {blogs.map(b => (
+                                                <SortableBlogRow key={b.id} b={b} onEdit={openEdit} onToggle={toggleVisibility} onDelete={setDeleteId} />
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </SortableContext>
+                            </DndContext>
+                        )}
                     </div>
                 </>
             )}

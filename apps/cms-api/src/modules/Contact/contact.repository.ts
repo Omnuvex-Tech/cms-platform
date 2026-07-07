@@ -56,6 +56,7 @@ export class ContactRepository {
         ...(dto.formPhoneLabel !== undefined && { formPhoneLabel: dto.formPhoneLabel }),
         ...(dto.formPhonePlaceholder !== undefined && { formPhonePlaceholder: dto.formPhonePlaceholder }),
         ...(dto.formServiceLabel !== undefined && { formServiceLabel: dto.formServiceLabel }),
+        ...(dto.formServicePlaceholder !== undefined && { formServicePlaceholder: dto.formServicePlaceholder }), 
         ...(dto.formBudgetLabel !== undefined && { formBudgetLabel: dto.formBudgetLabel }),
         ...(dto.formBudgetPlaceholder !== undefined && { formBudgetPlaceholder: dto.formBudgetPlaceholder }),
         ...(dto.formTimelineLabel !== undefined && { formTimelineLabel: dto.formTimelineLabel }),

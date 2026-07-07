@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import TiptapLink from "@tiptap/extension-link";
+import Underline from "@tiptap/extension-underline";
 import {
   DndContext,
   closestCenter,
@@ -78,6 +82,158 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, "");
+}
+
+function AnswerRichEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+  const [showLinkPopup, setShowLinkPopup] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkNewTab, setLinkNewTab] = useState(true);
+
+ const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TiptapLink.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer" } }),
+    ],
+    content: value,
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
+
+  const openLinkPopup = () => {
+    if (!editor) return;
+    if (editor.state.selection.empty) {
+      alert("Əvvəlcə link əlavə etmək istədiyiniz mətni seçin");
+      return;
+    }
+    setLinkUrl(editor.getAttributes("link").href ?? "");
+    setLinkNewTab(editor.getAttributes("link").target !== "_self");
+    setShowLinkPopup(true);
+  };
+
+  const applyLink = () => {
+    if (editor && linkUrl.trim()) {
+      editor.chain().focus().extendMarkRange("link")
+        .setLink({ href: linkUrl.trim(), target: linkNewTab ? "_blank" : "_self" })
+        .run();
+    }
+    setShowLinkPopup(false);
+  };
+
+  const removeLink = () => {
+    editor?.chain().focus().unsetLink().run();
+    setShowLinkPopup(false);
+  };
+
+  return (
+    <div style={{ border: "1px solid #333", borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ display: "flex", gap: 6, padding: 8, borderBottom: "1px solid #333", background: "#ffffff" }}>
+        {[
+          { label: <b>B</b>, action: () => editor?.chain().focus().toggleBold().run(), key: "bold" },
+          { label: <i>I</i>, action: () => editor?.chain().focus().toggleItalic().run(), key: "italic" },
+          { label: <u>U</u>, action: () => editor?.chain().focus().toggleUnderline().run(), key: "underline" },
+        ].map(({ label, action, key }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={action}
+            style={{
+              padding: "4px 10px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+              border: "1.5px solid", borderColor: editor?.isActive(key) ? "#3b82f6" : "#333",
+              background: editor?.isActive(key) ? "#ffffff" : "transparent",
+              color: editor?.isActive(key) ? "#fff" : "#888", cursor: "pointer",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <div style={{ width: 1, background: "#333", margin: "0 2px" }} />
+        <button
+          type="button"
+          onClick={openLinkPopup}
+          style={{
+            padding: "4px 10px", borderRadius: 6, fontSize: 13, fontWeight: 600,
+            border: "1.5px solid", borderColor: editor?.isActive("link") ? "#3b82f6" : "#333",
+            background: editor?.isActive("link") ? "#ffffff" : "transparent",
+            color: editor?.isActive("link") ? "#fff" : "#888", cursor: "pointer",
+          }}
+        >
+          🔗 Link
+        </button>
+      </div>
+
+      {showLinkPopup && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", padding: 8, borderBottom: "1px solid #333", background: "#ffffff", flexWrap: "wrap" }}>
+          <input
+            type="url"
+            placeholder="https://..."
+            value={linkUrl}
+            onChange={e => setLinkUrl(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") applyLink(); if (e.key === "Escape") setShowLinkPopup(false); }}
+            autoFocus
+            style={{ flex: 1, minWidth: 180, padding: "6px 10px", borderRadius: 6, border: "1px solid #ffffff", background: "#a5aad1", color: "#fff" }}
+          />
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#ccc", whiteSpace: "nowrap" }}>
+            <input type="checkbox" checked={linkNewTab} onChange={e => setLinkNewTab(e.target.checked)} />
+            Yeni tab
+          </label>
+          <button type="button" onClick={applyLink}
+            style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #16a34a", background: "#14532d", color: "#fff", cursor: "pointer" }}>
+            Əlavə et
+          </button>
+          <button type="button" onClick={removeLink}
+            style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid #dc2626", background: "#450a0a", color: "#fff", cursor: "pointer" }}>
+            Sil
+          </button>
+          <button type="button" onClick={() => setShowLinkPopup(false)}
+            style={{ padding: "6px 10px", borderRadius: 6, fontSize: 13, border: "1.5px solid #333", background: "transparent", color: "#888", cursor: "pointer" }}>
+            ✕
+          </button>
+        </div>
+      )}
+
+      <div className="faqAnswerEditor" style={{ padding: 10, minHeight: 120 }}>
+        <EditorContent editor={editor} />
+      </div>
+
+      <style jsx>{`
+        .faqAnswerEditor :global(.ProseMirror) {
+          outline: none;
+          color: #eee;
+          font-size: 14px;
+          line-height: 1.6;
+          min-height: 100px;
+        }
+        .faqAnswerEditor :global(.ProseMirror p) {
+          margin: 0 0 8px;
+        }
+        .faqAnswerEditor :global(a) {
+          color: #3b82f6;
+          text-decoration: underline;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function LocalizedAnswerEditor({ value, lang, onChange }: {
+  value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
+}) {
+  return (
+    <AnswerRichEditor
+      value={value?.[lang] || ""}
+      onChange={v => onChange({ ...value, [lang]: v })}
+    />
+  );
+}
+
 function SortableRow({
   faq,
   index,
@@ -103,8 +259,8 @@ function SortableRow({
     background: isDragging ? "#f0f7ff" : undefined,
   };
 
-  const question = faq.question?.[activeLang] || faq.question?.az || "";
-  const answer = faq.answer?.[activeLang] || faq.answer?.az || "";
+ const question = faq.question?.[activeLang] || faq.question?.az || "";
+  const answer = stripHtml(faq.answer?.[activeLang] || faq.answer?.az || "");
 
   return (
     <tr ref={setNodeRef} style={style}>
@@ -218,12 +374,11 @@ export default function FaqPage() {
     setFormError(null);
   };
 
-  const validateFaq = (): string | null => {
+ const validateFaq = (): string | null => {
     if (!question.az?.trim()) return "Sual (AZ) boş ola bilməz";
-    if (!answer.az?.trim()) return "Cavab (AZ) boş ola bilməz";
+    if (!stripHtml(answer.az || "").trim()) return "Cavab (AZ) boş ola bilməz";
     return null;
   };
-
   const save = async () => {
     setFormError(null);
     const validationError = validateFaq();
@@ -370,13 +525,7 @@ export default function FaqPage() {
               </div>
               <div className={styles.field}>
                 <label>Cavab ({modalLang.toUpperCase()})</label>
-                <textarea
-                  className={styles.textarea}
-                  value={answer[modalLang] || ""}
-                  onChange={(e) => updL(setAnswer, modalLang, e.target.value)}
-                  placeholder="Cavabı daxil edin"
-                  rows={5}
-                />
+                <LocalizedAnswerEditor value={answer} lang={modalLang} onChange={setAnswer} />
               </div>
             </div>
             <div className={styles.modalFooter}>

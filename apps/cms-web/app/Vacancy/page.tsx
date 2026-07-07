@@ -104,6 +104,7 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
+
 function LocalizedTagInput({ label, items, setItems, lang, large }: {
   label: string;
   items: LocalizedString[];
@@ -123,6 +124,10 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
     arr[i] = { ...arr[i], [lang]: val };
     setItems(arr);
   };
+  const visibleIndexes = items
+    .map((item, i) => i)
+    .filter((i) => !!items[i]?.[lang]?.trim());
+
   return (
     <div className={styles.field}>
       <label>{label} ({lang.toUpperCase()})</label>
@@ -140,15 +145,15 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
         )}
         <button className={styles.addTagBtn} type="button" onClick={add}>+</button>
       </div>
-      {items.length > 0 && (
+      {visibleIndexes.length > 0 && (
         <div className={styles.tagList}>
-          {items.map((item, i) => (
+          {visibleIndexes.map((i) => (
             <span key={i} className={styles.tagChip}>
-              <input
-                style={{ background: "transparent", border: "none", color: "inherit", width: 120, outline: "none" }}
-                value={item[lang] ?? ""}
-                onChange={(e) => updateItem(i, e.target.value)}
-              />
+             <input
+  style={{ background: "transparent", border: "none", color: "inherit", width: 120, outline: "none" }}
+  value={items[i]?.[lang] ?? ""}
+  onChange={(e) => updateItem(i, e.target.value)}
+/>
               <button type="button" onClick={() => setItems(items.filter((_, idx) => idx !== i))}>✕</button>
             </span>
           ))}
@@ -157,6 +162,17 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 
 function SortableCategoryRow({ cat, index, lang, onEdit, onDelete }: {
   cat: VacancyCategory; index: number; lang: Lang;

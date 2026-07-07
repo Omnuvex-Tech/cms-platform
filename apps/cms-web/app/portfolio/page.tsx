@@ -467,7 +467,7 @@ function StrategySectionEditor({ data, onChange, activeLang }: { data: any; onCh
           lang={activeLang}
           onChange={v => onChange({ ...data, descriptions: [data.descriptions?.[0] ?? {}, { ...(data.descriptions?.[1] ?? {}), [activeLang]: v[activeLang] }] })} />
       </div>
-     <div className={styles.field}><label>Sitat şəkli</label>
+      <div className={styles.field}><label>Sitat şəkli</label>
         <ImageUploadArea
           images={normalizeImages(data.quoteImages)}
           onChange={imgs => onChange({ ...data, quoteImages: imgs })}
@@ -681,6 +681,7 @@ export default function PortfolioPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
   const [gif, setGif] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -893,12 +894,24 @@ export default function PortfolioPage() {
 
   const usedTypes = sections.map(s => s.type);
 
+  const normalize = (s: string) =>
+    s.toLowerCase()
+      .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
+      .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c");
+
+  const filteredPortfolios = portfolios.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = normalize(searchQuery);
+    const titleAz = normalize((typeof p.title === "object" ? (p.title?.az || "") : (p.title || "")).replace(/<[^>]*>/g, ""));
+    const slugVal = normalize(p.slug || "");
+    const tagsVal = normalize((p.tags ?? []).join(" "));
+    return titleAz.includes(q) || slugVal.includes(q) || tagsVal.includes(q);
+  });
+
   return (
 
 
     <div className={styles.page}>
-
-
       <div className={styles.fullDrawerSection}>
         <div
           style={{
@@ -963,8 +976,6 @@ export default function PortfolioPage() {
           />
         </div>
       </div>
-
-
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Portfolio</h1>
@@ -976,25 +987,50 @@ export default function PortfolioPage() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 16 }}>
+        <input
+          className={styles.input}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Başlıq, slug və ya etiketə görə axtar..."
+          style={{ maxWidth: 320 }}
+        />
+      </div>
+
       <div className={styles.tableWrap}>
-        {loading ? <div className={styles.empty}>Yüklənir...</div>
-          : portfolios.length === 0 ? <div className={styles.empty}>Hələ portfolio əlavə edilməyib</div>
-            : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <table className={styles.table}>
-                  <thead><tr><th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
-                  <SortableContext items={portfolios.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                    <tbody>
-                      {portfolios.map(p => (
-                        <SortableRow key={p.id} p={p} onEdit={openEdit}
-                          onToggle={toggleVisibility} onToggleHomepage={toggleHomepage}
-                          onDelete={setDeleteId} />
-                      ))}
-                    </tbody>
-                  </SortableContext>
-                </table>
-              </DndContext>
-            )}
+        {loading ? (
+          <div className={styles.empty}>Yüklənir...</div>
+        ) : portfolios.length === 0 ? (
+          <div className={styles.empty}>Hələ portfolio əlavə edilməyib</div>
+        ) : filteredPortfolios.length === 0 ? (
+          <div className={styles.empty}>Axtarışa uyğun nəticə tapılmadı</div>
+        ) : searchQuery.trim() ? (
+          <table className={styles.table}>
+            <thead><tr><th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
+            <tbody>
+              {filteredPortfolios.map(p => (
+                <SortableRow key={p.id} p={p} onEdit={openEdit}
+                  onToggle={toggleVisibility} onToggleHomepage={toggleHomepage}
+                  onDelete={setDeleteId} />
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <table className={styles.table}>
+              <thead><tr><th></th><th>Portfolio</th><th>Etiketlər</th><th>Status</th><th>Əməliyyatlar</th></tr></thead>
+              <SortableContext items={portfolios.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                <tbody>
+                  {portfolios.map(p => (
+                    <SortableRow key={p.id} p={p} onEdit={openEdit}
+                      onToggle={toggleVisibility} onToggleHomepage={toggleHomepage}
+                      onDelete={setDeleteId} />
+                  ))}
+                </tbody>
+              </SortableContext>
+            </table>
+          </DndContext>
+        )}
       </div>
 
       {drawerOpen && (
@@ -1049,7 +1085,7 @@ export default function PortfolioPage() {
               </div>
               <div className={styles.field}>
                 <label>GIF (optional)</label>
-               <input
+                <input
                   type="file"
                   accept="image/gif,image/webp,video/mp4"
                   style={{ display: "none" }}
@@ -1075,9 +1111,9 @@ export default function PortfolioPage() {
                   )}
                 </div>
               </div>
-          
-          
-          
+
+
+
             </div>
 
             <div className={styles.fullDrawerSection}>
@@ -1128,7 +1164,7 @@ export default function PortfolioPage() {
               </div>
             </div>
 
-{editItem && (
+            {editItem && (
               <div className={styles.fullDrawerSection}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
@@ -1160,8 +1196,8 @@ export default function PortfolioPage() {
                 {schemaError && <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>}
               </div>
             )}
-     
-  
+
+
           </div>
         </div>
       )}

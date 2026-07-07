@@ -81,6 +81,7 @@ interface ContactSettings {
     formPhoneLabel: LocalizedString;
     formPhonePlaceholder: LocalizedString;
     formServiceLabel: LocalizedString;
+    formServicePlaceholder: LocalizedString;
     formBudgetLabel: LocalizedString;
     formBudgetPlaceholder: LocalizedString;
     formTimelineLabel: LocalizedString;
@@ -433,6 +434,7 @@ export default function ContactPage() {
                     formPhoneLabel: settings.formPhoneLabel,
                     formPhonePlaceholder: settings.formPhonePlaceholder,
                     formServiceLabel: settings.formServiceLabel,
+                    formServicePlaceholder: settings.formServicePlaceholder,
                     formBudgetLabel: settings.formBudgetLabel,
                     formBudgetPlaceholder: settings.formBudgetPlaceholder,
                     formTimelineLabel: settings.formTimelineLabel,
@@ -705,6 +707,11 @@ export default function ContactPage() {
                             <label>Servis — label ({activeLang.toUpperCase()})</label>
                             <input className={styles.input} value={settings.formServiceLabel?.[activeLang] || ""} placeholder="Service"
                                 onChange={e => updL("formServiceLabel", activeLang, e.target.value)} />
+                        </div>
+                        <div className={styles.field}>
+                            <label>Servis — placeholder ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={settings.formServicePlaceholder?.[activeLang] || ""} placeholder="Select a service"
+                                onChange={e => updL("formServicePlaceholder", activeLang, e.target.value)} />
                         </div>
                         <div className={styles.field}>
                             <label>Mesaj — label ({activeLang.toUpperCase()})</label>

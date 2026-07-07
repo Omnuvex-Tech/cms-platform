@@ -50,7 +50,7 @@ export class PortfolioService {
 
   async generateSchema(id: number) {
     const portfolio = await this.findOne(id);
-const baseUrl = process.env.SITE_URL!;
+    const baseUrl = process.env.SITE_URL!;
     return generatePortfolioSchema(portfolio, baseUrl);
   }
 

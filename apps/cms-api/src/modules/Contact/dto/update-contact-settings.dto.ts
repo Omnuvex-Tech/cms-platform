@@ -21,7 +21,8 @@ export class UpdateContactSettingsDto {
   @IsOptional() @IsObject() formEmailPlaceholder?: Record<string, string>;
   @IsOptional() @IsObject() formPhoneLabel?: Record<string, string>;
   @IsOptional() @IsObject() formPhonePlaceholder?: Record<string, string>;
-  @IsOptional() @IsObject() formServiceLabel?: Record<string, string>;
+ @IsOptional() @IsObject() formServiceLabel?: Record<string, string>;
+  @IsOptional() @IsObject() formServicePlaceholder?: Record<string, string>;
   @IsOptional() @IsObject() formBudgetLabel?: Record<string, string>;
   @IsOptional() @IsObject() formBudgetPlaceholder?: Record<string, string>;
   @IsOptional() @IsObject() formTimelineLabel?: Record<string, string>;

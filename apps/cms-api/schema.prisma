@@ -107,6 +107,7 @@ model VacancyPageHeader {
 model VacancySettings {
   id                     Int      @id @default(autoincrement())
   backLabel              Json     @default("{}")
+  detailButtonLabel      Json     @default("{}")
   applyTitle             Json     @default("{}")
   aboutRoleLabel         Json     @default("{}")
   skillsLabel            Json     @default("{}")
@@ -491,6 +492,7 @@ model ContactSettings {
   formPhoneLabel          Json                    @default("{}")
   formPhonePlaceholder    Json                    @default("{}")
   formServiceLabel        Json                    @default("{}")
+  formServicePlaceholder  Json                    @default("{}")  
   formBudgetLabel         Json                    @default("{}")
   formBudgetPlaceholder   Json                    @default("{}")
   formTimelineLabel       Json                    @default("{}")

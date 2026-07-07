@@ -467,7 +467,6 @@ function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOu
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────
 export default function BlogAuthorsPage() {
   const [authors, setAuthors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -477,6 +476,7 @@ export default function BlogAuthorsPage() {
   const [reordering, setReordering] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
@@ -659,6 +659,19 @@ export default function BlogAuthorsPage() {
     }
   };
 
+ const normalize = (s: string) =>
+    s.toLowerCase()
+      .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
+      .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c");
+
+  const filteredAuthors = authors.filter(a => {
+    if (!searchQuery.trim()) return true;
+    const q = normalize(searchQuery);
+    const nameAz = normalize(typeof a.name === "object" ? (a.name?.az || "") : (a.name || ""));
+    const roleAz = normalize(typeof a.role === "object" ? (a.role?.az || "") : (a.role || ""));
+    return nameAz.includes(q) || roleAz.includes(q);
+  });
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -671,7 +684,14 @@ export default function BlogAuthorsPage() {
       <OurTeamSettingsPanel />
       <AuthorSettingsPanel />
 
-      <div className={styles.tabHeader}>
+     <div className={styles.tabHeader}>
+        <input
+          className={styles.input}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Ad və ya vəzifəyə görə axtar..."
+          style={{ maxWidth: 320 }}
+        />
         <div className={styles.headerRight}>
           {reordering && <span className={styles.reorderingText}>Saxlanır...</span>}
           <button className={styles.addBtn} onClick={openCreate}>+ Yeni Author</button>
@@ -683,27 +703,47 @@ export default function BlogAuthorsPage() {
         <div className={styles.empty}>Yüklənir...</div>
       ) : authors.length === 0 ? (
         <div className={styles.empty}>Hələ author yoxdur</div>
+      ) : filteredAuthors.length === 0 ? (
+        <div className={styles.empty}>Axtarışa uyğun nəticə tapılmadı</div>
       ) : (
         <div className={styles.tableWrap}>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={authors.map(a => a.id)} strategy={verticalListSortingStrategy}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th></th><th>Avatar</th><th>Ad (AZ)</th>
-                    <th>Vəzifə (AZ)</th><th>Placement</th><th>Əməliyyatlar</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {authors.map(a => (
-                    <SortableAuthorRow key={a.id} a={a} onEdit={openEdit}
-                      onDelete={setDeleteId} onToggleVisibility={handleToggleVisibility}
-                      onToggleOurTeam={handleToggleOurTeam} />
-                  ))}
-                </tbody>
-              </table>
-            </SortableContext>
-          </DndContext>
+          {searchQuery.trim() ? (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th></th><th>Avatar</th><th>Ad (AZ)</th>
+                  <th>Vəzifə (AZ)</th><th>Placement</th><th>Əməliyyatlar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAuthors.map(a => (
+                  <SortableAuthorRow key={a.id} a={a} onEdit={openEdit}
+                    onDelete={setDeleteId} onToggleVisibility={handleToggleVisibility}
+                    onToggleOurTeam={handleToggleOurTeam} />
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={authors.map(a => a.id)} strategy={verticalListSortingStrategy}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th></th><th>Avatar</th><th>Ad (AZ)</th>
+                      <th>Vəzifə (AZ)</th><th>Placement</th><th>Əməliyyatlar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {authors.map(a => (
+                      <SortableAuthorRow key={a.id} a={a} onEdit={openEdit}
+                        onDelete={setDeleteId} onToggleVisibility={handleToggleVisibility}
+                        onToggleOurTeam={handleToggleOurTeam} />
+                    ))}
+                  </tbody>
+                </table>
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       )}
 
