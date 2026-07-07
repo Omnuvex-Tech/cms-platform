@@ -7,12 +7,405 @@ datasource db {
   url      = env("DB_URI")
 }
 
+// ---------------------------------------------------------------------------
+// Enums (wire values kept identical to the front-end vocabulary in the spec)
+// ---------------------------------------------------------------------------
+
+enum Role {
+  admin
+  sales_rep
+}
+
+enum ProjectStatus {
+  draft
+  published
+  archived
+}
+
+enum InfoStatus {
+  draft
+  published
+}
+
+enum Channel {
+  web
+  whatsapp
+  telegram
+  instagram
+  phone
+}
+
+enum Language {
+  en
+  ru
+  az
+}
+
+enum ConversationStatus {
+  active
+  waiting_for_human
+  assigned
+  resolved
+  closed
+  spam
+}
+
+enum MessageRole {
+  user
+  bot
+  human
+  system
+}
+
+enum HandoffStatus {
+  new
+  active
+  assigned
+  resolved
+  cancelled
+}
+
+enum HandoffPriority {
+  normal
+  high
+  urgent
+}
+
+enum SlaState {
+  on_track
+  due_soon
+  breached
+}
+
+enum ContactRequestStatus {
+  new
+  assigned
+  contacted
+  scheduled
+  completed
+  no_answer
+  cancelled
+}
+
+enum LeadStatus {
+  new
+  qualified
+  contact_requested
+  assigned
+  in_follow_up
+  visit_scheduled
+  negotiation
+  won
+  lost
+  invalid
+}
+
+enum Temperature {
+  hot
+  warm
+  cold
+}
+
+enum LeadTimelineType {
+  created
+  phone_captured
+  project_suggested
+  handoff_created
+  contact_requested
+  status_changed
+  note_added
+}
+
+// ---------------------------------------------------------------------------
+// Users (extends the original product_owners table)
+// ---------------------------------------------------------------------------
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  password       String
+  name           String?
+  phone          String?
+  role           Role      @default(admin)
+  isActive       Boolean   @default(true)
+  lastActivityAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assignedConversations Conversation[]   @relation("ConversationAssignee")
+  authoredNotes         InternalNote[]
+  assignedHandoffs      Handoff[]        @relation("HandoffAssignee")
+  ownedContactRequests  ContactRequest[] @relation("ContactRequestOwner")
+  ownedLeads            Lead[]           @relation("LeadOwner")
+
+  @@map("product_owners")
+}
+
+// ---------------------------------------------------------------------------
+// Projects (the agent's real-estate knowledge base)
+// ---------------------------------------------------------------------------
+
+model Project {
+  id        Int           @id @default(autoincrement())
+  name      String
+  slug      String?       @unique
+  location  String?
+  latitude  Float?
+  longitude Float?
+  status    ProjectStatus @default(draft)
+
+  // Markdown-friendly description fields
+  aboutProject         String? @db.Text
+  advantages           String? @db.Text
+  targetAudience       String? @db.Text
+  investmentAdvantages String? @db.Text
+  services             String? @db.Text
+
+  // Metadata
+  pricePerM2Min         Float?
+  pricePerM2Max         Float?
+  areaMin               Float?
+  areaMax               Float?
+  totalPriceMin         Float?
+  totalPriceMax         Float?
+  readyToMoveIn         Boolean @default(false)
+  completionYear        Int?
+  handoverCondition     String?
+  paymentPlanAvailable  Boolean @default(false)
+  bulkDiscountAvailable Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("product_owners")
+  bedroomPricing     BedroomPricing[]
+  standardPlans      StandardPaymentPlan[]
+  internationalTiers InternationalPlanTier[]
+
+  @@map("projects")
+}
+
+model BedroomPricing {
+  id        Int     @id @default(autoincrement())
+  projectId Int
+  label     String
+  areaMin   Float?
+  areaMax   Float?
+  priceMin  Float?
+  priceMax  Float?
+  note      String?
+  sortOrder Int     @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("bedroom_pricing")
+}
+
+model StandardPaymentPlan {
+  id                Int    @id @default(autoincrement())
+  projectId         Int
+  downPaymentPct    Float?
+  discountPct       Float?
+  installmentMonths Int?
+  optionDiscountPct Float?
+  sortOrder         Int    @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("standard_payment_plans")
+}
+
+model InternationalPlanTier {
+  id                 Int    @id @default(autoincrement())
+  projectId          Int
+  downPaymentPct     Float?
+  discountPct        Float?
+  interestFreeMonths Int?
+  sortOrder          Int    @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("international_plan_tiers")
+}
+
+// ---------------------------------------------------------------------------
+// TREVA Information (single company-info record)
+// ---------------------------------------------------------------------------
+
+model TrevaInfo {
+  id        Int        @id @default(autoincrement())
+  mission   String?    @db.Text
+  vision    String?    @db.Text
+  whoWeAre  String?    @db.Text
+  whyChoose String?    @db.Text
+  website   String?
+  email     String?
+  phone     String?
+  hotline   String?
+  status    InfoStatus @default(draft)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("treva_info")
+}
+
+// ---------------------------------------------------------------------------
+// Conversations
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id             Int                @id @default(autoincrement())
+  threadId       String             @unique
+  channel        Channel
+  language       Language           @default(en)
+  status         ConversationStatus @default(active)
+  customerHandle String?
+  customerPhone  String?
+  stage          String?
+  budget         String?
+  botActive      Boolean            @default(true)
+  unreadCount    Int                @default(0)
+  lastMessageAt  DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  assignedToId Int?
+  assignedTo   User? @relation("ConversationAssignee", fields: [assignedToId], references: [id])
+
+  leadId Int?
+  lead   Lead? @relation(fields: [leadId], references: [id])
+
+  messages        Message[]
+  notes           InternalNote[]
+  handoff         Handoff?
+  contactRequests ContactRequest[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             Int         @id @default(autoincrement())
+  conversationId Int
+  role           MessageRole
+  content        String      @db.Text
+  channel        Channel?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model InternalNote {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  authorId       Int?
+  body           String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User?        @relation(fields: [authorId], references: [id])
+
+  @@map("internal_notes")
+}
+
+// ---------------------------------------------------------------------------
+// Handoff Queue
+// ---------------------------------------------------------------------------
+
+model Handoff {
+  id             Int             @id @default(autoincrement())
+  conversationId Int             @unique
+  status         HandoffStatus   @default(new)
+  priority       HandoffPriority @default(normal)
+  slaState       SlaState        @default(on_track)
+  reason         String?         @db.Text
+  notes          String?         @db.Text
+  dueAt          DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  assignedToId Int?
+  assignedTo   User? @relation("HandoffAssignee", fields: [assignedToId], references: [id])
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("handoffs")
+}
+
+// ---------------------------------------------------------------------------
+// Contact Requests (callback promises)
+// ---------------------------------------------------------------------------
+
+model ContactRequest {
+  id               Int                  @id @default(autoincrement())
+  customerPhone    String
+  preferredChannel Channel              @default(phone)
+  availabilityText String?
+  availabilityAt   DateTime?
+  isFlexible       Boolean              @default(false)
+  status           ContactRequestStatus @default(new)
+  customerWords    String?              @db.Text
+  followUpOutcome  String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  ownerId Int?
+  owner   User? @relation("ContactRequestOwner", fields: [ownerId], references: [id])
+
+  conversationId Int?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  leadId Int?
+  lead   Lead? @relation(fields: [leadId], references: [id])
+
+  @@map("contact_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Leads (the CRM hub)
+// ---------------------------------------------------------------------------
+
+model Lead {
+  id                 Int         @id @default(autoincrement())
+  phone              String?
+  threadId           String?
+  channel            Channel
+  topProject         String?
+  budget             String?
+  budgetFlexible     Boolean     @default(false)
+  budgetRaw          String?
+  purpose            String?
+  bedrooms           String?
+  location           String?
+  timeframe          String?
+  language           Language    @default(en)
+  interestedProjects String[]
+  botNotes           String?     @db.Text
+  salesStatus        LeadStatus  @default(new)
+  temperature        Temperature @default(warm)
+  nextAction         String?     @db.Text
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  ownerId Int?
+  owner   User? @relation("LeadOwner", fields: [ownerId], references: [id])
+
+  timeline        LeadTimelineEvent[]
+  conversations   Conversation[]
+  contactRequests ContactRequest[]
+
+  @@map("leads")
+}
+
+model LeadTimelineEvent {
+  id          Int              @id @default(autoincrement())
+  leadId      Int
+  type        LeadTimelineType
+  description String           @db.Text
+  createdAt   DateTime         @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_timeline_events")
 }

@@ -1,0 +1,50 @@
+.customer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.chan {
+    font-size: 11.5px;
+    color: #8a9099;
+}
+.avail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.overdue {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #fdeaea;
+    color: #c0392b;
+    font-size: 11px;
+    font-weight: 600;
+}
+.dueToday {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #fdf3e2;
+    color: #b5730d;
+    font-size: 11px;
+    font-weight: 600;
+}
+.quick {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.words {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #f7f8fa;
+    border-radius: 10px;
+    font-size: 13px;
+    font-style: italic;
+    color: #4b5159;
+}
+.statusGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}

@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cms-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace=cms-api"],
+      "port": 4000,
+      "autoPort": false
+    },
+    {
+      "name": "cms-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace=cms-web"],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}

@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-    title: "Trenders Admin",
-    description: "Trenders Admin Panel",
+    title: "TREVA Admin Panel",
+    description: "TREVA Sales Agent — Admin Panel",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="az">
-            <body>{children}</body>
+        <html lang="en">
+            <body>
+                <Providers>{children}</Providers>
+            </body>
         </html>
     );
 }

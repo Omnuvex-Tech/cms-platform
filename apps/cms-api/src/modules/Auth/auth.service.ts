@@ -18,15 +18,41 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!owner.isActive) {
+      throw new UnauthorizedException('Account is deactivated');
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, owner.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: owner.id, email: owner.email };
+    const payload = { sub: owner.id, email: owner.email, role: owner.role };
     const token = this.jwtService.sign(payload);
 
-    return { access_token: token };
+    return {
+      access_token: token,
+      user: {
+        id: owner.id,
+        email: owner.email,
+        name: owner.name,
+        role: owner.role,
+      },
+    };
+  }
+
+  async me(userId: number) {
+    const owner = await this.authRepository.findById(userId);
+    if (!owner) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      id: owner.id,
+      email: owner.email,
+      name: owner.name,
+      role: owner.role,
+      isActive: owner.isActive,
+    };
   }
 }

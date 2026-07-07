@@ -1,0 +1,213 @@
+.wrap {
+    display: grid;
+    grid-template-columns: 320px 1fr 300px;
+    gap: 16px;
+    height: calc(100vh - 80px);
+}
+
+/* Inbox */
+.inbox {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.inboxHead {
+    padding: 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.inboxFilters {
+    display: flex;
+    gap: 8px;
+}
+.inboxFilters select {
+    flex: 1;
+    min-width: 0;
+}
+.inboxList {
+    flex: 1;
+    overflow-y: auto;
+}
+.inboxItem {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+    padding: 13px 14px;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease;
+}
+.inboxItem:hover {
+    background: rgba(1, 72, 194, 0.03);
+}
+.inboxItemActive {
+    background: rgba(1, 72, 194, 0.07);
+}
+.inboxItemTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+.inboxName {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #16181d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.inboxTime {
+    font-size: 11px;
+    color: #9aa0a6;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.inboxItemBottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.inboxChannel {
+    font-size: 11.5px;
+    color: #8a9099;
+}
+.unread {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #0148c2;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Center */
+.center {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.centerHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+.centerTitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: #16181d;
+}
+.centerSub {
+    font-size: 12px;
+    color: #8a9099;
+    margin-top: 2px;
+}
+.centerActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.transcriptScroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    background: #fafbfc;
+}
+.composer {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    flex-shrink: 0;
+}
+.composerRow {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+.composerRow textarea {
+    flex: 1;
+}
+
+/* Right */
+.right {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 18px;
+    overflow-y: auto;
+}
+.notesHint {
+    font-size: 11.5px;
+    color: #9aa0a6;
+    margin-bottom: 10px;
+}
+.notesList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.note {
+    background: #f7f8fa;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.noteBody {
+    font-size: 13px;
+    color: #2a2d33;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+.noteMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #8a9099;
+}
+.noteDelete {
+    border: none;
+    background: transparent;
+    color: #b8bec6;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+}
+.noteDelete:hover {
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.08);
+}
+
+@media (max-width: 1200px) {
+    .wrap {
+        grid-template-columns: 280px 1fr;
+    }
+    .right {
+        display: none;
+    }
+}

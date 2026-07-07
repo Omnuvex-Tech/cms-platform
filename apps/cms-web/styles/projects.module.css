@@ -1,0 +1,233 @@
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    color: #8a9099;
+    text-decoration: none;
+    margin-bottom: 2px;
+}
+.back:hover {
+    color: #0148c2;
+}
+.unsaved {
+    font-size: 12px;
+    font-weight: 500;
+    color: #b5730d;
+}
+
+.split {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 22px;
+    align-items: start;
+}
+.editorCol {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Accordion sections */
+.section {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 15px 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #16181d;
+}
+.sectionHead:hover {
+    background: #fafbfc;
+}
+.sectionBody {
+    padding: 6px 18px 18px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 6px;
+}
+.check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: #2a2d33;
+    cursor: pointer;
+}
+.check input {
+    width: 15px;
+    height: 15px;
+    accent-color: #0148c2;
+}
+
+/* Editable row tables */
+.rowTable {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.rowHead,
+.rowLine {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 6), 1fr) 56px;
+    gap: 6px;
+    align-items: center;
+}
+.rowHead {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9aa0a6;
+    padding: 0 2px;
+}
+.rowInput {
+    width: 100%;
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+}
+.rowInput:focus {
+    border-color: #0148c2;
+}
+.rowActions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+}
+.iconBtn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 7px;
+    background: #fff;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.iconBtn:hover {
+    background: #f5f7fa;
+    color: #16181d;
+}
+
+/* Preview */
+.previewCol {
+    position: sticky;
+    top: 20px;
+}
+.previewLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8a9099;
+    margin-bottom: 10px;
+}
+.pvName {
+    font-size: 20px;
+    font-weight: 700;
+    color: #16181d;
+    margin-bottom: 8px;
+}
+.pvMeta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-bottom: 16px;
+}
+.pvStats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 14px;
+    background: #f7f8fa;
+    border-radius: 10px;
+    margin-bottom: 18px;
+}
+.pvStatLabel {
+    display: block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9aa0a6;
+    margin-bottom: 3px;
+}
+.pvStatVal {
+    font-size: 13px;
+    font-weight: 600;
+    color: #16181d;
+}
+.pvHeading {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #0148c2;
+    margin-bottom: 6px;
+}
+.pvBody {
+    font-size: 13px;
+    color: #2a2d33;
+}
+.pvTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+.pvTable td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #2a2d33;
+}
+.pvPlan {
+    font-size: 12.5px;
+    color: #2a2d33;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.bannerOk {
+    background: #e6f6ec;
+    color: #1a7f3d;
+    border: 1px solid rgba(26, 127, 61, 0.2);
+}
+
+@media (max-width: 1100px) {
+    .split {
+        grid-template-columns: 1fr;
+    }
+    .previewCol {
+        position: static;
+    }
+}

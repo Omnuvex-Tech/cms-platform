@@ -83,6 +83,27 @@
     flex: 1;
 }
 
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(1, 72, 194, 0.12);
+    color: rgba(1, 72, 194, 1);
+    font-family: 'Poppins';
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.badgeDanger {
+    background: rgba(192, 57, 43, 0.12);
+    color: rgba(192, 57, 43, 1);
+}
+
 .chevron {
     transition: transform 0.2s ease;
     flex-shrink: 0;
@@ -125,6 +146,52 @@
     padding: 16px 12px 24px;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
     flex-shrink: 0;
+}
+
+.userRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 14px;
+    margin-bottom: 6px;
+}
+
+.userAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(1, 72, 194, 0.1);
+    color: rgba(1, 72, 194, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins';
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.userMeta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.userEmail {
+    font-family: 'Poppins';
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(40, 40, 40, 1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+}
+
+.userRole {
+    font-family: 'Poppins';
+    font-size: 11px;
+    color: rgba(120, 120, 120, 1);
 }
 
 .logoutBtn {
