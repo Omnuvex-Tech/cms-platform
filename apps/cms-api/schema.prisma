@@ -108,6 +108,7 @@ model VacancySettings {
   id                     Int      @id @default(autoincrement())
   backLabel              Json     @default("{}")
   detailButtonLabel      Json     @default("{}")
+  dropdownLabel          Json     @default("{}")
   applyTitle             Json     @default("{}")
   aboutRoleLabel         Json     @default("{}")
   skillsLabel            Json     @default("{}")
@@ -137,6 +138,7 @@ model VacancySettings {
 
   @@map("vacancy_settings")
 }
+
 
 model VacancySubmission {
   id           Int      @id @default(autoincrement())

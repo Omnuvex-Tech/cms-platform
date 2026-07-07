@@ -3,6 +3,7 @@ import { IsOptional, IsString, IsObject } from 'class-validator';
 export class UpdateVacancySettingsDto {
   @IsOptional() @IsObject() detailButtonLabel?: Record<string, string>;
   @IsOptional() @IsObject() backLabel?: Record<string, string>;
+  @IsOptional() @IsObject() dropdownLabel?: Record<string, string>;
   @IsOptional() @IsObject() applyTitle?: Record<string, string>;
   @IsOptional() @IsObject() aboutRoleLabel?: Record<string, string>;
   @IsOptional() @IsObject() skillsLabel?: Record<string, string>;

@@ -27,6 +27,7 @@ async function apiFetch(path: string, options?: RequestInit) {
 interface VacancySettings {
   detailButtonLabel: LocalizedString;
   backLabel: LocalizedString;
+  dropdownLabel: LocalizedString;
   applyTitle: LocalizedString;
   aboutRoleLabel: LocalizedString;
   skillsLabel: LocalizedString;
@@ -56,6 +57,7 @@ interface VacancySettings {
 const DEFAULT: VacancySettings = {
   detailButtonLabel: { ...EMPTY_L },
   backLabel: { ...EMPTY_L },
+  dropdownLabel: { ...EMPTY_L },
   applyTitle: { ...EMPTY_L },
   aboutRoleLabel: { ...EMPTY_L },
   skillsLabel: { ...EMPTY_L },
@@ -115,6 +117,7 @@ export default function VacancySettingPage() {
        if (data) setSettings({
           detailButtonLabel: data.detailButtonLabel ?? { ...EMPTY_L },
           backLabel: data.backLabel ?? { ...EMPTY_L },
+          dropdownLabel: data.dropdownLabel ?? { ...EMPTY_L },
           applyTitle: data.applyTitle ?? { ...EMPTY_L },
           aboutRoleLabel: data.aboutRoleLabel ?? { ...EMPTY_L },
           skillsLabel: data.skillsLabel ?? { ...EMPTY_L },
@@ -207,6 +210,7 @@ export default function VacancySettingPage() {
        {localizedFields([
           { key: "detailButtonLabel", label: "Daha ətraflı düyməsi mətni", hint: "DAHA ƏTRAFLI" },
           { key: "backLabel", label: "Geri düyməsi mətni", hint: "← geri linki" },
+          { key: "dropdownLabel", label: "Vakansiya dropdown mətni", hint: "Vakansiya seçin" },
           { key: "applyTitle", label: "Müraciət başlığı", hint: "APPLY NOW" },
           { key: "aboutRoleLabel", label: "About the Role başlığı", hint: "Vakansiya təsviri bölməsi" },
           { key: "skillsLabel", label: "Skills başlığı", hint: "Bacarıqlar bölməsi" },
