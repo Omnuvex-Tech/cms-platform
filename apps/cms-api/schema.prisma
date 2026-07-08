@@ -91,7 +91,7 @@ model Vacancy {
   slug               String          @unique
   category           VacancyCategory @relation(fields: [categoryId], references: [id])
   filterTags         VacancyFilterTag[] @relation("VacancyFilterTags")
-   seoTitle       Json?
+  seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
   schema             Json?
@@ -204,6 +204,7 @@ model PartnerSection {
 
   @@map("partner_sections")
 }
+
 model Partner {
   id         Int            @id @default(autoincrement())
   image      String
@@ -249,7 +250,6 @@ model Service {
 
   @@map("services")
 }
-
 
 model BlogAuthor {
   id           Int      @id @default(autoincrement())
@@ -319,7 +319,6 @@ model Blog {
   category           BlogCategory? @relation(fields: [categoryId], references: [id])
   @@map("blogs")
 }
-
 
 model BlogSettings {
   id            Int      @id @default(autoincrement())
