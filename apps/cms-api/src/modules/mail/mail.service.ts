@@ -190,7 +190,7 @@ export class MailService {
         <tr>
           <td style="padding: 10px 0; color: #6b7280; font-size: 13px;">CV</td>
           <td style="padding: 10px 0; font-size: 14px;">
-            <a href="${process.env.API_URL}${data.cvUrl}" style="color: #2563eb;">CV-yə bax / yüklə</a>
+           <a href="${(process.env.API_URL ?? 'https://api.dev.trenders.az')}${data.cvUrl}" style="color: #2563eb;">CV-yə bax / yüklə</a>
           </td>
         </tr>
       </table>
