@@ -37,6 +37,11 @@ export class ProjectsController {
     return this.projectsService.validate(id);
   }
 
+  @Post('sync-all')
+  syncAll() {
+    return this.projectsService.syncAll();
+  }
+
   @Post()
   create(@Body() dto: CreateProjectDto) {
     return this.projectsService.create(dto);

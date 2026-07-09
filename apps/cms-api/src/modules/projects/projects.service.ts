@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ProjectStatus } from '@prisma/client';
 import { ProjectsRepository } from './projects.repository';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
+import { BotSyncService } from '../bot-sync/bot-sync.service';
+import { ProjectWithChildren } from '../bot-sync/bot-sync.mapper';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly botSync: BotSyncService,
+  ) {}
 
   list(search?: string, status?: ProjectStatus) {
     const where: Prisma.ProjectWhereInput = {};
@@ -50,7 +55,7 @@ export class ProjectsService {
       await this.projectsRepository.replaceChildren(id);
     }
 
-    return this.projectsRepository.update(id, {
+    const project = await this.projectsRepository.update(id, {
       ...rest,
       bedroomPricing: bedroomPricing?.length
         ? { create: bedroomPricing }
@@ -62,11 +67,25 @@ export class ProjectsService {
         ? { create: internationalTiers }
         : undefined,
     });
+
+    // Propagate edits to the bot only for projects it already knows about
+    // (published). Fire-and-forget: a bot outage must not fail the edit.
+    if (project.status === ProjectStatus.published) {
+      void this.botSync.syncProject(project as ProjectWithChildren, 'upsert');
+    }
+    return project;
   }
 
   async archive(id: number) {
     await this.get(id);
-    return this.projectsRepository.setStatus(id, ProjectStatus.archived);
+    const project = await this.projectsRepository.setStatus(
+      id,
+      ProjectStatus.archived,
+    );
+    // Archiving pulls a project out of the customer-facing catalogue -> tell the
+    // bot to drop it from its knowledge base.
+    void this.botSync.syncProject(project as ProjectWithChildren, 'delete');
+    return project;
   }
 
   async publish(id: number) {
@@ -78,13 +97,28 @@ export class ProjectsService {
       id,
       ProjectStatus.published,
     );
-    return { published: true, issues: [], project };
+    // Primary sync trigger. Awaited (bounded by BOT_SYNC_TIMEOUT_MS, never
+    // throws) so the admin sees whether the push landed in the response.
+    const botSync = await this.botSync.syncProject(
+      project as ProjectWithChildren,
+      'upsert',
+    );
+    return { published: true, issues: [], project, botSync };
   }
 
   async remove(id: number) {
-    await this.get(id);
+    const project = await this.get(id);
     await this.projectsRepository.delete(id);
+    // If the bot had this project (it was published), tell it to drop it.
+    if (project.status === ProjectStatus.published) {
+      void this.botSync.syncProject(project as ProjectWithChildren, 'delete');
+    }
     return { deleted: true };
+  }
+
+  /** Backfill: re-push every published project to the bot (cutover/recovery). */
+  syncAll() {
+    return this.botSync.syncAllPublished();
   }
 
   /** Flags missing/inconsistent sales fields before publishing. */
