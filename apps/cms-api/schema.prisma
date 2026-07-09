@@ -591,7 +591,6 @@ model PageMeta {
   updatedAt      DateTime @updatedAt
 }
 
-
 enum BulletType {
   BULLET
   NUMBERED
