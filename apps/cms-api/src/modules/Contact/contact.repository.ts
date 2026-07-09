@@ -118,8 +118,6 @@ export class ContactRepository {
     );
   }
 
-  // ── Budget Options ──────────────────────────────────────────────────────────
-
   async createBudgetOption(contactId: number, dto: CreateContactOptionDto) {
     return this.prisma.contactBudgetOption.create({
       data: { label: dto.label, order: dto.order ?? 0, contactId },
@@ -143,8 +141,6 @@ export class ContactRepository {
   async findBudgetOptionById(id: number) {
     return this.prisma.contactBudgetOption.findUnique({ where: { id } });
   }
-
-  // ── Timeline Options ────────────────────────────────────────────────────────
 
   async createTimelineOption(contactId: number, dto: CreateContactOptionDto) {
     return this.prisma.contactTimelineOption.create({
@@ -170,8 +166,6 @@ export class ContactRepository {
     return this.prisma.contactTimelineOption.findUnique({ where: { id } });
   }
 
-  // ── Submissions ─────────────────────────────────────────────────────────────
-
   async createSubmission(dto: CreateContactSubmissionDto) {
     return this.prisma.contactSubmission.create({ data: dto });
   }
@@ -181,7 +175,5 @@ export class ContactRepository {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-
 
 }

@@ -78,15 +78,10 @@ function generateSlug(title: string) {
     .trim();
 }
 
-// --- Localized images helpers -------------------------------------------
-
-// Supports legacy shape (plain string[]) so old sections don't break.
 function normalizeImages(images: any): LocalizedImages {
   if (Array.isArray(images)) return images.length ? { az: images } : {};
   return images ?? {};
 }
-
-// mainImage used to be a single string; normalize to LocalizedImages (max 1 each).
 function normalizeMainImage(img: any): LocalizedImages {
   if (typeof img === "string") return img ? { az: [img] } : {};
   return normalizeImages(img);
@@ -174,9 +169,7 @@ function SortableImage({ id, src, onRemove }: { id: string; src: string; onRemov
   );
 }
 
-// Localized image upload: each language can have its own set of images.
-// If a language has none, it falls back to displaying another language's
-// images (AZ -> EN -> RU priority) marked as "default".
+
 function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange, altPlaceholder, activeLang }: {
   images: LocalizedImages;
   onChange: (imgs: LocalizedImages) => void;
@@ -188,12 +181,7 @@ function ImageUploadArea({ images, onChange, maxImages, altText, onAltTextChange
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor));
-
-  // Admin panelində hər dil YALNIZ öz şəkillərini göstərir/redaktə edir.
-  // Dillər arası fallback (boş olan dil üçün default şəkil göstərmək)
-  // yalnız canlı saytın render tərəfində tətbiq olunmalıdır, admin formada yox.
   const currentList = images?.[activeLang] ?? [];
-
   const setLangImages = (list: string[]) => {
     onChange({ ...images, [activeLang]: list });
   };

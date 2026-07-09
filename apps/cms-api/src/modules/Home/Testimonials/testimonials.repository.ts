@@ -9,7 +9,6 @@ import { UpdateTestimonialDto } from './dto/update-testimonial.dto';
 export class TestimonialsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Section
   findSection() {
     return this.prisma.testimonialsSection.findFirst({
       include: { testimonials: { orderBy: { order: 'asc' } } },
@@ -24,7 +23,6 @@ export class TestimonialsRepository {
     return this.prisma.testimonialsSection.update({ where: { id }, data: dto });
   }
 
-  // Testimonials
   findAllTestimonials(sectionId: number) {
     return this.prisma.testimonial.findMany({
       where: { sectionId },

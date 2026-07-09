@@ -75,7 +75,6 @@ export default function SeoPage() {
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // Schema state-ləri
   const [schemaByLang, setSchemaByLang] = useState<Record<string, any>>({});
   const [schemaText, setSchemaText] = useState("");
   const [schemaError, setSchemaError] = useState<string | null>(null);
@@ -83,7 +82,6 @@ export default function SeoPage() {
   const [schemaSaving, setSchemaSaving] = useState(false);
   const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // Səhifə dəyişəndə bütün məlumatları yüklə
   useEffect(() => {
     setLoading(true);
     setSchemaError(null);
@@ -102,7 +100,6 @@ export default function SeoPage() {
       .finally(() => setLoading(false));
   }, [selectedKey]);
 
-  // Dil dəyişəndə schema mətnini yenilə
   useEffect(() => {
     setSchemaText(schemaByLang[activeLang] ? JSON.stringify(schemaByLang[activeLang], null, 2) : "");
     setSchemaError(null);
@@ -135,8 +132,6 @@ export default function SeoPage() {
       setTimeout(() => setSaveStatus("idle"), 3000);
     }
   };
-
-  // ── Schema funksiyaları ──
 
   const handleSchemaChange = (val: string) => {
     setSchemaText(val);

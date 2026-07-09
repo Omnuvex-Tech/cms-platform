@@ -18,7 +18,6 @@ import * as fs from 'fs';
 export class PortfolioController {
   constructor(private readonly service: PortfolioService) { }
 
-  // SETTINGS
   @Get('settings')
   getSettings() {
     return this.service.getPortfolioSettings();
@@ -37,7 +36,6 @@ export class PortfolioController {
     return this.service.updatePortfolioSettings(id, dto);
   }
 
-  // PUBLIC
   @Get('public')
   findAllVisible() {
     return this.service.findAllVisible();
@@ -48,7 +46,6 @@ export class PortfolioController {
     return this.service.findHomepage();
   }
 
-  // ADMIN CRUD
   @Get()
   findAll() {
     return this.service.findAll();
@@ -59,7 +56,6 @@ export class PortfolioController {
     return this.service.findBySlug(slug);
   }
 
-  // ⚠️ Spesifik :id alt-route-lar HƏMİŞƏ sadə :id-dən ƏVVƏL olmalıdır
   @Get(':id/schema/preview')
   previewSchema(@Param('id', ParseIntPipe) id: number) {
     return this.service.generateSchema(id);

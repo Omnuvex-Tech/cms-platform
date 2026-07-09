@@ -1,4 +1,3 @@
-// navbar-settings.module.ts
 import { Module } from '@nestjs/common';
 import { NavbarSettingsController } from './navbar.controller';
 import { NavbarSettingsService } from './navbar.service';

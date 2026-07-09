@@ -130,39 +130,30 @@ export default function TestimonialsPage() {
     const [section, setSection] = useState<Section | null>(null);
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // Section edit
     const [sectionActiveLang, setSectionActiveLang] = useState<Lang>("az");
     const [sectionTitle, setSectionTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [sectionDesc, setSectionDesc] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [sectionSaving, setSectionSaving] = useState(false);
     const [sectionError, setSectionError] = useState<string | null>(null);
-
-    // Testimonial modal
     const [modalOpen, setModalOpen] = useState(false);
     const [modalActiveLang, setModalActiveLang] = useState<Lang>("az");
     const [editItem, setEditItem] = useState<Testimonial | null>(null);
-
     const [company, setCompany] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [quote, setQuote] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [name, setName] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [role, setRole] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-
     const [image, setImage] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState("");
     const [altText, setAltText] = useState("");
     const [imageUploading, setImageUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [reordering, setReordering] = useState(false);
-
     const sensors = useSensors(useSensor(PointerSensor));
-
     const load = async () => {
         setLoading(true);
         try {
@@ -239,8 +230,6 @@ export default function TestimonialsPage() {
             setReordering(false);
         }
     };
-
-    // --- Image handlers ---
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;

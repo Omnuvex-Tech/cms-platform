@@ -71,8 +71,6 @@ fileFilter: (req, file, cb) => {
   uploadCv(@UploadedFile() file: Express.Multer.File) {
     return { url: `/uploads/cv/${file.filename}` };
   }
-
-  // ─── Submissions ──────────────────────────────────────────
   @Post('submit')
   createSubmission(@Body() dto: CreateVacancySubmissionDto) {
     return this.service.createSubmission(dto);
@@ -83,7 +81,6 @@ fileFilter: (req, file, cb) => {
     return this.service.findAllSubmissions();
   }
 
-// ─── Filter Tags ─────────────────────────────────────────
   @Get('filter-tags')
   getAllFilterTags() { return this.service.getAllFilterTags(); }
 
@@ -152,7 +149,6 @@ fileFilter: (req, file, cb) => {
     return { success: true };
   }
 
-  // ─── Vacancies ───────────────────────────────────────────
   @Get()
   getAllVacancies() { return this.service.getAllVacancies(); }
 

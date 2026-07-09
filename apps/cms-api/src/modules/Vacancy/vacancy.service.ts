@@ -18,7 +18,6 @@ export class VacancyService {
     private readonly mailService: MailService,
   ) { }
 
-  // ─── Category ────────────────────────────────────────────
   getAllCategories() { return this.repo.findAllCategories(); }
 
   async getCategoryById(id: number) {
@@ -45,7 +44,6 @@ export class VacancyService {
     return this.repo.reorderCategories(dto);
   }
 
-  // ─── Vacancy ─────────────────────────────────────────────
   getAllVacancies() { return this.repo.findAllVacancies(); }
 
   async getVacancyById(id: number) {
@@ -87,8 +85,6 @@ export class VacancyService {
     if (!v) throw new NotFoundException('Vacancy not found');
     return v;
   }
-
-  // vacancy.service.ts — MailService inject et, bunları əlavə et
 
   async getSettings() {
     const s = await this.repo.getSettings();
@@ -132,7 +128,6 @@ export class VacancyService {
     return this.repo.saveSchema(id, schema);
   }
 
-  // ─── Filter Tags ──────────────────────────────────────
   getAllFilterTags() { return this.repo.findAllFilterTags(); }
 
   async getFilterTagById(id: number) {

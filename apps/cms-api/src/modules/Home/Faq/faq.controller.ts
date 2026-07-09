@@ -21,7 +21,6 @@ export class FaqController {
     return this.faqService.findAll();
   }
 
-  // ⚠️ STATIC ROUTE — :id-dən ƏVVƏL olmalıdır
   @Patch('reorder')
   reorder(@Body() dto: ReorderFaqDto) {
     return this.faqService.reorder(dto);

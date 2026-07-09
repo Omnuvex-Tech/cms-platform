@@ -1,4 +1,3 @@
-// vacancy.repository.ts
 import { ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -16,7 +15,6 @@ import { CreateVacancyFilterTagDto } from './dto/create-vacancy-filter-tag.dto';
 export class VacancyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── Category ─────────────────────────────────────────
   findAllCategories() {
     return this.prisma.vacancyCategory.findMany({ orderBy: { order: 'asc' } });
   }
@@ -45,7 +43,6 @@ export class VacancyRepository {
     );
   }
 
-// ─── Vacancy ──────────────────────────────────────────
   findAllVacancies() {
     return this.prisma.vacancy.findMany({
       orderBy: { order: 'asc' },
@@ -143,8 +140,6 @@ async updateVacancy(id: number, dto: UpdateVacancyDto) {
       ),
     );
   }
-
-  // ─── Settings ─────────────────────────────────────────
   async getSettings() {
     return this.prisma.vacancySettings.findFirst();
   }
@@ -160,7 +155,6 @@ async updateVacancy(id: number, dto: UpdateVacancyDto) {
     });
   }
 
-  // ─── Submissions ──────────────────────────────────────
   async createSubmission(dto: CreateVacancySubmissionDto) {
     return this.prisma.vacancySubmission.create({ data: dto });
   }
@@ -171,8 +165,6 @@ async updateVacancy(id: number, dto: UpdateVacancyDto) {
     });
   }
 
-
-  // ─── Filter Tags ──────────────────────────────────────
   findAllFilterTags() {
     return this.prisma.vacancyFilterTag.findMany({ orderBy: { order: 'asc' } });
   }

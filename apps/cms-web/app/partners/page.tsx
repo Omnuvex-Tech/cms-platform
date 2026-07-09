@@ -73,7 +73,6 @@ function lv(field: any): LocalizedString {
   return { az: field ?? "", en: "", ru: "" };
 }
 
-// ─── Lang Tabs ────────────────────────────────────────────
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -94,7 +93,6 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
-// ─── Rich Editor ─────────────────────────────────────────
 function RichEditor({ value, onChange, placeholder }: {
   value: string;
   onChange: (html: string) => void;
@@ -225,7 +223,6 @@ function LocalizedRichEditor({ value, lang, onChange, placeholder }: {
   );
 }
 
-// ─── Sortable Row ─────────────────────────────────────────
 function SortableRow({ p, index, onEdit, onToggleHomepage, onToggleVisibility, onDelete }: {
   p: Partner; index: number;
   onEdit: (p: Partner) => void;
@@ -294,7 +291,6 @@ function SortableRow({ p, index, onEdit, onToggleHomepage, onToggleVisibility, o
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────
 export default function PartnersPage() {
   const [section, setSection] = useState<Section | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);

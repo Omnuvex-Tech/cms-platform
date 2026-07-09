@@ -37,8 +37,6 @@ export class SearchService {
 
         const lower = q.toLowerCase();
         const results: SearchResult[] = [];
-
-        // --- Blog ---
         const blogs = await this.prisma.blog.findMany({
             where: { isVisible: true },
             select: { title: true, slug: true, badge: true, excerpt: true },
@@ -60,8 +58,6 @@ export class SearchService {
                 });
             }
         }
-
-        // --- Portfolio ---
         const portfolios = await this.prisma.portfolio.findMany({
             where: { isVisible: true },
             select: { title: true, slug: true, tags: true },
@@ -78,8 +74,6 @@ export class SearchService {
                 });
             }
         }
-
-        // --- Service ---
         const services = await this.prisma.service.findMany({
             where: { isVisible: true },
             select: { title: true, slug: true, badge: true, description: true },
@@ -102,7 +96,6 @@ export class SearchService {
             }
         }
 
-        // --- BlogAuthor ---
         const authors = await this.prisma.blogAuthor.findMany({
             where: { isVisible: true },
             select: { name: true, slug: true, role: true, bio: true },
@@ -124,8 +117,6 @@ export class SearchService {
                 });
             }
         }
-
-        // --- Vacancy ---
         const vacancies = await this.prisma.vacancy.findMany({
             where: { isVisible: true },
             select: { title: true, slug: true, tags: true },

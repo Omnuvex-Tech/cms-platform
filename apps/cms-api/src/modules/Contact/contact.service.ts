@@ -37,8 +37,6 @@ export class ContactService {
     return this.repo.updateSettings(existing.id, dto);
   }
 
-  // ── Social Links ────────────────────────────────────────────────────────────
-
   async createSocialLink(dto: CreateContactSocialLinkDto) {
     const contact = await this.getOrCreate();
     return this.repo.createSocialLink(contact.id, dto);
@@ -60,8 +58,6 @@ export class ContactService {
     return this.repo.reorderSocialLinks(dto.links);
   }
 
-  // ── Budget Options ──────────────────────────────────────────────────────────
-
   async createBudgetOption(dto: CreateContactOptionDto) {
     const contact = await this.getOrCreate();
     return this.repo.createBudgetOption(contact.id, dto);
@@ -79,8 +75,6 @@ export class ContactService {
     return this.repo.deleteBudgetOption(id);
   }
 
-  // ── Timeline Options ────────────────────────────────────────────────────────
-
   async createTimelineOption(dto: CreateContactOptionDto) {
     const contact = await this.getOrCreate();
     return this.repo.createTimelineOption(contact.id, dto);
@@ -97,8 +91,6 @@ export class ContactService {
     if (!option) throw new NotFoundException(`TimelineOption #${id} tapılmadı`);
     return this.repo.deleteTimelineOption(id);
   }
-
-  // ── Submissions ─────────────────────────────────────────────────────────────
 
   async createSubmission(dto: CreateContactSubmissionDto) {
     const submission = await this.repo.createSubmission(dto);

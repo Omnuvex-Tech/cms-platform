@@ -202,10 +202,6 @@ function SortableImage({ id, src, onRemove }: { id: string; src: string; onRemov
     );
 }
 
-// Dilə görə fərqlənən şəkil sahələri üçün (Hero şəkil, Sitat şəkli, Alt şəkil
-// və s.). Admin panelində hər dil YALNIZ öz şəkillərini göstərir/redaktə edir.
-// maxImages=1 verilən yerlərdə tək şəkil sahəsi kimi işləyir (SingleImageUpload
-// əvəzinə), amma hər dil üçün ayrıca şəkil saxlamağa imkan verir.
 function ImageUploadArea({ images, onChange, maxImages, activeLang, label, accept = "image/webp" }: {
     images: LocalizedImages;
     onChange: (imgs: LocalizedImages) => void;
@@ -785,8 +781,6 @@ export default function ServicePage() {
         setImage(s.image ?? "");
         setImageAlt(s.imageAlt ?? { az: "", en: "", ru: "" });
         setGif(s.gif ?? "");
-
-        // features normalize — köhnə string label → {az: label, en: "", ru: ""}
         const normalizedFeatures = (s.features ?? []).map((f: any) => ({
             ...f,
             label: typeof f.label === "string"

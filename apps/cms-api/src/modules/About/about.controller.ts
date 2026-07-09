@@ -1,4 +1,3 @@
-// about.controller.ts
 import {
   Controller, Get, Put, Body,
   Post, UploadedFile, UseInterceptors,

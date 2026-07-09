@@ -9,8 +9,6 @@ import { ReorderTestimonialDto } from './dto/reorder-testimonial.dto';
 @Injectable()
 export class TestimonialsService {
   constructor(private readonly repo: TestimonialsRepository) {}
-
-  // Section
   findSection() {
     return this.repo.findSection();
   }
@@ -25,7 +23,6 @@ export class TestimonialsService {
     return this.repo.updateSection(id, dto);
   }
 
-  // Testimonials
   async findOneTestimonial(id: number) {
     const t = await this.repo.findOneTestimonial(id);
     if (!t) throw new NotFoundException('Testimonial tapılmadı');

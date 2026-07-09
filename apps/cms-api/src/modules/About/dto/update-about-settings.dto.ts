@@ -1,4 +1,3 @@
-// update-about-settings.dto.ts
 import { IsOptional, IsString, IsArray, IsObject } from 'class-validator';
 
 export class UpdateAboutSettingsDto {

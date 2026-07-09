@@ -1,4 +1,3 @@
-// about.service.ts
 import { Injectable } from '@nestjs/common';
 import { AboutRepository } from './about.repository';
 import { UpdateAboutSettingsDto } from './dto/update-about-settings.dto';

@@ -65,7 +65,6 @@ function generateSlug(name: string) {
     .replace(/^-|-$/g, "").trim();
 }
 
-// ─── Lang Tabs ───────────────────────────────────────────
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
     <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -86,7 +85,6 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
-// ─── Rich Editor ─────────────────────────────────────────
 function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [showLinkPopup, setShowLinkPopup] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -207,7 +205,6 @@ function LocalizedRichEditor({ value, lang, onChange }: {
   );
 }
 
-// ─── Avatar Upload ────────────────────────────────────────
 function AvatarUpload({ value, onChange, label }: {
   value: string; onChange: (url: string) => void; label?: string;
 }) {

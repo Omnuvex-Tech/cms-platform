@@ -53,7 +53,6 @@ export class FooterRepository {
     });
 }
 
-  // Nav Links
   async createNavLink(footerId: number, dto: CreateFooterNavLinkDto) {
     return this.prisma.footerNavLink.create({
       data: {
@@ -99,7 +98,6 @@ export class FooterRepository {
     );
   }
 
-  // Social Links
   async createSocialLink(footerId: number, dto: CreateFooterSocialLinkDto) {
     return this.prisma.footerSocialLink.create({
       data: {
