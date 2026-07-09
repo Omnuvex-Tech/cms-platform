@@ -14,6 +14,7 @@ import { ContactRequestsModule } from './modules/contact-requests/contact-reques
 import { LeadsModule } from './modules/leads/leads.module';
 import { UsersModule } from './modules/users/users.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { IngestModule } from './modules/ingest/ingest.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { StatsModule } from './modules/stats/stats.module';
     LeadsModule,
     UsersModule,
     StatsModule,
+    IngestModule,
   ],
   controllers: [AppController],
   providers: [
