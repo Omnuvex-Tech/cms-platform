@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { Search, Plus, Building2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Search, Plus, Building2, Pencil, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { projectStatus } from "@/lib/status";
 import { relativeTime, money, range } from "@/lib/format";
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Loading, EmptyState } from "@/components/ui/States";
 import ui from "@/styles/ui.module.css";
+import styles from "@/styles/projects.module.css";
 
 interface ProjectListItem {
     id: number;
@@ -29,6 +30,7 @@ interface ProjectListItem {
 function ProjectsList() {
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("");
+    const qc = useQueryClient();
 
     const query = new URLSearchParams();
     if (search) query.set("search", search);
@@ -38,6 +40,23 @@ function ProjectsList() {
     const { data, isLoading } = useQuery({
         queryKey: ["projects", qs],
         queryFn: () => api.get<ProjectListItem[]>(`/projects${qs ? `?${qs}` : ""}`),
+    });
+
+    const invalidate = () => qc.invalidateQueries({ queryKey: ["projects"] });
+
+    const archive = useMutation({
+        mutationFn: (id: number) => api.post(`/projects/${id}/archive`),
+        onSuccess: invalidate,
+    });
+
+    const unarchive = useMutation({
+        mutationFn: (id: number) => api.patch(`/projects/${id}`, { status: "draft" }),
+        onSuccess: invalidate,
+    });
+
+    const remove = useMutation({
+        mutationFn: (id: number) => api.delete(`/projects/${id}`),
+        onSuccess: invalidate,
     });
 
     return (
@@ -96,6 +115,7 @@ function ProjectsList() {
                                     <th>Price range</th>
                                     <th>Completion</th>
                                     <th>Updated</th>
+                                    <th />
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,6 +146,60 @@ function ProjectsList() {
                                         </td>
                                         <td>{p.completionYear ?? "—"}</td>
                                         <td className={ui.muted}>{relativeTime(p.updatedAt)}</td>
+                                        <td>
+                                            <div className={styles.rowActions}>
+                                                <Link
+                                                    href={`/projects/${p.id}`}
+                                                    className={styles.iconBtn}
+                                                    title="Edit"
+                                                >
+                                                    <Pencil size={13} />
+                                                </Link>
+                                                {p.status === "archived" ? (
+                                                    <button
+                                                        className={styles.iconBtn}
+                                                        title="Unarchive (set to draft)"
+                                                        disabled={unarchive.isPending}
+                                                        onClick={() => unarchive.mutate(p.id)}
+                                                    >
+                                                        <ArchiveRestore size={13} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className={styles.iconBtn}
+                                                        title="Archive"
+                                                        disabled={archive.isPending}
+                                                        onClick={() => {
+                                                            if (
+                                                                confirm(
+                                                                    `Archive "${p.name}"? It will be hidden from the agent.`
+                                                                )
+                                                            ) {
+                                                                archive.mutate(p.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Archive size={13} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className={styles.iconBtn}
+                                                    title="Delete"
+                                                    disabled={remove.isPending}
+                                                    onClick={() => {
+                                                        if (
+                                                            confirm(
+                                                                `Delete "${p.name}" permanently? This cannot be undone.`
+                                                            )
+                                                        ) {
+                                                            remove.mutate(p.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

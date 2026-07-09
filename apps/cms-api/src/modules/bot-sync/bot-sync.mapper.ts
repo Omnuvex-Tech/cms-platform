@@ -37,6 +37,10 @@ export interface BotSyncPayload {
 }
 
 export interface BotProject {
+  /** Panel's stable Project.id (autoincrement Int). Lets the bot-side receiver
+   * track identity across a name/slug edit deterministically instead of
+   * guessing from the (user-editable) name/slug alone. */
+  id: number;
   name: string;
   slug: string | null;
   status: string;
@@ -166,6 +170,7 @@ export function projectToBotPayload(
     op,
     version: 1,
     project: {
+      id: project.id,
       name: project.name,
       slug: project.slug ?? null,
       status: project.status,

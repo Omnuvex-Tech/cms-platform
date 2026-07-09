@@ -18,7 +18,10 @@ async function main() {
   const repHash = await bcrypt.hash('Sales123', 10);
 
   console.log('Resetting sample data...');
-  // Child -> parent order so FKs never block the wipe.
+  // Child -> parent order so FKs never block the wipe. Projects (and their
+  // bedroomPricing/standardPlans/internationalTiers children) are deliberately
+  // NOT wiped here: the real, live project catalog is imported separately via
+  // import-bot-projects.ts and must survive every re-seed.
   await prisma.leadTimelineEvent.deleteMany();
   await prisma.internalNote.deleteMany();
   await prisma.message.deleteMany();
@@ -26,10 +29,6 @@ async function main() {
   await prisma.contactRequest.deleteMany();
   await prisma.conversation.deleteMany();
   await prisma.lead.deleteMany();
-  await prisma.bedroomPricing.deleteMany();
-  await prisma.standardPaymentPlan.deleteMany();
-  await prisma.internationalPlanTier.deleteMany();
-  await prisma.project.deleteMany();
   await prisma.trevaInfo.deleteMany();
 
   // --- Users ---------------------------------------------------------------
@@ -94,142 +93,11 @@ async function main() {
   });
   console.log('Seeded TREVA information record');
 
-  // --- Projects ------------------------------------------------------------
-  const portBaku = await prisma.project.create({
-    data: {
-      name: 'Port Baku Residence',
-      slug: 'port-baku-residence',
-      location: 'Nizami district, Baku',
-      latitude: 40.3717,
-      longitude: 49.8516,
-      status: 'published',
-      aboutProject:
-        '## Port Baku Residence\n\nA landmark waterfront development in the heart of Baku, offering panoramic Caspian views, private landscaped gardens and a five-star service infrastructure.',
-      advantages:
-        '- Seafront promenade access\n- 24/7 concierge & security\n- Underground parking\n- Rooftop infinity pool',
-      targetAudience:
-        'High-net-worth end users and investors seeking a trophy asset in central Baku.',
-      investmentAdvantages:
-        'Historically strong rental yields (7-9%) and consistent capital appreciation in the Port Baku cluster.',
-      services: 'Concierge, spa, fitness center, kids club, valet parking.',
-      pricePerM2Min: 3200,
-      pricePerM2Max: 5400,
-      areaMin: 68,
-      areaMax: 240,
-      totalPriceMin: 240000,
-      totalPriceMax: 1300000,
-      readyToMoveIn: true,
-      completionYear: 2024,
-      handoverCondition: 'Fully finished with premium fit-out',
-      paymentPlanAvailable: true,
-      bulkDiscountAvailable: true,
-      bedroomPricing: {
-        create: [
-          { label: '1 Bedroom', areaMin: 68, areaMax: 82, priceMin: 240000, priceMax: 300000, sortOrder: 0 },
-          { label: '2 Bedroom', areaMin: 95, areaMax: 128, priceMin: 340000, priceMax: 520000, sortOrder: 1 },
-          { label: '3 Bedroom', areaMin: 140, areaMax: 190, priceMin: 560000, priceMax: 880000, sortOrder: 2 },
-          { label: 'Penthouse', areaMin: 210, areaMax: 240, priceMin: 980000, priceMax: 1300000, note: 'Limited availability', sortOrder: 3 },
-        ],
-      },
-      standardPlans: {
-        create: [
-          { downPaymentPct: 30, discountPct: 5, installmentMonths: 12, optionDiscountPct: 2, sortOrder: 0 },
-          { downPaymentPct: 50, discountPct: 8, installmentMonths: 24, optionDiscountPct: 3, sortOrder: 1 },
-        ],
-      },
-      internationalTiers: {
-        create: [
-          { downPaymentPct: 40, discountPct: 4, interestFreeMonths: 18, sortOrder: 0 },
-        ],
-      },
-    },
-  });
-
-  const whiteCity = await prisma.project.create({
-    data: {
-      name: 'White City Boulevard',
-      slug: 'white-city-boulevard',
-      location: 'Baku White City',
-      latitude: 40.3897,
-      longitude: 49.8721,
-      status: 'published',
-      aboutProject:
-        '## White City Boulevard\n\nA modern mixed-use quarter transforming the former "Black City" into a green, walkable district with schools, offices and retail.',
-      advantages: '- Master-planned green district\n- On-site international school\n- Metro access (planned)',
-      targetAudience: 'Young families and first-time buyers.',
-      investmentAdvantages: 'Early-phase pricing with strong upside as the district matures.',
-      services: 'Retail promenade, parks, medical center.',
-      pricePerM2Min: 1900,
-      pricePerM2Max: 2800,
-      areaMin: 52,
-      areaMax: 165,
-      totalPriceMin: 98000,
-      totalPriceMax: 460000,
-      readyToMoveIn: false,
-      completionYear: 2026,
-      handoverCondition: 'White-box (unfinished)',
-      paymentPlanAvailable: true,
-      bulkDiscountAvailable: false,
-      bedroomPricing: {
-        create: [
-          { label: 'Studio', areaMin: 52, areaMax: 58, priceMin: 98000, priceMax: 120000, sortOrder: 0 },
-          { label: '2 Bedroom', areaMin: 78, areaMax: 104, priceMin: 165000, priceMax: 250000, sortOrder: 1 },
-          { label: '3 Bedroom', areaMin: 120, areaMax: 165, priceMin: 300000, priceMax: 460000, sortOrder: 2 },
-        ],
-      },
-      standardPlans: {
-        create: [
-          { downPaymentPct: 20, discountPct: 3, installmentMonths: 18, sortOrder: 0 },
-          { downPaymentPct: 30, discountPct: 6, installmentMonths: 36, optionDiscountPct: 2, sortOrder: 1 },
-        ],
-      },
-    },
-  });
-
-  const crescentBay = await prisma.project.create({
-    data: {
-      name: 'Crescent Bay',
-      slug: 'crescent-bay',
-      location: 'Bayil, Baku',
-      status: 'draft',
-      aboutProject:
-        '## Crescent Bay\n\nAn iconic crescent-shaped tower overlooking Baku Bay. Currently in pre-sales.',
-      advantages: '- Signature architecture\n- Bay views from every unit',
-      targetAudience: 'Luxury investors.',
-      pricePerM2Min: 4100,
-      areaMin: 90,
-      readyToMoveIn: false,
-      completionYear: 2027,
-      paymentPlanAvailable: false,
-      bulkDiscountAvailable: false,
-      bedroomPricing: {
-        create: [
-          { label: '2 Bedroom', areaMin: 90, areaMax: 120, priceMin: 380000, priceMax: 520000, sortOrder: 0 },
-        ],
-      },
-    },
-  });
-
-  const seaBreeze = await prisma.project.create({
-    data: {
-      name: 'Sea Breeze Resort',
-      slug: 'sea-breeze-resort',
-      location: 'Nardaran, Absheron',
-      status: 'archived',
-      aboutProject:
-        '## Sea Breeze Resort\n\nA seaside resort community (phase 1 sold out — archived).',
-      pricePerM2Min: 2400,
-      pricePerM2Max: 3600,
-      areaMin: 45,
-      areaMax: 180,
-      readyToMoveIn: true,
-      completionYear: 2023,
-      paymentPlanAvailable: true,
-      bulkDiscountAvailable: false,
-    },
-  });
-
-  console.log('Seeded 4 projects (published / draft / archived)');
+  // Projects are NOT seeded here — the real, live catalog is imported via
+  // import-bot-projects.ts and must persist across every re-seed. Leads below
+  // reference project names as free-text (topProject/interestedProjects are
+  // plain strings, not a foreign key), so they don't depend on any Project row
+  // existing.
 
   // --- Leads ---------------------------------------------------------------
   const leadEmin = await prisma.lead.create({
