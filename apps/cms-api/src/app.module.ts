@@ -25,6 +25,7 @@ import { PulseModule } from './modules/Pulse/pulse.module';
 import { LayihelerimizModule } from './modules/Layihelerimiz/layihelerimiz.module';
 import { CallbackModule } from './modules/Callback/callback.module';
 import { BrokerRegistrationModule } from './modules/BrokerRegistration/broker-registration.module';
+import { SubscriberModule } from './modules/Subscriber/subscriber.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -32,7 +33,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
               ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
-              DashboardModule,PageMetaModule, HeroModule, HomeModule, PulseModule, LayihelerimizModule, CallbackModule, BrokerRegistrationModule
+              DashboardModule,PageMetaModule, HeroModule, HomeModule, PulseModule, LayihelerimizModule, CallbackModule, BrokerRegistrationModule, SubscriberModule
   ],
   controllers: [AppController],
   providers: [

@@ -11,10 +11,13 @@ async function bootstrap() {
   app.use(require('express').json({ limit: '50mb' }));
   app.use(require('express').urlencoded({ extended: true, limit: '50mb' }));
 
-  const corsOrigins = (process.env.CORS_ORIGINS || '')
+  const rawOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
+  const corsOrigins = rawOrigins.length
+    ? rawOrigins
+    : ['https://pre.treva.realestate', 'https://admin.pre.treva.realestate', 'http://localhost:3000', 'http://localhost:10010', 'http://localhost:10021'];
 
   app.enableCors({
     origin: corsOrigins,

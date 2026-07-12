@@ -561,18 +561,21 @@ model PulseCategory {
 // ─── Layihelerimiz (Projects) ────────────────────────────────
 
 model LayihelerimizCategory {
-  id            String   @id @default(cuid())
-  title         Json     @default("{}")
-  slug          String   @unique
-  image         String?
-  brandImage    String?
-  description   Json?
-  brand         Json?
-  brandTextColor String?  @default("white")
-  order         Int      @default(0)
-  isVisible     Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           Json     @default("{}")
+  slug            String   @unique
+  image           String?
+  brandImage      String?
+  description     Json?
+  brand           Json?
+  brandTextColor  String?  @default("white")
+  order           Int      @default(0)
+  isVisible       Boolean  @default(true)
+  banks           String?
+  infrastructure  String?
+  salesDepartment String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("layihelerimiz_categories")
 }
@@ -652,4 +655,14 @@ model BrokerRegistration {
   createdAt  DateTime @default(now())
 
   @@map("broker_registrations")
+}
+
+model Subscriber {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscribers")
 }

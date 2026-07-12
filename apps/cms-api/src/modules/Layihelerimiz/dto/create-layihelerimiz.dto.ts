@@ -35,4 +35,16 @@ export class CreateLayihelerimizDto {
   @IsBoolean()
   @IsOptional()
   isVisible?: boolean;
+
+  @IsString()
+  @IsOptional()
+  banks?: string;
+
+  @IsString()
+  @IsOptional()
+  infrastructure?: string;
+
+  @IsString()
+  @IsOptional()
+  salesDepartment?: string;
 }

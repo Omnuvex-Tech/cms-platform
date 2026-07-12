@@ -33,4 +33,16 @@ export class UpdateLayihelerimizDto {
   @IsBoolean()
   @IsOptional()
   isVisible?: boolean;
+
+  @IsString()
+  @IsOptional()
+  banks?: string;
+
+  @IsString()
+  @IsOptional()
+  infrastructure?: string;
+
+  @IsString()
+  @IsOptional()
+  salesDepartment?: string;
 }

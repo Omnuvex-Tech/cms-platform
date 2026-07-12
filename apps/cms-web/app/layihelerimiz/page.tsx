@@ -75,6 +75,9 @@ interface LayihelerimizCategory {
   brandTextColor: string | null;
   order: number;
   isVisible: boolean;
+  banks: string | null;
+  infrastructure: string | null;
+  salesDepartment: string | null;
   createdAt?: string;
 }
 
@@ -158,6 +161,9 @@ interface FormState {
   brandTextColor: string;
   order: number;
   isVisible: boolean;
+  banks: string;
+  infrastructure: string;
+  salesDepartment: string;
 }
 
 const emptyForm: FormState = {
@@ -174,6 +180,9 @@ const emptyForm: FormState = {
   brandTextColor: "white",
   order: 0,
   isVisible: true,
+  banks: "",
+  infrastructure: "",
+  salesDepartment: "",
 };
 
 export default function LayihelerimizPage() {
@@ -232,6 +241,9 @@ export default function LayihelerimizPage() {
       brandTextColor: item.brandTextColor || "white",
       order: item.order ?? 0,
       isVisible: item.isVisible ?? true,
+      banks: item.banks || "",
+      infrastructure: item.infrastructure || "",
+      salesDepartment: item.salesDepartment || "",
     });
     setModalOpen(true);
   };
@@ -298,6 +310,9 @@ export default function LayihelerimizPage() {
         brandTextColor: form.brandTextColor,
         order: form.order,
         isVisible: form.isVisible,
+        banks: form.banks || null,
+        infrastructure: form.infrastructure || null,
+        salesDepartment: form.salesDepartment || null,
       };
 
       if (isNew) {
@@ -692,6 +707,36 @@ export default function LayihelerimizPage() {
               <option value="true">Bəli</option>
               <option value="false">Xeyr</option>
             </select>
+
+            {/* Banks */}
+            <label style={labelStyle}>Banks</label>
+            <input
+              type="text"
+              value={form.banks}
+              onChange={(e) => setForm((f) => ({ ...f, banks: e.target.value }))}
+              placeholder="e.g. Kapital Bank, Pasha Bank"
+              style={inputStyle}
+            />
+
+            {/* Infrastructure */}
+            <label style={labelStyle}>Infrastructure</label>
+            <input
+              type="text"
+              value={form.infrastructure}
+              onChange={(e) => setForm((f) => ({ ...f, infrastructure: e.target.value }))}
+              placeholder="e.g. Swimming pool, Gym, Parking"
+              style={inputStyle}
+            />
+
+            {/* Sales Department */}
+            <label style={labelStyle}>Sales Department</label>
+            <input
+              type="text"
+              value={form.salesDepartment}
+              onChange={(e) => setForm((f) => ({ ...f, salesDepartment: e.target.value }))}
+              placeholder="e.g. +994 50 123 45 67"
+              style={inputStyle}
+            />
 
             {/* Buttons */}
             <div style={{ display: "flex", gap: 8, marginTop: 24 }}>

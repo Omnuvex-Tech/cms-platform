@@ -86,7 +86,7 @@ async function main() {
       category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03349150df278a38351b4a_panorama%20aze.webp',
-      headerPosition: 'left',
+      headerPositions: ['left'],
       headerOrder: 1,
       keywords: ['kampaniya', 'investisiya', 'layihe'],
       blocks: [
@@ -108,7 +108,7 @@ async function main() {
       category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03347538e0bfa6ec214d61_reportage%20aze.webp',
-      headerPosition: 'left',
+      headerPositions: ['left'],
       headerOrder: 2,
       keywords: ['kampaniya', 'investisiya'],
       blocks: [
@@ -136,7 +136,7 @@ async function main() {
       date: '08.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69fd94d16c2f782bfe2b200b_emil%20blog%20cover.webp',
       authorSlug: 'emil-qurbanov',
-      headerPosition: 'center',
+      headerPositions: ['center'],
       headerOrder: 1,
       featured: true,
       keywords: ['dasinmaz-emlak', 'bakida-evler', 'ipoteka', 'investisiya'],
@@ -162,7 +162,7 @@ async function main() {
       date: '17.04.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69e23b2e65222dfa1568b506_javid%20cover.webp',
       authorSlug: 'cavid-axundov',
-      headerPosition: 'right',
+      headerPositions: ['right'],
       headerOrder: 1,
       keywords: ['dasinmaz-emlak', 'bloq'],
       blocks: [
@@ -185,7 +185,7 @@ async function main() {
       date: '10.04.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69d8fa41ad243257771d2882_Nezrin%20Kerimli%20cover%20(1)%20(1).webp',
       authorSlug: 'nezrin-kerimli',
-      headerPosition: 'right',
+      headerPositions: ['right'],
       headerOrder: 2,
       keywords: ['investisiya', 'layihe', 'bloq'],
       blocks: [
@@ -205,7 +205,7 @@ async function main() {
       category: { az: 'Kampaniya', en: 'Campaign', ru: 'Кампания' },
       date: '12.05.2026',
       coverImage: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6a03037f2071a1acdd345f50_arabian%2016x9.webp',
-      headerPosition: 'week',
+      headerPositions: ['week'],
       headerOrder: 1,
       keywords: ['kampaniya', 'investisiya'],
       blocks: [

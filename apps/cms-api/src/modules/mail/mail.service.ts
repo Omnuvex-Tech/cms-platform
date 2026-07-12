@@ -114,6 +114,49 @@ export class MailService {
     }
   }
 
+  async sendNewsletterWelcome(email: string) {
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+
+    <div style="padding:32px 40px;background:#0a0a0a;">
+      <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">TREVA</h1>
+    </div>
+
+    <div style="padding:32px 40px;">
+      <h2 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#1a1a1a;">Xoş gəlmisiniz!</h2>
+      <p style="margin:0 0 12px;font-size:14px;color:#444;line-height:1.7;">
+        Abunəliyiniz uğurla qeydiyyatdan keçdi. TREVA ilə əlaqədə qaldığınız üçün təşəkkür edirik.
+      </p>
+      <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">
+        Ən son xəbərlər, layihələr və yeniliklərdən xəbərdar olacaqsınız.
+      </p>
+    </div>
+
+    <div style="padding:20px 40px;background:#f9f9f9;border-top:1px solid #f0f0f0;">
+      <span style="font-size:15px;font-weight:700;color:#0a0a0a;letter-spacing:-0.01em;">TREVA</span>
+    </div>
+
+  </div>
+</body>
+</html>
+`;
+    try {
+      await this.getTransporter().sendMail({
+        from: `"TREVA" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: 'TREVA — Xoş gəlmisiniz!',
+        html,
+      });
+      this.logger.log(`Newsletter xoş gəlmisiniz maili göndərildi: ${email}`);
+    } catch (err) {
+      this.logger.error('Newsletter mail göndərilmədi', err);
+    }
+  }
+
   async sendVacancySubmission(data: {
     name: string;
     email: string;

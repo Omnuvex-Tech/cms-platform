@@ -82,6 +82,7 @@ export default function PulseLayoutPage() {
         if (!article || !article.headerPositions || article.headerPositions.length === 0) return;
 
         const currentPosition = article.headerPositions[0];
+        if (!currentPosition) return;
         const sectionArticles = getArticlesForPosition(currentPosition);
         const idx = sectionArticles.findIndex(a => a.id === articleId);
         if (idx === -1) return;

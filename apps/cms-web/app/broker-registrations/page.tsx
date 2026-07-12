@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -157,8 +157,8 @@ export default function BrokerRegistrationsPage() {
                         </thead>
                         <tbody>
                             {filtered.map(reg => (
-                                <>
-                                    <tr key={reg.id} style={{ borderBottom: "1px solid #f0f0f0", cursor: "pointer" }} onClick={() => setExpanded(expanded === reg.id ? null : reg.id)}>
+                                <React.Fragment key={reg.id}>
+                                    <tr style={{ borderBottom: "1px solid #f0f0f0", cursor: "pointer" }} onClick={() => setExpanded(expanded === reg.id ? null : reg.id)}>
                                         <td style={{ padding: "14px 20px" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                                 <Avatar name={reg.name} />
@@ -187,7 +187,7 @@ export default function BrokerRegistrationsPage() {
                                         </td>
                                     </tr>
                                     {expanded === reg.id && (
-                                        <tr key={`${reg.id}-details`}>
+                                        <tr>
                                             <td colSpan={7} style={{ padding: "14px 20px 20px", background: "#fafafa", borderBottom: "1px solid #f0f0f0" }}>
                                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, fontSize: 13 }}>
                                                     <div>
@@ -206,7 +206,7 @@ export default function BrokerRegistrationsPage() {
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>
