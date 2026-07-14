@@ -55,7 +55,10 @@ export class BotSyncService {
   constructor(private readonly prisma: PrismaService) {}
 
   private settings(): BotSyncSettings {
-    const flag = (process.env.BOT_SYNC_ENABLED ?? '').trim().toLowerCase();
+    // SYNC_ENABLED is the single master switch for every cms<->bot sync; the
+    // legacy per-flow BOT_SYNC_ENABLED remains a fallback when it is unset.
+    const raw = process.env.SYNC_ENABLED ?? process.env.BOT_SYNC_ENABLED ?? '';
+    const flag = raw.trim().toLowerCase();
     return {
       enabled: ['1', 'true', 'yes', 'on'].includes(flag),
       url: (process.env.BOT_KB_WEBHOOK_URL ?? '').trim(),
