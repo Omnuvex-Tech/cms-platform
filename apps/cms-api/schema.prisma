@@ -167,7 +167,6 @@ model Portfolio {
   id            Int      @id @default(autoincrement())
   title         Json     @default("{}")
   slug          String   @unique
-  tags          String[]
   coverImage    String
   gif                   String?
   coverImageAlt Json     @default("{}")
@@ -181,6 +180,7 @@ model Portfolio {
   schema         Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  services      PortfolioService[]
 
   @@map("portfolios")
 }
@@ -221,6 +221,21 @@ model Partner {
   @@map("partners")
 }
 
+model PortfolioService {
+  id            Int      @id @default(autoincrement())
+  portfolioId   Int
+  serviceId     Int
+  coverImage    String
+  coverImageAlt Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, serviceId])
+  @@map("portfolio_services")
+}
+
 model Service {
   id                    Int      @id @default(autoincrement())
   number                String
@@ -228,8 +243,9 @@ model Service {
   badge                 Json     @default("{}")
   title                 Json     @default("{}")
   description           Json     @default("{}")
-  image                 String
+ image                 String
   imageAlt              Json     @default("{}")
+  homeCoverImage        String?
   gif                   String?
   features              Json     @default("[]")
   portfolioButtonText   Json     @default("{}")
@@ -245,8 +261,9 @@ model Service {
   seoDescription Json?
   seoKeywords    Json?
   schema                Json?
-  createdAt             DateTime @default(now())
+createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  portfolios            PortfolioService[]
 
   @@map("services")
 }

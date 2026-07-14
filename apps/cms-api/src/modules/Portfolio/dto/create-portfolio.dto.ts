@@ -1,4 +1,8 @@
-import { IsObject, IsString, IsArray, IsOptional, IsInt, Min } from 'class-validator';
+import {
+  IsObject, IsString, IsArray, IsOptional, IsInt, Min, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { PortfolioServiceInputDto } from './portfolio-service-input.dto';
 
 export class CreatePortfolioDto {
   @IsObject()
@@ -8,8 +12,9 @@ export class CreatePortfolioDto {
   slug: string;
 
   @IsArray()
-  @IsString({ each: true })
-  tags: string[];
+  @ValidateNested({ each: true })
+  @Type(() => PortfolioServiceInputDto)
+  categories: PortfolioServiceInputDto[];
 
   @IsString()
   coverImage: string;

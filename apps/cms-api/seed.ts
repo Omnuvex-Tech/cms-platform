@@ -181,14 +181,11 @@ await prisma.user.upsert({
     },
   });
 
-  // ─────────────────────────────────────────
-  // PORTFOLIO
-  // ─────────────────────────────────────────
-  await prisma.portfolio.create({
+
+await prisma.portfolio.create({
     data: {
       title: { az: 'Layihə 1', en: 'Project 1', ru: 'Проект 1' },
       slug: 'project-1',
-      tags: ['web', 'design'],
       coverImage: '/uploads/portfolio-1.jpg',
       coverImageAlt: { az: 'Layihə 1 şəkli', en: 'Project 1 image', ru: 'Изображение проекта 1' },
       order: 1,
@@ -196,7 +193,7 @@ await prisma.user.upsert({
       isHomepage: true,
       sections: [],
     },
-  });
+});
   console.log('✅ Portfolio seeded');
 
   // ─────────────────────────────────────────

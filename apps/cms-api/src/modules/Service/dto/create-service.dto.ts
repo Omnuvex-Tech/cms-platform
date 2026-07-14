@@ -23,10 +23,13 @@ export class CreateServiceDto {
   @IsObject()
   imageAlt?: Record<string, string>;
 
-  @IsOptional()
+@IsOptional()
   @IsString()
   gif?: string;
 
+  @IsOptional()
+  @IsString()
+  homeCoverImage?: string;
   @IsOptional()
   features?: any[];
 

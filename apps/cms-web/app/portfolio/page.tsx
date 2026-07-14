@@ -21,6 +21,11 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
 type LocalizedImages = Partial<Record<Lang, string[]>>;
+type PortfolioCategoryInput = {
+  serviceId: number;
+  coverImage: string;
+  coverImageAlt: LocalizedString;
+};
 
 function getToken() {
   return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
@@ -62,6 +67,15 @@ function toAbsUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("blob:")) return path;
   return `${API}${path}`;
+}
+
+function stripHtml(html: any): string {
+  if (!html) return "";
+  return String(html)
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .trim();
 }
 
 function generateSlug(title: string) {
@@ -596,8 +610,10 @@ function SortableRow({ p, onEdit, onToggle, onToggleHomepage, onDelete }: {
         </div>
       </td>
       <td>
-        <div className={styles.tagList}>
-          {p.tags?.map((tag: string, i: number) => <span key={i} className={styles.tag}>{tag}</span>)}
+    <div className={styles.tagList}>
+          {p.services?.map((ps: any) => (
+            <span key={ps.id} className={styles.tag}>{stripHtml(ps.service?.title?.az) || ps.service?.slug}</span>
+          ))}
         </div>
       </td>
       <td>
@@ -633,7 +649,8 @@ export default function PortfolioPage() {
 
   const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [slug, setSlug] = useState("");
-  const [tags, setTags] = useState("");
+  const [categories, setCategories] = useState<PortfolioCategoryInput[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [coverImage, setCoverImage] = useState("");
   const [coverImageAlt, setCoverImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [sections, setSections] = useState<any[]>([]);
@@ -679,6 +696,15 @@ export default function PortfolioPage() {
     } finally { setLoading(false); }
   };
 
+  const loadServices = async () => {
+    try {
+      const data = await apiFetch("/services");
+      setServices(data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
 
   const loadSettings = async () => {
     try {
@@ -694,8 +720,7 @@ export default function PortfolioPage() {
     }
   };
 
-  useEffect(() => { load(); loadSettings(); }, []);
-
+  useEffect(() => { load(); loadSettings(); loadServices(); }, []);
 
   useEffect(() => {
     if (editItem) {
@@ -707,8 +732,7 @@ export default function PortfolioPage() {
   const openCreate = () => {
     setEditItem(null);
     setTitle({ az: "", en: "", ru: "" });
-    setSlug(""); setTags(""); setCoverImage("");
-    setCoverImageAlt({ az: "", en: "", ru: "" });
+    setSlug(""); setCategories([]); setCoverImage(""); setCoverImageAlt({ az: "", en: "", ru: "" });
     setSeoTitle({ az: "", en: "", ru: "" });
     setSeoDescription({ az: "", en: "", ru: "" });
     setSeoKeywords({ az: "", en: "", ru: "" });
@@ -726,8 +750,14 @@ export default function PortfolioPage() {
     setSeoDescription(p.seoDescription ?? { az: "", en: "", ru: "" });
     setSeoKeywords(p.seoKeywords ?? { az: "", en: "", ru: "" });
     setSchemaText(p.schema?.[activeLang] ? JSON.stringify(p.schema[activeLang], null, 2) : "");
-    setSlug(p.slug ?? "");
-    setTags(p.tags?.join(", ") ?? "");
+setSlug(p.slug ?? "");
+    setCategories(
+      (p.services ?? []).map((ps: any) => ({
+        serviceId: ps.serviceId,
+        coverImage: ps.coverImage,
+        coverImageAlt: ps.coverImageAlt ?? { az: "", en: "", ru: "" },
+      }))
+    );
     setCoverImage(p.coverImage ?? "");
     setCoverImageAlt(
       typeof p.coverImageAlt === "object"
@@ -746,12 +776,28 @@ export default function PortfolioPage() {
     setSlug(generateSlug(val.az || ""));
   };
 
-  const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== "image/webp") { alert("Yalnız WebP"); return; }
     const url = await uploadFile(file);
     setCoverImage(url);
+  };
+
+  const toggleCategory = (serviceId: number) => {
+    setCategories(prev => {
+      const exists = prev.find(c => c.serviceId === serviceId);
+      if (exists) return prev.filter(c => c.serviceId !== serviceId);
+      return [...prev, { serviceId, coverImage: "", coverImageAlt: { az: "", en: "", ru: "" } }];
+    });
+  };
+
+  const updateCategoryCover = (serviceId: number, coverImage: string) => {
+    setCategories(prev => prev.map(c => c.serviceId === serviceId ? { ...c, coverImage } : c));
+  };
+
+  const updateCategoryCoverAlt = (serviceId: number, val: LocalizedString) => {
+    setCategories(prev => prev.map(c => c.serviceId === serviceId ? { ...c, coverImageAlt: val } : c));
   };
 
   const addSection = (type: string) => setSections(prev => [...prev, { type, isVisible: true }]);
@@ -813,7 +859,7 @@ export default function PortfolioPage() {
     try {
       const payload = {
         title, slug,
-        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+        categories,
         coverImage, coverImageAlt, gif: gif || null, sections, seoTitle, seoDescription, seoKeywords,
       };
       if (editItem) {
@@ -892,8 +938,8 @@ export default function PortfolioPage() {
     const q = normalize(searchQuery);
     const titleAz = normalize((typeof p.title === "object" ? (p.title?.az || "") : (p.title || "")).replace(/<[^>]*>/g, ""));
     const slugVal = normalize(p.slug || "");
-    const tagsVal = normalize((p.tags ?? []).join(" "));
-    return titleAz.includes(q) || slugVal.includes(q) || tagsVal.includes(q);
+const categoriesVal = normalize((p.services ?? []).map((ps: any) => ps.service?.title?.az || "").join(" "));
+    return titleAz.includes(q) || slugVal.includes(q) || categoriesVal.includes(q);
   });
 
   return (
@@ -1048,10 +1094,61 @@ export default function PortfolioPage() {
                     onChange={e => setSlug(e.target.value)} placeholder="marina-village" />
                 </div>
               </div>
-              <div className={styles.field}><label>Etiketlər <small>(vergüllə ayırın)</small></label>
-                <input className={styles.input} value={tags}
-                  onChange={e => setTags(e.target.value)} placeholder="SMM, Development" />
+             <div className={styles.field}>
+                <label>Kateqoriyalar (Servicelər)</label>
+                <div className={styles.tagList}>
+               {services.map((s: any) => {
+                    const selected = categories.some(c => c.serviceId === s.id);
+                    return (
+                      <button key={s.id} type="button"
+                        onClick={() => toggleCategory(s.id)}
+                        className={selected ? styles.toolbarBtnActive : styles.toolbarBtn}
+                        style={{ marginRight: 8, marginBottom: 8 }}>
+                        {stripHtml(s.title?.az) || s.slug}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {categories.map((c) => {
+                const service = services.find((s: any) => s.id === c.serviceId);
+                return (
+                  <div key={c.serviceId} className={styles.field}
+                    style={{ border: "1px solid #333", borderRadius: 8, padding: 12, marginBottom: 12 }}>
+<label>{stripHtml(service?.title?.az) || `Service #${c.serviceId}`} — Cover şəkil</label>                    <input
+                      type="file"
+                      accept="image/webp"
+                      style={{ display: "none" }}
+                      id={`category-cover-${c.serviceId}`}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.type !== "image/webp") { alert("Yalnız WebP"); return; }
+                        const url = await uploadFile(file);
+                        updateCategoryCover(c.serviceId, url);
+                      }}
+                    />
+                    <div className={styles.coverUploadArea}
+                      onClick={() => document.getElementById(`category-cover-${c.serviceId}`)?.click()}>
+                      {c.coverImage ? (
+                        <img src={toAbsUrl(c.coverImage)} alt="" className={styles.coverPreview} />
+                      ) : (
+                        <div className={styles.imagePlaceholder}>
+                          <span>🖼️</span><span>Cover şəkil seçin</span><small>WebP</small>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <label>Cover alt text ({activeLang.toUpperCase()})</label>
+                      <input className={styles.input}
+                        value={c.coverImageAlt?.[activeLang] || ""}
+                        onChange={e => updateCategoryCoverAlt(c.serviceId, { ...c.coverImageAlt, [activeLang]: e.target.value })}
+                        placeholder="Cover şəkli alt text" />
+                    </div>
+                  </div>
+                );
+              })}
               <div className={styles.field}><label>Cover şəkil</label>
                 <input ref={coverInputRef} type="file" accept="image/webp"
                   style={{ display: "none" }} onChange={handleCoverSelect} />

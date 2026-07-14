@@ -1,4 +1,8 @@
-import { IsObject, IsString, IsArray, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
+import {
+  IsObject, IsString, IsArray, IsOptional, IsBoolean, IsInt, Min, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { PortfolioServiceInputDto } from './portfolio-service-input.dto';
 
 export class UpdatePortfolioDto {
   @IsOptional()
@@ -11,18 +15,18 @@ export class UpdatePortfolioDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => PortfolioServiceInputDto)
+  categories?: PortfolioServiceInputDto[];
 
   @IsOptional()
   @IsString()
   coverImage?: string;
 
-
-    @IsOptional()
+  @IsOptional()
   @IsString()
   gif?: string;
-  
+
   @IsOptional()
   @IsObject()
   coverImageAlt?: Record<string, string>;
@@ -50,6 +54,7 @@ export class UpdatePortfolioDto {
   @IsOptional()
   @IsObject()
   seoKeywords?: Record<string, string>;
-    @IsOptional()
+
+  @IsOptional()
   schema?: Record<string, any> | null;
 }

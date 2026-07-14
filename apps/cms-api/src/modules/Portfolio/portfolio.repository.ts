@@ -6,6 +6,10 @@ import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { CreatePortfolioSettingsDto } from './dto/create-portfolio-settings.dto';
 import { UpdatePortfolioSettingsDto } from './dto/update-portfolio-settings.dto';
 
+const PORTFOLIO_INCLUDE = {
+  services: { include: { service: true } },
+};
+
 @Injectable()
 export class PortfolioRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -13,6 +17,7 @@ export class PortfolioRepository {
   findAll() {
     return this.prisma.portfolio.findMany({
       orderBy: { order: 'asc' },
+      include: PORTFOLIO_INCLUDE,
     });
   }
 
@@ -20,6 +25,7 @@ export class PortfolioRepository {
     return this.prisma.portfolio.findMany({
       where: { isVisible: true },
       orderBy: { order: 'asc' },
+      include: PORTFOLIO_INCLUDE,
     });
   }
 
@@ -28,6 +34,7 @@ export class PortfolioRepository {
       where: { isHomepage: true, isVisible: true },
       orderBy: { order: 'asc' },
       take: 6,
+      include: PORTFOLIO_INCLUDE,
     });
   }
 
@@ -53,24 +60,39 @@ export class PortfolioRepository {
   }
 
   findOne(id: number) {
-    return this.prisma.portfolio.findUnique({ where: { id } });
+    return this.prisma.portfolio.findUnique({
+      where: { id },
+      include: PORTFOLIO_INCLUDE,
+    });
   }
 
   findBySlug(slug: string) {
-    return this.prisma.portfolio.findUnique({ where: { slug } });
+    return this.prisma.portfolio.findUnique({
+      where: { slug },
+      include: PORTFOLIO_INCLUDE,
+    });
   }
 
   create(dto: CreatePortfolioDto) {
+    const { categories, ...rest } = dto;
     return this.prisma.portfolio.create({
       data: {
-        ...dto,
+        ...rest,
         sections: dto.sections ?? [],
+        services: {
+          create: categories.map((c) => ({
+            serviceId: c.serviceId,
+            coverImage: c.coverImage,
+            coverImageAlt: c.coverImageAlt ?? {},
+          })),
+        },
       },
+      include: PORTFOLIO_INCLUDE,
     });
   }
 
   update(id: number, dto: UpdatePortfolioDto) {
-    const { schema, ...rest } = dto;
+    const { schema, categories, ...rest } = dto;
     return this.prisma.portfolio.update({
       where: { id },
       data: {
@@ -78,7 +100,18 @@ export class PortfolioRepository {
         ...(schema !== undefined && {
           schema: schema === null ? Prisma.JsonNull : schema,
         }),
+        ...(categories !== undefined && {
+          services: {
+            deleteMany: {},
+            create: categories.map((c) => ({
+              serviceId: c.serviceId,
+              coverImage: c.coverImage,
+              coverImageAlt: c.coverImageAlt ?? {},
+            })),
+          },
+        }),
       },
+      include: PORTFOLIO_INCLUDE,
     });
   }
 
