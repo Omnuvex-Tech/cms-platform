@@ -339,6 +339,9 @@ model Handoff {
 
 model ContactRequest {
   id               Int                  @id @default(autoincrement())
+  // Stable idempotency key = the bot's contact-request request_id. Null for any
+  // rows created outside the bot ingest path.
+  externalId       String?              @unique
   customerPhone    String
   preferredChannel Channel              @default(phone)
   availabilityText String?

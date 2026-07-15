@@ -3,6 +3,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 import { IngestService } from './ingest.service';
 import { IngestLeadDto } from './dto/ingest-lead.dto';
+import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
 
 /**
  * Machine-to-machine ingestion surface for the treva_sales_bot.
@@ -20,5 +21,10 @@ export class IngestController {
   @Post('leads')
   ingestLead(@Body() dto: IngestLeadDto) {
     return this.ingestService.upsertLead(dto);
+  }
+
+  @Post('contact-requests')
+  ingestContactRequest(@Body() dto: IngestContactRequestDto) {
+    return this.ingestService.upsertContactRequest(dto);
   }
 }

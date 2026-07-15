@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, PhoneCall, ExternalLink } from "lucide-react";
+import {
+    AlertTriangle,
+    PhoneCall,
+    ExternalLink,
+    CalendarDays,
+    List as ListIcon,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { contactStatus, channelLabel } from "@/lib/status";
 import { relativeTime, formatDateTime, initials } from "@/lib/format";
@@ -51,11 +60,30 @@ const STATUS_OPTIONS = [
 
 const QUICK_ACTIONS = ["contacted", "scheduled", "completed", "no_answer"];
 
-export default function ContactRequestsPage() {
+function dayKey(input: string | Date): string {
+    const d = new Date(input);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+    ).padStart(2, "0")}`;
+}
+
+function ContactRequestsInner() {
     const qc = useQueryClient();
+    const params = useSearchParams();
     const [statusFilter, setStatusFilter] = useState("");
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [view, setView] = useState<"list" | "calendar">("list");
+    const [calMonth, setCalMonth] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    });
+    const [selectedDay, setSelectedDay] = useState<string | null>(null);
     const { data: reps } = useReps();
+
+    useEffect(() => {
+        const open = params.get("open");
+        if (open) setSelectedId(Number(open));
+    }, [params]);
 
     const { data, isLoading } = useQuery({
         queryKey: ["contact-requests", statusFilter],
@@ -64,6 +92,29 @@ export default function ContactRequestsPage() {
                 `/contact-requests${statusFilter ? `?status=${statusFilter}` : ""}`
             ),
     });
+
+    const items = data?.items ?? [];
+
+    // Group scheduled callbacks by local day for the calendar.
+    const byDay = useMemo(() => {
+        const map = new Map<string, ContactRequest[]>();
+        for (const r of items) {
+            if (!r.availabilityAt) continue;
+            const k = dayKey(r.availabilityAt);
+            const arr = map.get(k);
+            if (arr) arr.push(r);
+            else map.set(k, [r]);
+        }
+        return map;
+    }, [items]);
+
+    // In calendar view a selected day filters the table below it.
+    const displayedItems =
+        view === "calendar" && selectedDay
+            ? items.filter(
+                  (r) => r.availabilityAt && dayKey(r.availabilityAt) === selectedDay
+              )
+            : items;
 
     const invalidate = () => {
         qc.invalidateQueries({ queryKey: ["contact-requests"] });
@@ -118,15 +169,57 @@ export default function ContactRequestsPage() {
                         </option>
                     ))}
                 </select>
+                <div className={styles.viewToggle}>
+                    <button
+                        className={`${styles.viewBtn} ${view === "list" ? styles.viewBtnActive : ""}`}
+                        onClick={() => setView("list")}
+                    >
+                        <ListIcon size={14} /> List
+                    </button>
+                    <button
+                        className={`${styles.viewBtn} ${view === "calendar" ? styles.viewBtnActive : ""}`}
+                        onClick={() => setView("calendar")}
+                    >
+                        <CalendarDays size={14} /> Calendar
+                    </button>
+                </div>
             </div>
+
+            {view === "calendar" && (
+                <CalendarView
+                    month={calMonth}
+                    byDay={byDay}
+                    selectedDay={selectedDay}
+                    onSelectDay={(d) => setSelectedDay((cur) => (cur === d ? null : d))}
+                    onMonthChange={setCalMonth}
+                />
+            )}
+
+            {view === "calendar" && selectedDay && (
+                <div className={styles.calFilterBar}>
+                    <span>
+                        Showing callbacks for <strong>{formatDayLabel(selectedDay)}</strong>
+                    </span>
+                    <button
+                        className={styles.calClearBtn}
+                        onClick={() => setSelectedDay(null)}
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
 
             <div className={ui.card}>
                 {isLoading ? (
                     <Loading />
-                ) : !data || data.items.length === 0 ? (
+                ) : displayedItems.length === 0 ? (
                     <EmptyState
                         icon={<PhoneCall size={26} />}
-                        title="No contact requests"
+                        title={
+                            view === "calendar" && selectedDay
+                                ? "No callbacks that day"
+                                : "No contact requests"
+                        }
                         hint="Callback requests from customers will appear here."
                     />
                 ) : (
@@ -142,7 +235,7 @@ export default function ContactRequestsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.items.map((r) => (
+                                {displayedItems.map((r) => (
                                     <tr
                                         key={r.id}
                                         className={`${ui.rowClickable} ${selectedId === r.id ? ui.rowActive : ""}`}
@@ -324,6 +417,122 @@ export default function ContactRequestsPage() {
                     </div>
                 )}
             </SideSheet>
+        </div>
+    );
+}
+
+export default function ContactRequestsPage() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <ContactRequestsInner />
+        </Suspense>
+    );
+}
+
+const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function formatDayLabel(key: string): string {
+    const parts = key.split("-");
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    const d = Number(parts[2]);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+    });
+}
+
+function CalendarView({
+    month,
+    byDay,
+    selectedDay,
+    onSelectDay,
+    onMonthChange,
+}: {
+    month: Date;
+    byDay: Map<string, ContactRequest[]>;
+    selectedDay: string | null;
+    onSelectDay: (day: string) => void;
+    onMonthChange: (d: Date) => void;
+}) {
+    const todayKey = dayKey(new Date());
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const startOffset = (first.getDay() + 6) % 7; // days since Monday
+    const gridStart = new Date(first);
+    gridStart.setDate(first.getDate() - startOffset);
+
+    const cells = Array.from({ length: 42 }, (_, i) => {
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate() + i);
+        return d;
+    });
+
+    const goMonth = (delta: number) =>
+        onMonthChange(new Date(month.getFullYear(), month.getMonth() + delta, 1));
+
+    return (
+        <div className={`${ui.card} ${styles.calCard}`}>
+            <div className={styles.calHead}>
+                <span className={styles.calMonth}>
+                    {month.toLocaleDateString(undefined, {
+                        month: "long",
+                        year: "numeric",
+                    })}
+                </span>
+                <div className={styles.calNav}>
+                    <button
+                        className={styles.calTodayBtn}
+                        onClick={() => {
+                            const n = new Date();
+                            onMonthChange(new Date(n.getFullYear(), n.getMonth(), 1));
+                        }}
+                    >
+                        Today
+                    </button>
+                    <button className={styles.calNavBtn} onClick={() => goMonth(-1)}>
+                        <ChevronLeft size={16} />
+                    </button>
+                    <button className={styles.calNavBtn} onClick={() => goMonth(1)}>
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
+            </div>
+            <div className={styles.calGrid}>
+                {DOW.map((d) => (
+                    <div key={d} className={styles.calDow}>
+                        {d}
+                    </div>
+                ))}
+                {cells.map((d) => {
+                    const key = dayKey(d);
+                    const dayItems = byDay.get(key) ?? [];
+                    const inMonth = d.getMonth() === month.getMonth();
+                    const isToday = key === todayKey;
+                    const isSelected = key === selectedDay;
+                    const hasOverdue = dayItems.some((r) => r.isOverdue);
+                    const countClass = hasOverdue
+                        ? styles.calCountOverdue
+                        : isToday
+                          ? styles.calCountDue
+                          : "";
+                    return (
+                        <button
+                            key={key}
+                            className={`${styles.calCell} ${inMonth ? "" : styles.calCellOtherMonth} ${isToday ? styles.calCellToday : ""} ${isSelected ? styles.calCellSelected : ""}`}
+                            onClick={() => onSelectDay(key)}
+                        >
+                            <span className={styles.calDayNum}>{d.getDate()}</span>
+                            {dayItems.length > 0 && (
+                                <span className={`${styles.calCount} ${countClass}`}>
+                                    <PhoneCall size={10} />
+                                    {dayItems.length}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     );
 }
