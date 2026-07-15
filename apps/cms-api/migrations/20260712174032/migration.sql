@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "subscribers" (
+CREATE TABLE IF NOT EXISTS "subscribers" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
@@ -10,4 +10,4 @@ CREATE TABLE "subscribers" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "subscribers_email_key" ON "subscribers"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscribers_email_key" ON "subscribers"("email");
