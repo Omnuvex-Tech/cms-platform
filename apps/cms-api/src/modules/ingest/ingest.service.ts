@@ -29,6 +29,8 @@ export class IngestService {
     const interested = dto.interested_projects ?? [];
 
     const shared = {
+      name: dto.name ?? null,
+      surname: dto.surname ?? null,
       channel: this.mapChannel(dto.channel),
       language: this.mapLanguage(dto.language),
       phone,

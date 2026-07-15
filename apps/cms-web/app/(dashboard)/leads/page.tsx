@@ -23,6 +23,8 @@ import styles from "@/styles/leads.module.css";
 
 interface LeadListItem {
     id: number;
+    name?: string | null;
+    surname?: string | null;
     phone?: string | null;
     threadId?: string | null;
     channel: string;
@@ -195,6 +197,11 @@ function LeadsInner() {
                                     >
                                         <td>
                                             <div className={styles.customer}>
+                                                {(l.name || l.surname) && (
+                                                    <span className={styles.custName}>
+                                                        {[l.name, l.surname].filter(Boolean).join(" ")}
+                                                    </span>
+                                                )}
                                                 <span className={styles.custTop}>
                                                     {channelLabel[l.channel]} ·{" "}
                                                     <span className={ui.mono}>
@@ -241,7 +248,9 @@ function LeadsInner() {
                 title={
                     detail ? (
                         <span>
-                            {detail.phone ?? detail.threadId}{" "}
+                            {[detail.name, detail.surname].filter(Boolean).join(" ")}
+                            {(detail.name || detail.surname) && (detail.phone || detail.threadId) && " · "}
+                            {detail.phone ?? (detail.name ? null : detail.threadId)}{" "}
                             <span className={ui.muted} style={{ fontWeight: 400, fontSize: 13 }}>
                                 · {channelLabel[detail.channel]}
                             </span>

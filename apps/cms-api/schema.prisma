@@ -368,6 +368,8 @@ model ContactRequest {
 
 model Lead {
   id                 Int         @id @default(autoincrement())
+  name               String?
+  surname            String?
   phone              String?
   threadId           String?
   channel            Channel
