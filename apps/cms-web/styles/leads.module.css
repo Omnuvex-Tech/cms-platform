@@ -72,6 +72,9 @@
     background: rgba(1, 72, 194, 0.04);
     color: #0148c2;
 }
+.linkType {
+    font-weight: 600;
+}
 
 .timeline {
     list-style: none;

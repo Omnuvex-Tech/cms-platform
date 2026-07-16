@@ -313,242 +313,6 @@ async function main() {
 
   console.log('Seeded 8 leads with timelines');
 
-  // --- Conversations + messages -------------------------------------------
-  const convEmin = await prisma.conversation.create({
-    data: {
-      threadId: 'wa-emin-2233',
-      channel: 'whatsapp',
-      language: 'en',
-      status: 'assigned',
-      customerHandle: 'Emin A.',
-      customerPhone: '+994 50 111 2233',
-      stage: 'matching',
-      budget: '$250k – $300k',
-      botActive: false,
-      unreadCount: 0,
-      assignedToId: rep1.id,
-      leadId: leadEmin.id,
-      lastMessageAt: hours(3),
-      createdAt: days(3),
-      messages: {
-        create: [
-          { role: 'user', content: 'Hi, I saw Port Baku Residence. Do you have 2-bedroom units available?', channel: 'whatsapp', createdAt: days(3) },
-          { role: 'bot', content: 'Hello Emin! Yes — Port Baku Residence has 2BR units from 95m² starting at $340,000. Are you buying to live in or to invest?', channel: 'whatsapp', createdAt: days(3) },
-          { role: 'user', content: 'Investment. What rental yield can I expect?', channel: 'whatsapp', createdAt: days(3) },
-          { role: 'bot', content: 'Great question. Units in the Port Baku cluster typically yield 7-9% gross. I can connect you with a sales advisor for exact figures.', channel: 'whatsapp', createdAt: days(3) },
-          { role: 'human', content: 'Hi Emin, this is Nurlan from TREVA. I can share a rental-yield breakdown for a 2BR today — what’s the best time to call?', channel: 'whatsapp', createdAt: hours(3) },
-        ],
-      },
-      notes: {
-        create: [
-          { authorId: rep1.id, body: 'Serious cash buyer. Prioritise — wants ROI numbers before committing.', createdAt: hours(3) },
-        ],
-      },
-    },
-  });
-
-  const convLeyla = await prisma.conversation.create({
-    data: {
-      threadId: 'ig-leyla-4455',
-      channel: 'instagram',
-      language: 'az',
-      status: 'waiting_for_human',
-      customerHandle: '@leyla.h',
-      customerPhone: '+994 51 333 4455',
-      stage: 'objection',
-      budget: '$400k – $520k',
-      botActive: false,
-      unreadCount: 2,
-      assignedToId: rep1.id,
-      leadId: leadLeyla.id,
-      lastMessageAt: mins(35),
-      createdAt: days(9),
-      messages: {
-        create: [
-          { role: 'user', content: 'Crescent Bay-də yüksək mərtəbəli mənzil istəyirəm, amma qiymət yüksəkdir.', channel: 'instagram', createdAt: hours(6) },
-          { role: 'bot', content: 'Anladım. Crescent Bay-də 2 otaqlı mənzillər $380k-dan başlayır. Sizə endirim variantlarını danışmaq üçün mütəxəssislə əlaqələndirim?', channel: 'instagram', createdAt: hours(6) },
-          { role: 'user', content: 'Bəli, xahiş edirəm. Endirim mümkündürsə maraqlanıram.', channel: 'instagram', createdAt: mins(35) },
-        ],
-      },
-    },
-  });
-
-  const convOrxan = await prisma.conversation.create({
-    data: {
-      threadId: 'wa-orxan-5566',
-      channel: 'whatsapp',
-      language: 'az',
-      status: 'waiting_for_human',
-      customerHandle: 'Orxan N.',
-      customerPhone: '+994 70 444 5566',
-      stage: 'phone capture',
-      botActive: true,
-      unreadCount: 1,
-      leadId: leadOrxan.id,
-      lastMessageAt: hours(20),
-      createdAt: days(1),
-      messages: {
-        create: [
-          { role: 'user', content: 'Ödəniş planları haqqında məlumat verə bilərsiniz?', channel: 'whatsapp', createdAt: days(1) },
-          { role: 'bot', content: 'Əlbəttə! Port Baku üçün 30% ilkin ödənişlə 12 aylıq plan mövcuddur. Sizə zəng edək?', channel: 'whatsapp', createdAt: days(1) },
-          { role: 'user', content: 'Bəli, sabah günortadan sonra zəng edin.', channel: 'whatsapp', createdAt: hours(20) },
-        ],
-      },
-    },
-  });
-
-  const convNigar = await prisma.conversation.create({
-    data: {
-      threadId: 'tg-nigar-3344',
-      channel: 'telegram',
-      language: 'ru',
-      status: 'assigned',
-      customerHandle: '@nigar_m',
-      customerPhone: '+994 55 222 3344',
-      stage: 'qualification',
-      budget: '$150k – $200k',
-      botActive: false,
-      unreadCount: 0,
-      assignedToId: rep2.id,
-      leadId: leadNigar.id,
-      lastMessageAt: days(1),
-      createdAt: days(6),
-      messages: {
-        create: [
-          { role: 'user', content: 'Здравствуйте, ищу 2-комнатную квартиру для семьи в White City.', channel: 'telegram', createdAt: days(6) },
-          { role: 'bot', content: 'Здравствуйте! В White City Boulevard есть 2-комнатные от 78м² по цене от $165,000. Рядом международная школа. Показать варианты?', channel: 'telegram', createdAt: days(6) },
-          { role: 'human', content: 'Добрый день, это Севиндж из TREVA. Организую для вас просмотр на выходных 🙂', channel: 'telegram', createdAt: days(1) },
-        ],
-      },
-    },
-  });
-
-  const convRashad = await prisma.conversation.create({
-    data: {
-      threadId: 'web-rashad-7788',
-      channel: 'web',
-      language: 'ru',
-      status: 'active',
-      customerHandle: 'Web visitor',
-      stage: 'greeting',
-      botActive: true,
-      unreadCount: 0,
-      leadId: leadRashad.id,
-      lastMessageAt: hours(8),
-      createdAt: hours(8),
-      messages: {
-        create: [
-          { role: 'user', content: 'Сколько стоит студия в Sea Breeze?', channel: 'web', createdAt: hours(8) },
-          { role: 'bot', content: 'Студии в Sea Breeze Resort начинались от $98,000. Обратите внимание: первая фаза распродана. Хотите узнать о новых фазах?', channel: 'web', createdAt: hours(8) },
-        ],
-      },
-    },
-  });
-
-  const convSpam = await prisma.conversation.create({
-    data: {
-      threadId: 'tg-tural-0011',
-      channel: 'telegram',
-      language: 'ru',
-      status: 'spam',
-      customerHandle: '@tural_promo',
-      botActive: false,
-      unreadCount: 0,
-      leadId: leadTural.id,
-      lastMessageAt: days(4),
-      createdAt: days(4),
-      messages: {
-        create: [
-          { role: 'user', content: '🔥🔥 Buy crypto now! Best rates! t.me/promo', channel: 'telegram', createdAt: days(4) },
-          { role: 'system', content: 'Thread flagged as spam by the agent.', createdAt: days(4) },
-        ],
-      },
-    },
-  });
-
-  const convKamran = await prisma.conversation.create({
-    data: {
-      threadId: 'phone-kamran-9900',
-      channel: 'phone',
-      language: 'en',
-      status: 'resolved',
-      customerHandle: 'Kamran I.',
-      customerPhone: '+994 50 777 8899',
-      stage: 'close',
-      budget: '$520k',
-      botActive: false,
-      unreadCount: 0,
-      assignedToId: rep1.id,
-      leadId: leadKamran.id,
-      lastMessageAt: days(2),
-      createdAt: days(20),
-      messages: {
-        create: [
-          { role: 'human', content: 'Kamran, confirming your 3BR reservation at Port Baku Residence. Congratulations!', channel: 'phone', createdAt: days(2) },
-          { role: 'user', content: 'Thank you Nurlan, excellent service.', channel: 'phone', createdAt: days(2) },
-          { role: 'system', content: 'Conversation resolved — deal won.', channel: 'phone', createdAt: days(2) },
-        ],
-      },
-    },
-  });
-
-  console.log('Seeded 7 conversations with messages + notes');
-
-  // --- Handoffs ------------------------------------------------------------
-  await prisma.handoff.create({
-    data: {
-      conversationId: convLeyla.id,
-      status: 'new',
-      priority: 'urgent',
-      slaState: 'breached',
-      reason: 'Customer requested a discount on a high-value unit — needs human pricing authority.',
-      dueAt: hours(2), // due 2h ago -> breached
-      createdAt: hours(6),
-    },
-  });
-
-  await prisma.handoff.create({
-    data: {
-      conversationId: convOrxan.id,
-      status: 'new',
-      priority: 'high',
-      slaState: 'due_soon',
-      reason: 'Callback requested to discuss payment plans.',
-      dueAt: inHours(1),
-      createdAt: hours(20),
-    },
-  });
-
-  await prisma.handoff.create({
-    data: {
-      conversationId: convEmin.id,
-      status: 'assigned',
-      priority: 'normal',
-      slaState: 'on_track',
-      reason: 'Investor wants exact rental-yield figures.',
-      notes: 'Picked up by Nurlan. Sending yield sheet.',
-      assignedToId: rep1.id,
-      dueAt: inHours(6),
-      createdAt: hours(4),
-    },
-  });
-
-  await prisma.handoff.create({
-    data: {
-      conversationId: convKamran.id,
-      status: 'resolved',
-      priority: 'normal',
-      slaState: 'on_track',
-      reason: 'Final paperwork for reservation.',
-      notes: 'Resolved — deal won.',
-      assignedToId: rep1.id,
-      resolvedAt: days(2),
-      createdAt: days(3),
-    },
-  });
-
-  console.log('Seeded 4 handoffs (urgent+breached, high, normal, resolved)');
-
   // --- Contact Requests ----------------------------------------------------
   await prisma.contactRequest.create({
     data: {
@@ -558,7 +322,6 @@ async function main() {
       availabilityAt: hours(20), // in the past -> overdue
       status: 'new',
       customerWords: 'Please call me about the discount, I am ready to decide.',
-      conversationId: convLeyla.id,
       leadId: leadLeyla.id,
       createdAt: days(1),
     },
@@ -573,7 +336,6 @@ async function main() {
       status: 'assigned',
       ownerId: rep2.id,
       customerWords: 'Sabah günortadan sonra zəng edin.',
-      conversationId: convOrxan.id,
       leadId: leadOrxan.id,
       createdAt: hours(20),
     },
@@ -588,7 +350,6 @@ async function main() {
       status: 'scheduled',
       ownerId: rep1.id,
       customerWords: 'Prefer a morning call to go through numbers.',
-      conversationId: convEmin.id,
       leadId: leadEmin.id,
       createdAt: hours(5),
     },
@@ -619,7 +380,6 @@ async function main() {
       ownerId: rep2.id,
       customerWords: 'Свяжитесь на выходных.',
       followUpOutcome: 'No answer on first attempt — will retry.',
-      conversationId: convNigar.id,
       leadId: leadNigar.id,
       createdAt: days(3),
     },

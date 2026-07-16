@@ -379,7 +379,11 @@ function LeadsInner() {
                                         href={`/conversations?open=${c.id}`}
                                         className={styles.linkRow}
                                     >
-                                        <span>💬 {c.threadId}</span>
+                                        <span>
+                                            <span className={styles.linkType}>Conversation</span>
+                                            {" · "}
+                                            {channelLabel[c.channel] ?? c.channel}
+                                        </span>
                                         <ExternalLink size={13} />
                                     </Link>
                                 ))}
@@ -389,7 +393,11 @@ function LeadsInner() {
                                         href={`/contact-requests?open=${c.id}`}
                                         className={styles.linkRow}
                                     >
-                                        <span>📞 {c.customerPhone}</span>
+                                        <span>
+                                            <span className={styles.linkType}>Contact request</span>
+                                            {" · "}
+                                            {c.customerPhone}
+                                        </span>
                                         <ExternalLink size={13} />
                                     </Link>
                                 ))}

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Channel, Language, Prisma } from '@prisma/client';
+import { Channel, Language, MessageRole, Prisma } from '@prisma/client';
 import { IngestRepository } from './ingest.repository';
 import { IngestLeadDto } from './dto/ingest-lead.dto';
 import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
+import { IngestConversationDto } from './dto/ingest-conversation.dto';
 
 const CHANNELS: Channel[] = ['web', 'whatsapp', 'telegram', 'instagram', 'phone'];
 
@@ -152,6 +153,115 @@ export class IngestService {
         (lead ? ` linked to lead ${lead.id}` : ''),
     );
     return { id: created.id, created: true, leadId: lead?.id ?? null };
+  }
+
+  /**
+   * Upsert a conversation transcript pushed by the bot, keyed by `thread_id`
+   * (idempotent). The bot sends the full transcript on every push; we create the
+   * conversation on first sight and append only the messages we don't already
+   * have (by count — the transcript is ordered and append-only), so retries and
+   * re-pushes never duplicate messages.
+   *
+   * Human-owned conversation fields (status / assignedToId / botActive /
+   * unreadCount / internal notes / handoff) are never written here, so a human's
+   * triage in the panel survives a later bot push. Only bot-owned trace fields
+   * (channel / language / customerHandle / customerPhone / stage / lastMessageAt,
+   * and leadId only while unset) are refreshed.
+   */
+  async upsertConversation(dto: IngestConversationDto) {
+    const threadId = dto.thread_id?.trim();
+    if (!threadId) {
+      return { skipped: true, reason: 'no thread_id' };
+    }
+
+    const channel = this.mapChannel(dto.channel);
+    const messages = dto.messages ?? [];
+    const phone = dto.phone?.trim() || null;
+
+    const botFields = {
+      channel,
+      language: this.mapLanguage(dto.language),
+      // Prefer the customer's real name once the bot has captured it; fall back
+      // to the channel-native sender id. The UI renders this as the thread title
+      // (customerHandle ?? customerPhone ?? threadId).
+      customerHandle: dto.name?.trim() || dto.user_id?.trim() || null,
+      customerPhone: phone,
+      stage: dto.stage?.trim() || null,
+      // Reuses the same formatter as /ingest/leads, so a conversation's budget
+      // always reads identically to the linked lead's.
+      budget: this.formatBudget(dto.preferences),
+      topProject: dto.top_project?.trim() || null,
+      selectedUnits: dto.interested_unit_ids ?? [],
+      lastMessageAt: this.parseDate(dto.last_message_at) ?? new Date(),
+    };
+
+    const existing =
+      await this.ingestRepository.findConversationByThreadId(threadId);
+
+    if (existing) {
+      await this.ingestRepository.updateConversation(existing.id, {
+        ...botFields,
+        // Link to a lead if we didn't have one before (never unlink).
+        ...(existing.leadId == null && phone
+          ? await this.connectLeadByPhone(phone)
+          : {}),
+      });
+
+      const have = await this.ingestRepository.countMessages(existing.id);
+      const fresh = messages.slice(have);
+      if (fresh.length) {
+        await this.ingestRepository.addMessages(
+          fresh.map((m) => ({
+            conversationId: existing.id,
+            role: this.mapRole(m.role),
+            content: m.content,
+            channel,
+            createdAt: this.parseDate(m.ts) ?? undefined,
+          })),
+        );
+      }
+      return { id: existing.id, created: false, appended: fresh.length };
+    }
+
+    const lead = phone
+      ? await this.ingestRepository.findLeadByPhoneFuzzy(phone)
+      : null;
+
+    const created = await this.ingestRepository.createConversation({
+      threadId,
+      ...botFields,
+      messages: {
+        create: messages.map((m) => ({
+          role: this.mapRole(m.role),
+          content: m.content,
+          channel,
+          createdAt: this.parseDate(m.ts) ?? undefined,
+        })),
+      },
+      ...(lead ? { lead: { connect: { id: lead.id } } } : {}),
+    });
+    this.logger.log(
+      `Ingested conversation ${created.id} (${threadId}, ${messages.length} msgs)` +
+        (lead ? ` linked to lead ${lead.id}` : ''),
+    );
+    return { id: created.id, created: true, appended: messages.length };
+  }
+
+  /** Build a lead-connect update fragment via fuzzy phone match, or {} if none. */
+  private async connectLeadByPhone(
+    phone: string,
+  ): Promise<Prisma.ConversationUpdateInput> {
+    const lead = await this.ingestRepository.findLeadByPhoneFuzzy(phone);
+    return lead ? { lead: { connect: { id: lead.id } } } : {};
+  }
+
+  /** The bot sends "user" | "bot" (or "assistant"/"ai"); map to our enum. */
+  private mapRole(raw: string | null | undefined): MessageRole {
+    const v = (raw ?? '').trim().toLowerCase();
+    if (v === 'user') return 'user';
+    if (v === 'human') return 'human';
+    if (v === 'system') return 'system';
+    return 'bot'; // bot | assistant | ai | anything else
   }
 
   private parseDate(raw: string | null | undefined): Date | null {

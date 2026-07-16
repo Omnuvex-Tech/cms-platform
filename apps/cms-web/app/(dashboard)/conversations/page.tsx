@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +41,8 @@ interface ConvListItem {
 interface ConvDetail extends ConvListItem {
     stage?: string | null;
     budget?: string | null;
+    topProject?: string | null;
+    selectedUnits?: string[];
     messages: TranscriptMessage[];
     notes: {
         id: number;
@@ -128,6 +130,14 @@ function ConversationsInner() {
 
     const canReply =
         detail && detail.status !== "closed" && detail.status !== "spam";
+
+    // Open a thread on its latest messages: jump the transcript to the bottom
+    // whenever a different conversation loads or new messages arrive.
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+    }, [detail?.id, detail?.messages.length]);
 
     return (
         <div className={styles.wrap}>
@@ -260,7 +270,7 @@ function ConversationsInner() {
                             </div>
                         </div>
 
-                        <div className={styles.transcriptScroll}>
+                        <div className={styles.transcriptScroll} ref={scrollRef}>
                             <Transcript messages={detail.messages} />
                         </div>
 
@@ -296,6 +306,14 @@ function ConversationsInner() {
                             <span className={ui.kvVal}>{detail.stage ?? "—"}</span>
                             <span className={ui.kvKey}>Budget</span>
                             <span className={ui.kvVal}>{detail.budget ?? "—"}</span>
+                            <span className={ui.kvKey}>Preferred project</span>
+                            <span className={ui.kvVal}>{detail.topProject ?? "—"}</span>
+                            <span className={ui.kvKey}>Selected unit</span>
+                            <span className={ui.kvVal}>
+                                {detail.selectedUnits?.length
+                                    ? detail.selectedUnits.join(", ")
+                                    : "—"}
+                            </span>
                         </div>
                     </div>
 

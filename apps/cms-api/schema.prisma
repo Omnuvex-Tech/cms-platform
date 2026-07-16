@@ -262,6 +262,10 @@ model Conversation {
   customerPhone  String?
   stage          String?
   budget         String?
+  // Bot-derived trace fields: the project the customer is focused on and the
+  // concrete units they picked (customer-facing apartment numbers, e.g. "C-410").
+  topProject     String?
+  selectedUnits  String[]
   botActive      Boolean            @default(true)
   unreadCount    Int                @default(0)
   lastMessageAt  DateTime           @default(now())

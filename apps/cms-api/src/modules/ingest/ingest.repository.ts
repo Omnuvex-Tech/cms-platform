@@ -77,6 +77,26 @@ export class IngestRepository {
     return this.prisma.contactRequest.update({ where: { id }, data });
   }
 
+  findConversationByThreadId(threadId: string) {
+    return this.prisma.conversation.findUnique({ where: { threadId } });
+  }
+
+  createConversation(data: Prisma.ConversationCreateInput) {
+    return this.prisma.conversation.create({ data });
+  }
+
+  updateConversation(id: number, data: Prisma.ConversationUpdateInput) {
+    return this.prisma.conversation.update({ where: { id }, data });
+  }
+
+  countMessages(conversationId: number) {
+    return this.prisma.message.count({ where: { conversationId } });
+  }
+
+  addMessages(data: Prisma.MessageCreateManyInput[]) {
+    return this.prisma.message.createMany({ data });
+  }
+
   createLead(data: Prisma.LeadCreateInput) {
     return this.prisma.lead.create({ data });
   }
