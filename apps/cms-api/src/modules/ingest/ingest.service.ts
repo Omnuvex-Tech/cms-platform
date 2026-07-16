@@ -111,6 +111,37 @@ export class IngestService {
       ? await this.ingestRepository.findLeadByPhoneFuzzy(phone)
       : null;
 
+    // Before creating a new row, fold this push into an already-open request for
+    // the same phone (a repeat/duplicate request within one live episode). A
+    // completed/closed request is left as history, so a genuinely new request
+    // after resolution still starts a fresh row.
+    if (phone) {
+      const openRequest =
+        await this.ingestRepository.findOpenContactRequestByPhone(phone);
+      if (openRequest) {
+        const data: Prisma.ContactRequestUpdateInput = { ...botFields };
+        // Keep the original request_id as the stable idempotency key; only
+        // adopt this one if the open request has none (created outside ingest).
+        if (openRequest.externalId == null) data.externalId = externalId;
+        if (openRequest.leadId == null && lead) {
+          data.lead = { connect: { id: lead.id } };
+        }
+        const updated = await this.ingestRepository.updateContactRequest(
+          openRequest.id,
+          data,
+        );
+        this.logger.log(
+          `Folded contact request ${externalId} into open request ` +
+            `${updated.id} (${phone})`,
+        );
+        return {
+          id: updated.id,
+          created: false,
+          leadId: updated.leadId ?? lead?.id ?? null,
+        };
+      }
+    }
+
     const created = await this.ingestRepository.createContactRequest({
       externalId,
       ...botFields,

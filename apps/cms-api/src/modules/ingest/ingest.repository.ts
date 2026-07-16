@@ -1,6 +1,20 @@
+import {
+  ContactRequestStatus,
+  LeadTimelineType,
+  Prisma,
+} from '@prisma/client';
 import { Injectable } from '@nestjs/common';
-import { LeadTimelineType, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+
+// Requests still awaiting a callback. A repeat push for the same phone folds
+// into one of these; once a request is completed/closed it becomes history and
+// a later push starts a fresh row. Mirrors OPEN_STATUSES in the contact-requests
+// service.
+const OPEN_CONTACT_STATUSES: ContactRequestStatus[] = [
+  'new',
+  'assigned',
+  'scheduled',
+];
 
 @Injectable()
 export class IngestRepository {
@@ -32,6 +46,27 @@ export class IngestRepository {
 
   findContactRequestByExternalId(externalId: string) {
     return this.prisma.contactRequest.findUnique({ where: { externalId } });
+  }
+
+  /**
+   * Find a still-open contact request for the same customer, so a repeat push
+   * with a different `request_id` folds into the live request instead of
+   * creating a duplicate. Uses the same national-significant-tail (last 9
+   * digits) match as `findLeadByPhoneFuzzy` because the phone may be formatted
+   * differently across pushes. Only open requests match; a completed/closed
+   * request is left as history and a new push starts a fresh row.
+   */
+  findOpenContactRequestByPhone(phone: string) {
+    const digits = (phone ?? '').replace(/\D/g, '');
+    if (digits.length < 6) return Promise.resolve(null);
+    const tail = digits.length > 9 ? digits.slice(-9) : digits;
+    return this.prisma.contactRequest.findFirst({
+      where: {
+        customerPhone: { contains: tail },
+        status: { in: OPEN_CONTACT_STATUSES },
+      },
+      orderBy: { id: 'desc' },
+    });
   }
 
   createContactRequest(data: Prisma.ContactRequestCreateInput) {
