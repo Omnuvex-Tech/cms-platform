@@ -9,14 +9,14 @@ interface BotControlSettings {
 }
 
 /**
- * Pushes the panel's "Pause bot" / "Resume bot" toggle to the bot so it
- * actually stops/resumes replying on a thread, instead of just flipping the
- * DB column. Mirrors BotSyncService's fire-and-forget push pattern; the bot's
- * receiver is `POST <BOT_BASE_URL>/internal/conversations/bot-state`, keyed by
- * the same threadId the panel stores on Conversation.
+ * Pushes panel->bot conversation-control actions (pause/resume, manual send)
+ * to the bot instead of leaving them as DB-only writes. Mirrors BotSyncService's
+ * fire-and-forget push pattern; the bot's receivers live under
+ * `<BOT_BASE_URL>/internal/conversations/*`, keyed by the same threadId the
+ * panel stores on Conversation.
  *
  * OFF by default (SYNC_ENABLED / BOT_CONTROL_ENABLED unset) — until then this
- * is a no-op and setBot behaves exactly as before (DB-only).
+ * is a no-op and setBot/reply behave exactly as before (DB-only).
  */
 @Injectable()
 export class BotControlService {
@@ -45,11 +45,31 @@ export class BotControlService {
 
   /** Never throws — a bot outage must never break the "pause bot" panel action. */
   async setBotActive(threadId: string | null | undefined, active: boolean): Promise<void> {
+    if (!threadId) return;
+    await this.postToBot('/internal/conversations/bot-state', { thread_id: threadId, active });
+  }
+
+  /**
+   * Push a manual reply to the bot so it actually reaches the customer.
+   * Telegram-only for now — other channels are silently skipped until their
+   * bot-side receivers exist.
+   */
+  async sendMessage(
+    threadId: string | null | undefined,
+    channel: string,
+    text: string,
+  ): Promise<void> {
+    if (!threadId || channel !== 'telegram') return;
+    await this.postToBot('/internal/conversations/send-message', { thread_id: threadId, text });
+  }
+
+  /** Never throws — a bot outage must never break the panel action that triggered it. */
+  private async postToBot(path: string, body: Record<string, unknown>): Promise<void> {
     const settings = this.settings();
-    if (!settings.enabled || !threadId) return;
+    if (!settings.enabled) return;
     if (!settings.url || !settings.apiKey) {
       this.logger.warn(
-        'SYNC_ENABLED is on but BOT_BASE_URL/BOT_SYNC_API_KEY is unset; skipping bot-state push',
+        `SYNC_ENABLED is on but BOT_BASE_URL/BOT_SYNC_API_KEY is unset; skipping push to ${path}`,
       );
       return;
     }
@@ -57,25 +77,25 @@ export class BotControlService {
     let lastError = '';
     for (let attempt = 1; attempt <= settings.maxAttempts; attempt += 1) {
       try {
-        const res = await fetch(`${settings.url}/internal/conversations/bot-state`, {
+        const res = await fetch(`${settings.url}${path}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': settings.apiKey,
           },
-          body: JSON.stringify({ thread_id: threadId, active }),
+          body: JSON.stringify(body),
           signal: AbortSignal.timeout(settings.timeoutMs),
         });
 
         if (res.ok) {
-          this.logger.log(`Bot-state push thread=${threadId} active=${active} -> HTTP ${res.status}`);
+          this.logger.log(`Push to ${path} -> HTTP ${res.status}`);
           return;
         }
 
         // 4xx (bad request / auth) is permanent — retrying won't help.
         if (res.status >= 400 && res.status < 500) {
-          const body = (await res.text().catch(() => '')).slice(0, 300);
-          this.logger.error(`Bot-state push rejected: HTTP ${res.status} ${body}`);
+          const resBody = (await res.text().catch(() => '')).slice(0, 300);
+          this.logger.error(`Push to ${path} rejected: HTTP ${res.status} ${resBody}`);
           return;
         }
 
@@ -89,8 +109,6 @@ export class BotControlService {
       }
     }
 
-    this.logger.error(
-      `Bot-state push thread=${threadId} failed after ${settings.maxAttempts} attempts: ${lastError}`,
-    );
+    this.logger.error(`Push to ${path} failed after ${settings.maxAttempts} attempts: ${lastError}`);
   }
 }

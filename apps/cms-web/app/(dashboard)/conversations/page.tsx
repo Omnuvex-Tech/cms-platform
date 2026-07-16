@@ -128,8 +128,9 @@ function ConversationsInner() {
         onSuccess: refresh,
     });
 
-    const canReply =
-        detail && detail.status !== "closed" && detail.status !== "spam";
+    const isClosedThread =
+        detail && (detail.status === "closed" || detail.status === "spam");
+    const canReply = detail && !isClosedThread && !detail.botActive;
 
     // Open a thread on its latest messages: jump the transcript to the bottom
     // whenever a different conversation loads or new messages arrive.
@@ -281,7 +282,9 @@ function ConversationsInner() {
                                 placeholder={
                                     canReply
                                         ? "Type a reply… (Ctrl/⌘+Enter to send)"
-                                        : "Replying is disabled for closed / spam threads"
+                                        : isClosedThread
+                                          ? "Replying is disabled for closed / spam threads"
+                                          : "Pause the bot first to reply manually"
                                 }
                                 onSend={(text) => reply.mutate(text)}
                             />

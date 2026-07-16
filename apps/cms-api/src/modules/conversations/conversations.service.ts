@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConversationStatus, Channel, Prisma } from '@prisma/client';
 import { ConversationsRepository } from './conversations.repository';
 import { BotControlService } from './bot-control.service';
@@ -48,16 +52,29 @@ export class ConversationsService {
 
   async reply(id: number, dto: ReplyDto) {
     const conversation = await this.get(id);
+    // A human and the bot must never reply over each other on the same
+    // thread — require the operator to pause the bot before sending manually.
+    if (conversation.botActive) {
+      throw new BadRequestException('Pause the bot before replying manually.');
+    }
     await this.conversationsRepository.addMessage({
       conversationId: id,
       role: 'human',
       content: dto.content,
       channel: conversation.channel,
     });
-    return this.conversationsRepository.update(id, {
+    const updated = await this.conversationsRepository.update(id, {
       lastMessageAt: new Date(),
       unreadCount: 0,
     });
+    // Fire-and-forget: push the reply to the bot so it reaches the customer.
+    // A bot outage must never break the panel's reply action.
+    void this.botControlService.sendMessage(
+      conversation.threadId,
+      conversation.channel,
+      dto.content,
+    );
+    return updated;
   }
 
   async setStatus(id: number, dto: SetStatusDto) {
