@@ -79,12 +79,19 @@ function ConversationsInner() {
     const { data: list, isLoading } = useQuery({
         queryKey: ["conversations", qs],
         queryFn: () => api.get<ConvListItem[]>(`/conversations${qs ? `?${qs}` : ""}`),
+        // Keep the inbox list (unread counts, last-message previews) live without
+        // a manual refresh. Paused automatically when the tab isn't focused
+        // (react-query's refetchIntervalInBackground defaults to false).
+        refetchInterval: 5_000,
     });
 
     const { data: detail } = useQuery({
         queryKey: ["conversation", selectedId],
         queryFn: () => api.get<ConvDetail>(`/conversations/${selectedId}`),
         enabled: !!selectedId,
+        // Poll the open thread so new messages appear as the conversation
+        // happens, instead of requiring the operator to keep refreshing.
+        refetchInterval: 2_000,
     });
 
     useEffect(() => {
