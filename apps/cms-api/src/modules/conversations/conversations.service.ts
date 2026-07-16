@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConversationStatus, Channel, Prisma } from '@prisma/client';
 import { ConversationsRepository } from './conversations.repository';
+import { BotControlService } from './bot-control.service';
 import {
   AddNoteDto,
   AssignDto,
@@ -20,6 +21,7 @@ interface ListFilters {
 export class ConversationsService {
   constructor(
     private readonly conversationsRepository: ConversationsRepository,
+    private readonly botControlService: BotControlService,
   ) {}
 
   list(filters: ListFilters) {
@@ -97,7 +99,13 @@ export class ConversationsService {
   }
 
   async setBot(id: number, dto: SetBotDto) {
-    await this.get(id);
-    return this.conversationsRepository.update(id, { botActive: dto.active });
+    const conversation = await this.get(id);
+    const updated = await this.conversationsRepository.update(id, {
+      botActive: dto.active,
+    });
+    // Fire-and-forget: tell the bot to actually stop/resume replying on this
+    // thread. A bot outage must never break the panel's toggle action.
+    void this.botControlService.setBotActive(conversation.threadId, dto.active);
+    return updated;
   }
 }
