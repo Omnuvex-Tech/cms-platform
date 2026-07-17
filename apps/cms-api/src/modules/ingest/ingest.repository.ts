@@ -129,6 +129,13 @@ export class IngestRepository {
     return this.prisma.lead.update({ where: { id }, data });
   }
 
+  findLeadSalesStatus(id: number) {
+    return this.prisma.lead.findUnique({
+      where: { id },
+      select: { salesStatus: true },
+    });
+  }
+
   addTimelineEvent(
     leadId: number,
     type: LeadTimelineType,

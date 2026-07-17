@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Channel, Language, MessageRole, Prisma } from '@prisma/client';
+import {
+  Channel,
+  ContactRequestStatus,
+  Language,
+  LeadStatus,
+  MessageRole,
+  Prisma,
+} from '@prisma/client';
 import { IngestRepository } from './ingest.repository';
 import { BotControlService } from '../conversations/bot-control.service';
 import { IngestLeadDto } from './dto/ingest-lead.dto';
@@ -7,6 +14,36 @@ import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
 import { IngestConversationDto } from './dto/ingest-conversation.dto';
 
 const CHANNELS: Channel[] = ['web', 'whatsapp', 'telegram', 'instagram', 'phone'];
+
+// The pipeline a lead moves through. Used to auto-advance salesStatus from
+// signals the bot/panel already gives us (e.g. a contact request coming in)
+// without ever regressing a stage a human has already progressed past.
+const LEAD_STAGE_ORDER: LeadStatus[] = [
+  'new',
+  'qualified',
+  'contact_requested',
+  'assigned',
+  'in_follow_up',
+  'visit_scheduled',
+  'negotiation',
+  'won',
+  'lost',
+  'invalid',
+];
+
+// Same idea for a contact request: a customer giving a concrete callback time
+// ("call me tomorrow at 6pm") already means "scheduled", without waiting for a
+// rep to flip the dropdown — but never regress a request a human already
+// worked further (contacted it, completed it, marked no-answer/cancelled).
+const CONTACT_STAGE_ORDER: ContactRequestStatus[] = [
+  'new',
+  'assigned',
+  'contacted',
+  'scheduled',
+  'completed',
+  'no_answer',
+  'cancelled',
+];
 
 // A handoff already in one of these is being worked (queued, claimed, or owned
 // by a rep) — a repeat `escalated:true` push from the bot on the same episode
@@ -91,13 +128,20 @@ export class IngestService {
 
     const phone = (dto.phone ?? '').trim();
     const availabilityAt = this.parseDate(dto.availability_datetime);
+    const isFlexible = dto.availability_flexible ?? false;
+    const availabilityText = dto.availability_text?.trim() || null;
+    // A concrete callback ask ("call me tomorrow at 6pm") already means the
+    // request is scheduled, not still "new" waiting for a rep to triage it.
+    // Flexible availability ("whenever works") isn't a fixed slot, so it
+    // doesn't count.
+    const hasFixedTime = !isFlexible && (availabilityAt != null || !!availabilityText);
 
     const botFields = {
       customerPhone: phone,
       preferredChannel: this.mapPreferredChannel(dto.preferred_channel),
       availabilityAt,
-      availabilityText: dto.availability_text?.trim() || null,
-      isFlexible: dto.availability_flexible ?? false,
+      availabilityText,
+      isFlexible,
       customerWords: (dto.latest_user_message ?? dto.notes)?.trim() || null,
     };
 
@@ -107,14 +151,26 @@ export class IngestService {
     if (existing) {
       // Re-link to a lead if we didn't have one before (never unlink).
       const data: Prisma.ContactRequestUpdateInput = { ...botFields };
+      let leadId = existing.leadId;
       if (existing.leadId == null && phone) {
         const lead = await this.ingestRepository.findLeadByPhoneFuzzy(phone);
-        if (lead) data.lead = { connect: { id: lead.id } };
+        if (lead) {
+          data.lead = { connect: { id: lead.id } };
+          leadId = lead.id;
+        }
+      }
+      if (
+        hasFixedTime &&
+        CONTACT_STAGE_ORDER.indexOf(existing.status) <
+          CONTACT_STAGE_ORDER.indexOf('scheduled')
+      ) {
+        data.status = 'scheduled';
       }
       const updated = await this.ingestRepository.updateContactRequest(
         existing.id,
         data,
       );
+      if (leadId) await this.advanceLeadStatus(leadId, 'contact_requested');
       return { id: updated.id, created: false };
     }
 
@@ -134,13 +190,23 @@ export class IngestService {
         // Keep the original request_id as the stable idempotency key; only
         // adopt this one if the open request has none (created outside ingest).
         if (openRequest.externalId == null) data.externalId = externalId;
+        let leadId = openRequest.leadId;
         if (openRequest.leadId == null && lead) {
           data.lead = { connect: { id: lead.id } };
+          leadId = lead.id;
+        }
+        if (
+          hasFixedTime &&
+          CONTACT_STAGE_ORDER.indexOf(openRequest.status) <
+            CONTACT_STAGE_ORDER.indexOf('scheduled')
+        ) {
+          data.status = 'scheduled';
         }
         const updated = await this.ingestRepository.updateContactRequest(
           openRequest.id,
           data,
         );
+        if (leadId) await this.advanceLeadStatus(leadId, 'contact_requested');
         this.logger.log(
           `Folded contact request ${externalId} into open request ` +
             `${updated.id} (${phone})`,
@@ -156,13 +222,36 @@ export class IngestService {
     const created = await this.ingestRepository.createContactRequest({
       externalId,
       ...botFields,
+      ...(hasFixedTime ? { status: 'scheduled' } : {}),
       ...(lead ? { lead: { connect: { id: lead.id } } } : {}),
     });
+    if (lead) await this.advanceLeadStatus(lead.id, 'contact_requested');
     this.logger.log(
       `Ingested contact request ${created.id} (${phone})` +
         (lead ? ` linked to lead ${lead.id}` : ''),
     );
     return { id: created.id, created: true, leadId: lead?.id ?? null };
+  }
+
+  /**
+   * Advance a lead's salesStatus to `target` only if it hasn't already
+   * reached (or passed) that stage — e.g. a contact request coming in always
+   * means at least "contact_requested", but never regresses a lead a human
+   * has already moved further along (negotiation, won, etc.).
+   */
+  private async advanceLeadStatus(leadId: number, target: LeadStatus) {
+    const lead = await this.ingestRepository.findLeadSalesStatus(leadId);
+    if (!lead) return;
+    const currentIdx = LEAD_STAGE_ORDER.indexOf(lead.salesStatus);
+    const targetIdx = LEAD_STAGE_ORDER.indexOf(target);
+    if (currentIdx >= targetIdx) return;
+
+    await this.ingestRepository.updateLead(leadId, { salesStatus: target });
+    await this.ingestRepository.addTimelineEvent(
+      leadId,
+      target === 'contact_requested' ? 'contact_requested' : 'status_changed',
+      `Sales status changed from “${lead.salesStatus}” to “${target}” automatically.`,
+    );
   }
 
   /**

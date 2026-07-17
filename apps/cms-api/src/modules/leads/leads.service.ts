@@ -10,6 +10,23 @@ interface LeadFilters {
   channel?: Channel;
 }
 
+// The pipeline a lead moves through. Mirrors LEAD_STAGE_ORDER in
+// ingest.service.ts — kept separate since each side reaches it from a
+// different signal (bot ingest vs. panel actions) and duplicating a short
+// array is cheaper than a shared module for two call sites.
+const LEAD_STAGE_ORDER: LeadStatus[] = [
+  'new',
+  'qualified',
+  'contact_requested',
+  'assigned',
+  'in_follow_up',
+  'visit_scheduled',
+  'negotiation',
+  'won',
+  'lost',
+  'invalid',
+];
+
 @Injectable()
 export class LeadsService {
   constructor(private readonly leadsRepository: LeadsRepository) {}
@@ -55,12 +72,26 @@ export class LeadsService {
           : { connect: { id: dto.ownerId } };
     }
 
+    // Assigning an owner is itself the "assigned" signal — don't also make the
+    // rep flip the status dropdown by hand. Only kicks in when the rep didn't
+    // already set an explicit status in the same request, and never regresses
+    // a stage the lead has already passed.
+    let nextStatus = dto.salesStatus;
+    if (!nextStatus && dto.ownerId != null) {
+      const currentIdx = LEAD_STAGE_ORDER.indexOf(current.salesStatus);
+      const assignedIdx = LEAD_STAGE_ORDER.indexOf('assigned');
+      if (currentIdx < assignedIdx) {
+        nextStatus = 'assigned';
+        data.salesStatus = nextStatus;
+      }
+    }
+
     // Append a timeline event automatically when the sales status changes.
-    if (dto.salesStatus && dto.salesStatus !== current.salesStatus) {
+    if (nextStatus && nextStatus !== current.salesStatus) {
       await this.leadsRepository.addTimelineEvent(
         id,
         'status_changed',
-        `Sales status changed from “${current.salesStatus}” to “${dto.salesStatus}”.`,
+        `Sales status changed from “${current.salesStatus}” to “${nextStatus}”.`,
       );
     }
 
