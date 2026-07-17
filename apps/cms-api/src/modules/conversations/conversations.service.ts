@@ -117,11 +117,21 @@ export class ConversationsService {
 
   async setBot(id: number, dto: SetBotDto) {
     const conversation = await this.get(id);
-    const updated = await this.conversationsRepository.update(id, {
-      botActive: dto.active,
-    });
+    const data: Prisma.ConversationUpdateInput = { botActive: dto.active };
+    // Resuming the bot ends the human's turn on this thread, so it also ends the
+    // handoff — an operator who wraps up here should not have to go to the Handoff
+    // Queue and resolve it a second time (and vice versa: resolving there resumes
+    // the bot). Mirrors HandoffsService.resolve / return_to_bot.
+    if (dto.active && conversation.status === 'waiting_for_human') {
+      data.status = 'active';
+    }
+    const updated = await this.conversationsRepository.update(id, data);
+    if (dto.active) {
+      await this.conversationsRepository.resolveOpenHandoff(id);
+    }
     // Fire-and-forget: tell the bot to actually stop/resume replying on this
-    // thread. A bot outage must never break the panel's toggle action.
+    // thread (a resume also clears its escalation gate). A bot outage must never
+    // break the panel's toggle action.
     void this.botControlService.setBotActive(conversation.threadId, dto.active);
     return updated;
   }

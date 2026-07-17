@@ -182,8 +182,8 @@ function LeadsInner() {
                                 <tr>
                                     <th>Customer</th>
                                     <th>Budget</th>
+                                    <th>Project</th>
                                     <th>Sales status</th>
-                                    <th>Temp</th>
                                     <th>Owner</th>
                                     <th>Updated</th>
                                 </tr>
@@ -216,11 +216,9 @@ function LeadsInner() {
                                             </div>
                                         </td>
                                         <td>{l.budget ?? "—"}</td>
+                                        <td>{l.topProject ?? "—"}</td>
                                         <td>
                                             <StatusPill meta={leadStatus[l.salesStatus]} />
-                                        </td>
-                                        <td>
-                                            <StatusPill meta={tempMeta[l.temperature]} dot={false} />
                                         </td>
                                         <td>
                                             {l.owner ? (

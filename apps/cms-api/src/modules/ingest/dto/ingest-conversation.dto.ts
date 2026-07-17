@@ -44,7 +44,12 @@ export class IngestConversationDto {
   @IsOptional() @IsString() name?: string | null;
   @IsOptional() @IsString() language?: string | null;
   @IsOptional() @IsString() stage?: string | null;
+  /** Sticky lead-level marker: this thread escalated at some point. Never cleared
+   *  by the bot, so it must NOT drive the handoff queue — see `awaiting_human`. */
   @IsOptional() @IsBoolean() escalated?: boolean;
+  /** Episodic: a human is needed right now. Set when the bot escalates, cleared
+   *  when the panel resumes the bot. This is what queues/closes a Handoff. */
+  @IsOptional() @IsBoolean() awaiting_human?: boolean;
   /** ISO-8601 timestamp of the latest turn. */
   @IsOptional() @IsString() last_message_at?: string | null;
 

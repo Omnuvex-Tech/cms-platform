@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { HandoffStatus, Prisma } from '@prisma/client';
 import { HandoffsRepository } from './handoffs.repository';
+import { BotControlService } from '../conversations/bot-control.service';
 import { BotAction, BotControlDto, HandoffNotesDto } from './dto/handoff.dto';
 
 const OPEN_STATUSES: HandoffStatus[] = ['new', 'active', 'assigned'];
 
 @Injectable()
 export class HandoffsService {
-  constructor(private readonly handoffsRepository: HandoffsRepository) {}
+  constructor(
+    private readonly handoffsRepository: HandoffsRepository,
+    private readonly botControlService: BotControlService,
+  ) {}
 
   list(status?: HandoffStatus | 'open') {
     const where: Prisma.HandoffWhereInput = {};
@@ -34,6 +38,7 @@ export class HandoffsService {
       status: 'assigned',
       assignedTo: { connect: { id: userId } },
     });
+    await this.pushBotState(handoff.conversation.threadId, false);
     return this.handoffsRepository.update(id, {
       status: 'assigned',
       assignedTo: { connect: { id: userId } },
@@ -47,6 +52,7 @@ export class HandoffsService {
       await this.handoffsRepository.updateConversation(handoff.conversationId, {
         botActive: false,
       });
+      await this.pushBotState(handoff.conversation.threadId, false);
       return this.get(id);
     }
 
@@ -54,6 +60,7 @@ export class HandoffsService {
       await this.handoffsRepository.updateConversation(handoff.conversationId, {
         botActive: true,
       });
+      await this.pushBotState(handoff.conversation.threadId, true);
       return this.get(id);
     }
 
@@ -63,6 +70,7 @@ export class HandoffsService {
       status: 'active',
       assignedTo: { disconnect: true },
     });
+    await this.pushBotState(handoff.conversation.threadId, true);
     return this.handoffsRepository.update(id, {
       status: 'resolved',
       resolvedAt: new Date(),
@@ -70,12 +78,28 @@ export class HandoffsService {
     });
   }
 
+  /** Resolve a handoff and hand the thread back to the bot (mirrors return_to_bot). */
   async resolve(id: number) {
-    await this.get(id);
+    const handoff = await this.get(id);
+    await this.handoffsRepository.updateConversation(handoff.conversationId, {
+      botActive: true,
+      status: 'active',
+    });
+    await this.pushBotState(handoff.conversation.threadId, true);
     return this.handoffsRepository.update(id, {
       status: 'resolved',
       resolvedAt: new Date(),
     });
+  }
+
+  /**
+   * Tell the BOT about a pause/resume. Updating `Conversation.botActive` alone is
+   * a panel-only write the bot never sees — it would keep replying while this page
+   * showed it as paused. Resuming also clears the bot's escalation gate, which is
+   * what lets a thread leave the queue for good.
+   */
+  private pushBotState(threadId: string | null | undefined, active: boolean) {
+    return this.botControlService.setBotActive(threadId, active);
   }
 
   async setNotes(id: number, dto: HandoffNotesDto) {

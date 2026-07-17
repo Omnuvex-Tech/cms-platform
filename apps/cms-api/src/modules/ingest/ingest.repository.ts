@@ -89,8 +89,32 @@ export class IngestRepository {
     return this.prisma.conversation.update({ where: { id }, data });
   }
 
+  findHandoffByConversationId(conversationId: number) {
+    return this.prisma.handoff.findUnique({ where: { conversationId } });
+  }
+
+  createHandoff(data: Prisma.HandoffCreateInput) {
+    return this.prisma.handoff.create({ data });
+  }
+
+  updateHandoff(id: number, data: Prisma.HandoffUpdateInput) {
+    return this.prisma.handoff.update({ where: { id }, data });
+  }
+
+  /**
+   * How many of this conversation's messages came from the bot's transcript.
+   *
+   * Excludes `human` — an operator's reply is written straight to our DB by
+   * ConversationsService.reply() and is deliberately never recorded into the
+   * bot's message_store, so it does not exist in the transcript the bot pushes.
+   * Counting it would run this number ahead of the bot's transcript length and
+   * make the caller's `messages.slice(count)` silently discard exactly that many
+   * real customer messages, permanently, for the rest of the conversation.
+   */
   countMessages(conversationId: number) {
-    return this.prisma.message.count({ where: { conversationId } });
+    return this.prisma.message.count({
+      where: { conversationId, role: { not: 'human' } },
+    });
   }
 
   addMessages(data: Prisma.MessageCreateManyInput[]) {

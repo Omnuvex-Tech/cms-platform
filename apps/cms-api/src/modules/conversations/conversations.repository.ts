@@ -60,6 +60,24 @@ export class ConversationsRepository {
     });
   }
 
+  /**
+   * Close any open handoff on this conversation. Called when the bot is resumed
+   * from the Conversations page: handing the thread back to the bot IS the end of
+   * the handoff, and leaving the queue item open would strand it there forever
+   * just because the operator finished up on this page instead of that one.
+   *
+   * `updateMany` so a conversation with no handoff is a silent no-op rather than
+   * a "record not found" throw. Reaches the Handoff table via Prisma rather than
+   * HandoffsService because HandoffsModule already imports ConversationsModule
+   * (for BotControlService) — injecting it back would be a circular dependency.
+   */
+  resolveOpenHandoff(conversationId: number) {
+    return this.prisma.handoff.updateMany({
+      where: { conversationId, status: { in: ['new', 'active', 'assigned'] } },
+      data: { status: 'resolved', resolvedAt: new Date(), assignedToId: null },
+    });
+  }
+
   addNote(data: Prisma.InternalNoteUncheckedCreateInput) {
     return this.prisma.internalNote.create({
       data,

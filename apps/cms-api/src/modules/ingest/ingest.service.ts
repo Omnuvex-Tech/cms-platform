@@ -1,17 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Channel, Language, MessageRole, Prisma } from '@prisma/client';
 import { IngestRepository } from './ingest.repository';
+import { BotControlService } from '../conversations/bot-control.service';
 import { IngestLeadDto } from './dto/ingest-lead.dto';
 import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
 import { IngestConversationDto } from './dto/ingest-conversation.dto';
 
 const CHANNELS: Channel[] = ['web', 'whatsapp', 'telegram', 'instagram', 'phone'];
 
+// A handoff already in one of these is being worked (queued, claimed, or owned
+// by a rep) — a repeat `escalated:true` push from the bot on the same episode
+// must not touch it, so a human's in-progress triage (or an explicit "resume
+// bot") is never fought by the bot re-asserting the flag on its next turn.
+const OPEN_HANDOFF_STATUSES = ['new', 'active', 'assigned'] as const;
+
 @Injectable()
 export class IngestService {
   private readonly logger = new Logger(IngestService.name);
 
-  constructor(private readonly ingestRepository: IngestRepository) {}
+  constructor(
+    private readonly ingestRepository: IngestRepository,
+    private readonly botControlService: BotControlService,
+  ) {}
 
   /**
    * Upsert a lead pushed by the bot, keyed by phone (idempotent). Mirrors the
@@ -160,7 +170,9 @@ export class IngestService {
    * (idempotent). The bot sends the full transcript on every push; we create the
    * conversation on first sight and append only the messages we don't already
    * have (by count — the transcript is ordered and append-only), so retries and
-   * re-pushes never duplicate messages.
+   * re-pushes never duplicate messages. The count deliberately ignores `human`
+   * messages, which are ours alone and absent from the bot's transcript — see
+   * IngestRepository.countMessages.
    *
    * Human-owned conversation fields (status / assignedToId / botActive /
    * unreadCount / internal notes / handoff) are never written here, so a human's
@@ -220,6 +232,9 @@ export class IngestService {
           })),
         );
       }
+      if (dto.awaiting_human) {
+        await this.handleEscalation(existing.id, threadId, dto);
+      }
       return { id: existing.id, created: false, appended: fresh.length };
     }
 
@@ -244,7 +259,85 @@ export class IngestService {
       `Ingested conversation ${created.id} (${threadId}, ${messages.length} msgs)` +
         (lead ? ` linked to lead ${lead.id}` : ''),
     );
+    if (dto.awaiting_human) {
+      await this.handleEscalation(created.id, threadId, dto);
+    }
     return { id: created.id, created: true, appended: messages.length };
+  }
+
+  /**
+   * The bot reports a live human is needed on this thread (`awaiting_human`).
+   * Queue it in the Handoff Queue and pause the bot so a human takes over —
+   * mirrors the Bitrix-side handoff, but as a first-class queue item instead
+   * of a comment on the CRM lead.
+   *
+   * Keyed on `awaiting_human`, NOT `escalated`: the latter is a sticky
+   * lead-level marker the bot never clears, so acting on it would re-queue a
+   * handoff on every subsequent turn forever. `awaiting_human` goes false as
+   * soon as an operator resumes the bot, which ends the episode cleanly.
+   *
+   * A `Handoff` is 1:1 with its conversation (see schema.prisma). If one is
+   * already open (new/active/assigned) this is a repeat push for the same live
+   * episode and must be a no-op, or it would fight a rep's in-progress triage.
+   * A resolved/cancelled handoff means a prior episode wrapped up; a fresh
+   * escalation reopens that same row rather than creating a second one.
+   */
+  private async handleEscalation(
+    conversationId: number,
+    threadId: string,
+    dto: IngestConversationDto,
+  ) {
+    const existingHandoff =
+      await this.ingestRepository.findHandoffByConversationId(conversationId);
+    if (
+      existingHandoff &&
+      OPEN_HANDOFF_STATUSES.includes(
+        existingHandoff.status as (typeof OPEN_HANDOFF_STATUSES)[number],
+      )
+    ) {
+      return;
+    }
+
+    const reason = this.buildEscalationReason(dto);
+    if (existingHandoff) {
+      await this.ingestRepository.updateHandoff(existingHandoff.id, {
+        status: 'new',
+        priority: 'normal',
+        slaState: 'on_track',
+        reason,
+        dueAt: null,
+        resolvedAt: null,
+        assignedTo: { disconnect: true },
+      });
+    } else {
+      await this.ingestRepository.createHandoff({
+        conversation: { connect: { id: conversationId } },
+        status: 'new',
+        priority: 'normal',
+        reason,
+      });
+    }
+
+    await this.ingestRepository.updateConversation(conversationId, {
+      status: 'waiting_for_human',
+      botActive: false,
+    });
+    // The DB write above only moves the panel's own row — the bot keeps replying
+    // until it is told. Never write botActive without this call.
+    await this.botControlService.setBotActive(threadId, false);
+    this.logger.log(`Escalation queued: handoff for conversation ${conversationId}`);
+  }
+
+  /** Best-effort human-readable reason: the customer's own last message. */
+  private buildEscalationReason(dto: IngestConversationDto): string {
+    const messages = dto.messages ?? [];
+    const lastUser = [...messages]
+      .reverse()
+      .find((m) => (m.role ?? '').trim().toLowerCase() === 'user');
+    const quote = lastUser?.content?.trim();
+    if (!quote) return 'Customer requested a human agent.';
+    const trimmed = quote.length > 300 ? `${quote.slice(0, 300)}…` : quote;
+    return `Customer requested a human agent: "${trimmed}"`;
   }
 
   /** Build a lead-connect update fragment via fuzzy phone match, or {} if none. */

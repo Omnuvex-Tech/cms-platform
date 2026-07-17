@@ -70,12 +70,17 @@ export default function HandoffsPage() {
     const { data: list, isLoading } = useQuery({
         queryKey: ["handoffs", statusFilter],
         queryFn: () => api.get<HandoffItem[]>(`/handoffs?status=${statusFilter}`),
+        // Keep the queue live so a newly escalated conversation shows up without
+        // the admin having to refresh the page.
+        refetchInterval: 5_000,
     });
 
     const { data: detail } = useQuery({
         queryKey: ["handoff", selectedId],
         queryFn: () => api.get<HandoffItem>(`/handoffs/${selectedId}`),
         enabled: !!selectedId,
+        // Poll the open handoff so new messages / status changes appear live.
+        refetchInterval: 3_000,
     });
 
     useEffect(() => {

@@ -109,11 +109,6 @@ function ConversationsInner() {
             api.post(`/conversations/${selectedId}/reply`, { content }),
         onSuccess: refresh,
     });
-    const setStatus = useMutation({
-        mutationFn: (status: string) =>
-            api.patch(`/conversations/${selectedId}/status`, { status }),
-        onSuccess: refresh,
-    });
     const setBot = useMutation({
         mutationFn: (active: boolean) =>
             api.patch(`/conversations/${selectedId}/bot`, { active }),
@@ -252,29 +247,6 @@ function ConversationsInner() {
                                     {detail.botActive ? <BotOff size={14} /> : <Bot size={14} />}
                                     {detail.botActive ? "Pause bot" : "Resume bot"}
                                 </button>
-                                {detail.status !== "resolved" && (
-                                    <button
-                                        className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
-                                        onClick={() => setStatus.mutate("resolved")}
-                                    >
-                                        Resolve
-                                    </button>
-                                )}
-                                {detail.status !== "closed" ? (
-                                    <button
-                                        className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
-                                        onClick={() => setStatus.mutate("closed")}
-                                    >
-                                        Close
-                                    </button>
-                                ) : (
-                                    <button
-                                        className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
-                                        onClick={() => setStatus.mutate("active")}
-                                    >
-                                        Reopen
-                                    </button>
-                                )}
                             </div>
                         </div>
 
