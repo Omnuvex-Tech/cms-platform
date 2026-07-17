@@ -34,7 +34,8 @@ export default function LoginPage() {
                 return;
             }
 
-            document.cookie = `access_token=${data.access_token}; path=/`;
+            const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
+            document.cookie = `access_token=${data.access_token}; path=/; SameSite=Lax${secureFlag}`;
             router.push("/");
         } catch {
             setError("Serverlə əlaqə qurmaq mümkün olmadı");
@@ -47,7 +48,9 @@ export default function LoginPage() {
         <div className={styles.page}>
             <div className={styles.card}>
                 <div className={styles.logoWrap}>
-                    <img src="/images/logo-svg.svg" alt="Trenders" className={styles.logo} />
+                    <span className={styles.logo}>
+                        Emla<span className={styles.logoAccent}>X</span>
+                    </span>
                 </div>
                 <h1 className={styles.title}>Admin Panel</h1>
                 <p className={styles.subtitle}>Hesabınıza daxil olun</p>

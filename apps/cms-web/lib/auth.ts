@@ -37,6 +37,7 @@ export function useCurrentUser(): CurrentUser | null {
 }
 
 export function logout() {
+    const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;";
+        `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
 }

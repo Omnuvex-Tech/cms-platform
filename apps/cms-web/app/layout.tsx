@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-    title: "TREVA Admin Panel",
+    title: "EmlaX Admin Panel",
     description: "TREVA Sales Agent — Admin Panel",
 };
 

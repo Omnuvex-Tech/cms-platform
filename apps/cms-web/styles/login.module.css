@@ -24,7 +24,17 @@
 }
 
 .logo {
-    height: 53px;
+    display: inline-block;
+    font-family: 'Poppins';
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 53px;
+    letter-spacing: -0.02em;
+    color: rgba(1, 72, 194, 1);
+}
+
+.logoAccent {
+    color: #0f172a;
 }
 
 .title {

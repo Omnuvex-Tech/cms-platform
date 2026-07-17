@@ -14,12 +14,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
-    "seed": "ts-node seed.ts",
     "import:bot-projects": "ts-node import-bot-projects.ts",
     "import:treva-info": "ts-node import-treva-info.ts"
-  },
-  "prisma": {
-    "seed": "ts-node seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

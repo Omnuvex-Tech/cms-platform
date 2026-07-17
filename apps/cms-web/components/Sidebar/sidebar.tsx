@@ -67,7 +67,9 @@ export function Sidebar() {
     return (
         <aside className={styles.sidebar}>
             <div className={styles.logoWrap}>
-                <img src="/images/logo-svg.svg" alt="TREVA" className={styles.logo} />
+                <span className={styles.logo}>
+                    Emla<span className={styles.logoAccent}>X</span>
+                </span>
             </div>
 
             <nav className={styles.nav}>
