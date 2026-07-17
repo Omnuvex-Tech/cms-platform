@@ -15,6 +15,7 @@ import {
     LifeBuoy,
     PhoneCall,
     Users,
+    UserCog,
     LogOut,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: "Dashboard", href: "/", icon: <LayoutDashboard size={18} /> },
     { label: "Projects", href: "/projects", icon: <Building2 size={18} />, adminOnly: true },
     { label: "TREVA Information", href: "/treva-information", icon: <Info size={18} />, adminOnly: true },
+    { label: "Users", href: "/users", icon: <UserCog size={18} />, adminOnly: true },
     { label: "Conversations", href: "/conversations", icon: <MessagesSquare size={18} />, badge: "conversations" },
     { label: "Escalations", href: "/handoffs", icon: <LifeBuoy size={18} />, badge: "handoffs" },
     { label: "Contact Requests", href: "/contact-requests", icon: <PhoneCall size={18} />, badge: "contactRequests" },
