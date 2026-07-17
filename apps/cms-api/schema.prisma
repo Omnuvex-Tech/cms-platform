@@ -22,11 +22,6 @@ enum ProjectStatus {
   archived
 }
 
-enum InfoStatus {
-  draft
-  published
-}
-
 enum Channel {
   web
   whatsapp
@@ -228,24 +223,32 @@ model InternationalPlanTier {
 }
 
 // ---------------------------------------------------------------------------
-// TREVA Information (single company-info record)
+// TREVA Information (single company-info record, made of freely editable
+// headed sections mirroring the bot's about_treva.md knowledge-base file)
 // ---------------------------------------------------------------------------
 
 model TrevaInfo {
-  id        Int        @id @default(autoincrement())
-  mission   String?    @db.Text
-  vision    String?    @db.Text
-  whoWeAre  String?    @db.Text
-  whyChoose String?    @db.Text
-  website   String?
-  email     String?
-  phone     String?
-  hotline   String?
-  status    InfoStatus @default(draft)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sections TrevaInfoSection[]
 
   @@map("treva_info")
+}
+
+model TrevaInfoSection {
+  id          Int      @id @default(autoincrement())
+  trevaInfoId Int
+  heading     String
+  content     String   @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trevaInfo TrevaInfo @relation(fields: [trevaInfoId], references: [id], onDelete: Cascade)
+
+  @@map("treva_info_sections")
 }
 
 // ---------------------------------------------------------------------------

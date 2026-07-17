@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, TrevaInfoSection } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
   BotSyncOp,
   ProjectWithChildren,
   projectToBotPayload,
+  trevaInfoToBotPayload,
 } from './bot-sync.mapper';
 
 interface BotSyncSettings {
@@ -54,14 +55,14 @@ export class BotSyncService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  private settings(): BotSyncSettings {
+  private settings(urlEnvVar = 'BOT_KB_WEBHOOK_URL'): BotSyncSettings {
     // SYNC_ENABLED is the single master switch for every cms<->bot sync; the
     // legacy per-flow BOT_SYNC_ENABLED remains a fallback when it is unset.
     const raw = process.env.SYNC_ENABLED ?? process.env.BOT_SYNC_ENABLED ?? '';
     const flag = raw.trim().toLowerCase();
     return {
       enabled: ['1', 'true', 'yes', 'on'].includes(flag),
-      url: (process.env.BOT_KB_WEBHOOK_URL ?? '').trim(),
+      url: (process.env[urlEnvVar] ?? '').trim(),
       apiKey: (process.env.BOT_SYNC_API_KEY ?? '').trim(),
       timeoutMs: Number(process.env.BOT_SYNC_TIMEOUT_MS ?? 15000) || 15000,
       maxAttempts: Number(process.env.BOT_SYNC_MAX_ATTEMPTS ?? 4) || 4,
@@ -118,6 +119,27 @@ export class BotSyncService {
       `Backfill complete: ${synced}/${projects.length} projects pushed to the bot (${failed} failed)`,
     );
     return { total: projects.length, synced, failed };
+  }
+
+  /**
+   * Push the full TREVA Information section list to the bot. Same "panel
+   * pushes on publish" contract as syncProject, on its own settings/URL
+   * (BOT_INFO_WEBHOOK_URL) so it can be enabled independently of project
+   * sync. Stays a no-op until that URL is configured — there is no bot-side
+   * receiver for it yet (cf. syncProject's BOT_KB_WEBHOOK_URL comment).
+   */
+  async syncTrevaInfo(sections: TrevaInfoSection[]): Promise<BotSyncResult> {
+    const settings = this.settings('BOT_INFO_WEBHOOK_URL');
+    if (!settings.enabled) return { ok: false, skipped: true, reason: 'disabled' };
+    if (!settings.url || !settings.apiKey) {
+      this.logger.warn(
+        'SYNC_ENABLED is on but BOT_INFO_WEBHOOK_URL/BOT_SYNC_API_KEY is unset; skipping push',
+      );
+      return { ok: false, skipped: true, reason: 'unconfigured' };
+    }
+
+    const payload = trevaInfoToBotPayload(sections);
+    return this.post(settings, payload, 'TREVA Information');
   }
 
   /** POST the payload with bounded exponential backoff. Never throws. */

@@ -84,11 +84,6 @@ export const projectStatus: Record<string, StatusMeta> = {
     archived: meta("Archived", AMBER),
 };
 
-export const infoStatus: Record<string, StatusMeta> = {
-    draft: meta("Draft", GRAY),
-    published: meta("Published", GREEN),
-};
-
 export const channelLabel: Record<string, string> = {
     web: "Web",
     whatsapp: "WhatsApp",

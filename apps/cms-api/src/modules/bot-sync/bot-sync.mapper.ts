@@ -3,6 +3,7 @@ import {
   InternationalPlanTier,
   Project,
   StandardPaymentPlan,
+  TrevaInfoSection,
 } from '@prisma/client';
 
 /**
@@ -203,5 +204,32 @@ export function projectToBotPayload(
         bulk_discount: { available: project.bulkDiscountAvailable },
       },
     },
+  };
+}
+
+/**
+ * Maps the panel's TREVA Information sections into the shape the bot's
+ * about_treva.md knowledge-base file is built from: an ordered list of
+ * `## heading` / markdown-body pairs. Mirrors projectToBotPayload's contract
+ * so a future bot-side receiver can write it back into that file near-verbatim.
+ */
+export interface BotInfoSection {
+  heading: string;
+  content: string;
+}
+
+export interface BotInfoPayload {
+  version: 1;
+  sections: BotInfoSection[];
+}
+
+export function trevaInfoToBotPayload(
+  sections: TrevaInfoSection[],
+): BotInfoPayload {
+  return {
+    version: 1,
+    sections: [...sections]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => ({ heading: s.heading, content: s.content })),
   };
 }

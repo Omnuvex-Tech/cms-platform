@@ -19,9 +19,10 @@ async function main() {
 
   console.log('Resetting sample data...');
   // Child -> parent order so FKs never block the wipe. Projects (and their
-  // bedroomPricing/standardPlans/internationalTiers children) are deliberately
-  // NOT wiped here: the real, live project catalog is imported separately via
-  // import-bot-projects.ts and must survive every re-seed.
+  // bedroomPricing/standardPlans/internationalTiers children) and TrevaInfo
+  // (and its sections) are deliberately NOT wiped here: the real, live
+  // content is imported separately via import-bot-projects.ts and
+  // import-treva-info.ts and must survive every re-seed.
   await prisma.leadTimelineEvent.deleteMany();
   await prisma.internalNote.deleteMany();
   await prisma.message.deleteMany();
@@ -29,7 +30,6 @@ async function main() {
   await prisma.contactRequest.deleteMany();
   await prisma.conversation.deleteMany();
   await prisma.lead.deleteMany();
-  await prisma.trevaInfo.deleteMany();
 
   // --- Users ---------------------------------------------------------------
   const admin = await prisma.user.upsert({
@@ -73,28 +73,9 @@ async function main() {
 
   console.log('Seeded users: admin + 2 sales reps');
 
-  // --- TREVA Information ----------------------------------------------------
-  await prisma.trevaInfo.create({
-    data: {
-      status: 'published',
-      mission:
-        'To make premium real estate in Azerbaijan accessible through honest guidance and an AI assistant that never sleeps.',
-      vision:
-        'To be the most trusted property partner in the Caspian region — where every buyer feels informed, not sold to.',
-      whoWeAre:
-        'TREVA is a Baku-based real-estate sales agency pairing seasoned human advisors with an AI sales agent that qualifies, matches and follows up with buyers across every channel.',
-      whyChoose:
-        'Verified listings, transparent payment plans, multilingual support (AZ / RU / EN), and a team that responds in minutes — not days.',
-      website: 'https://treva.az',
-      email: 'sales@treva.az',
-      phone: '+994 12 555 0100',
-      hotline: '*8080',
-    },
-  });
-  console.log('Seeded TREVA information record');
-
-  // Projects are NOT seeded here — the real, live catalog is imported via
-  // import-bot-projects.ts and must persist across every re-seed. Leads below
+  // Projects and TREVA Information are NOT seeded here — the real, live
+  // content is imported via import-bot-projects.ts / import-treva-info.ts and
+  // must persist across every re-seed. Leads below
   // reference project names as free-text (topProject/interestedProjects are
   // plain strings, not a foreign key), so they don't depend on any Project row
   // existing.
