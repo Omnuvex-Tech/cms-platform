@@ -36,6 +36,13 @@
 .nav::-webkit-scrollbar {
     display: none;     
 }
+.navSeparator {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin: 8px 10px;
+    flex-shrink: 0;
+}
+
 .navItem {
     display: flex;
     align-items: center;

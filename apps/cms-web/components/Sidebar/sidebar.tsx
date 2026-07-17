@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "@/styles/sidebar.module.css";
@@ -37,7 +38,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: "Projects", href: "/projects", icon: <Building2 size={18} />, adminOnly: true },
     { label: "TREVA Information", href: "/treva-information", icon: <Info size={18} />, adminOnly: true },
     { label: "Conversations", href: "/conversations", icon: <MessagesSquare size={18} />, badge: "conversations" },
-    { label: "Handoff Queue", href: "/handoffs", icon: <LifeBuoy size={18} />, badge: "handoffs" },
+    { label: "Escalations", href: "/handoffs", icon: <LifeBuoy size={18} />, badge: "handoffs" },
     { label: "Contact Requests", href: "/contact-requests", icon: <PhoneCall size={18} />, badge: "contactRequests" },
     { label: "Leads", href: "/leads", icon: <Users size={18} />, badge: "leads" },
 ];
@@ -68,27 +69,32 @@ export function Sidebar() {
             </div>
 
             <nav className={styles.nav}>
-                {visibleItems.map((item) => {
+                {visibleItems.map((item, index) => {
                     const count = item.badge ? badges?.[item.badge] ?? 0 : 0;
                     const overdue =
                         item.badge === "contactRequests" &&
                         (badges?.contactRequestsOverdue ?? 0) > 0;
+                    const prevItem = visibleItems[index - 1];
+                    const showSeparator =
+                        prevItem != null && !prevItem.badge && !!item.badge;
                     return (
-                        <Link
-                            key={item.label}
-                            href={item.href}
-                            className={`${styles.navItem} ${isActive(item.href) ? styles.navItemActive : ""}`}
-                        >
-                            <span className={styles.navIcon}>{item.icon}</span>
-                            <span className={styles.navLabel}>{item.label}</span>
-                            {item.badge && count > 0 && (
-                                <span
-                                    className={`${styles.badge} ${overdue ? styles.badgeDanger : ""}`}
-                                >
-                                    {count}
-                                </span>
-                            )}
-                        </Link>
+                        <React.Fragment key={item.label}>
+                            {showSeparator && <div className={styles.navSeparator} />}
+                            <Link
+                                href={item.href}
+                                className={`${styles.navItem} ${isActive(item.href) ? styles.navItemActive : ""}`}
+                            >
+                                <span className={styles.navIcon}>{item.icon}</span>
+                                <span className={styles.navLabel}>{item.label}</span>
+                                {item.badge && count > 0 && (
+                                    <span
+                                        className={`${styles.badge} ${overdue ? styles.badgeDanger : ""}`}
+                                    >
+                                        {count}
+                                    </span>
+                                )}
+                            </Link>
+                        </React.Fragment>
                     );
                 })}
             </nav>

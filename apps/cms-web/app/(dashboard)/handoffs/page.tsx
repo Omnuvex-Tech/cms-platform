@@ -121,7 +121,7 @@ export default function HandoffsPage() {
     return (
         <div>
             <PageHeader
-                title="Handoff Queue"
+                title="Escalations"
                 subtitle="The safety net between an AI conversation and a missed sale."
                 actions={
                     <select

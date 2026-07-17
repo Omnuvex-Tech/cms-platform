@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
     const links = [
         { label: "Conversations", href: "/conversations", icon: <MessagesSquare size={18} /> },
-        { label: "Handoff Queue", href: "/handoffs", icon: <LifeBuoy size={18} /> },
+        { label: "Escalations", href: "/handoffs", icon: <LifeBuoy size={18} /> },
         { label: "Contact Requests", href: "/contact-requests", icon: <PhoneCall size={18} /> },
         { label: "Leads", href: "/leads", icon: <Users size={18} /> },
         ...(user?.role === "admin"
