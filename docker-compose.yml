@@ -1,0 +1,84 @@
+services:
+  postgres:
+    # Matches the local dev server (postgresql-x64-18) so the migrated dump
+    # (pg_dump 18.x) restores in cleanly with no cross-major-version surprises.
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-cms_platform}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms_platform}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    expose:
+      - "5432"
+
+  cms-api:
+    build:
+      context: .
+      dockerfile: apps/cms-api/Dockerfile
+    image: cms-api:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms_platform}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      INGEST_API_KEY: ${INGEST_API_KEY}
+      # Single master switch for every cms<->bot sync flow (see bot-sync.service.ts).
+      SYNC_ENABLED: ${SYNC_ENABLED:-0}
+      BOT_KB_WEBHOOK_URL: ${BOT_KB_WEBHOOK_URL:-}
+      BOT_INFO_WEBHOOK_URL: ${BOT_INFO_WEBHOOK_URL:-}
+      BOT_BASE_URL: ${BOT_BASE_URL:-}
+      BOT_SYNC_API_KEY: ${BOT_SYNC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "4000"
+
+  cms-web:
+    build:
+      context: .
+      dockerfile: apps/cms-web/Dockerfile
+      args:
+        # Build-time only — inlined into the client bundle by `next build`.
+        # Changing this requires rebuilding the image, not just restarting it.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    image: cms-web:latest
+    restart: unless-stopped
+    depends_on:
+      - cms-api
+    expose:
+      - "3001"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    # Only map one port — this host already runs an nginx (see the bot's own
+    # docker-compose.yml) that owns 80/443 and routes by domain to services
+    # like this one. Add two server blocks there (one per domain, both
+    # proxying to 127.0.0.1:8090 with the Host header preserved); Caddy does
+    # the panel-vs-api split itself by hostname below.
+    ports:
+      - "8090:80"
+    environment:
+      PANEL_DOMAIN: ${PANEL_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - cms-web
+      - cms-api
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:

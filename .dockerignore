@@ -1,0 +1,34 @@
+# VCS
+.git/
+.gitignore
+
+# Dependencies (reinstalled inside the image from the pruned lockfile)
+node_modules/
+**/node_modules/
+
+# Build outputs (rebuilt inside the image)
+.next/
+**/.next/
+dist/
+**/dist/
+out/
+.turbo/
+**/.turbo/
+
+# Secrets — injected via compose env_file/build args at runtime, never baked into the image
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Editor / tooling
+.idea/
+.vscode/
+.cursor/
+.claude/
+.codex/
+
+# Misc
+coverage/
+*.log
+npm-debug.log*
