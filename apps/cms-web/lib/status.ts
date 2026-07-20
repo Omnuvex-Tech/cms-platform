@@ -85,7 +85,7 @@ export const projectStatus: Record<string, StatusMeta> = {
 };
 
 export const channelLabel: Record<string, string> = {
-    web: "Web",
+    webchat: "Web Chat",
     whatsapp: "WhatsApp",
     telegram: "Telegram",
     instagram: "Instagram",

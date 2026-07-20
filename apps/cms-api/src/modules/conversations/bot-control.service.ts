@@ -9,6 +9,12 @@ interface BotControlSettings {
 }
 
 /**
+ * Channels whose bot-side `/internal/conversations/send-message` receiver can
+ * actually deliver a manual operator reply.
+ */
+const SEND_SUPPORTED_CHANNELS = new Set(['telegram', 'webchat']);
+
+/**
  * Pushes panel->bot conversation-control actions (pause/resume, manual send)
  * to the bot instead of leaving them as DB-only writes. Mirrors BotSyncService's
  * fire-and-forget push pattern; the bot's receivers live under
@@ -51,7 +57,9 @@ export class BotControlService {
 
   /**
    * Push a manual reply to the bot so it actually reaches the customer.
-   * Telegram-only for now — other channels are silently skipped until their
+   * Supported on channels whose bot-side send-message receiver can deliver a
+   * manual reply: `telegram` (pushed via tg_send) and `webchat` (recorded for
+   * the widget to poll). Other channels are silently skipped until their
    * bot-side receivers exist.
    */
   async sendMessage(
@@ -59,7 +67,7 @@ export class BotControlService {
     channel: string,
     text: string,
   ): Promise<void> {
-    if (!threadId || channel !== 'telegram') return;
+    if (!threadId || !SEND_SUPPORTED_CHANNELS.has(channel)) return;
     await this.postToBot('/internal/conversations/send-message', { thread_id: threadId, text });
   }
 

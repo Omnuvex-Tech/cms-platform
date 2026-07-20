@@ -71,7 +71,7 @@ interface LeadDetail extends LeadListItem {
 
 const LEAD_STATUSES = Object.keys(leadStatus);
 const TEMPS = ["hot", "warm", "cold"];
-const CHANNELS = ["web", "whatsapp", "telegram", "instagram", "phone"];
+const CHANNELS = ["webchat", "whatsapp", "telegram", "instagram", "phone"];
 
 function LeadsInner() {
     const qc = useQueryClient();

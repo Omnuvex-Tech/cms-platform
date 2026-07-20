@@ -54,7 +54,7 @@ interface ConvDetail extends ConvListItem {
 }
 
 const STATUSES = Object.keys(conversationStatus);
-const CHANNELS = ["web", "whatsapp", "telegram", "instagram", "phone"];
+const CHANNELS = ["webchat", "whatsapp", "telegram", "instagram", "phone"];
 
 function ConversationsInner() {
     const qc = useQueryClient();

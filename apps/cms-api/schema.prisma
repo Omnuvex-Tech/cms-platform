@@ -23,7 +23,7 @@ enum ProjectStatus {
 }
 
 enum Channel {
-  web
+  webchat
   whatsapp
   telegram
   instagram

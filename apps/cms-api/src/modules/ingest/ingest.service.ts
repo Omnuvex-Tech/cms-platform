@@ -13,7 +13,7 @@ import { IngestLeadDto } from './dto/ingest-lead.dto';
 import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
 import { IngestConversationDto } from './dto/ingest-conversation.dto';
 
-const CHANNELS: Channel[] = ['web', 'whatsapp', 'telegram', 'instagram', 'phone'];
+const CHANNELS: Channel[] = ['webchat', 'whatsapp', 'telegram', 'instagram', 'phone'];
 
 // The pipeline a lead moves through. Used to auto-advance salesStatus from
 // signals the bot/panel already gives us (e.g. a contact request coming in)
@@ -443,6 +443,14 @@ export class IngestService {
     if (v === 'user') return 'user';
     if (v === 'human') return 'human';
     if (v === 'system') return 'system';
+    // "agent" = a human operator's HITL reply on the bot side. The bot's
+    // outbox already filters these out of the conversation push (the panel
+    // wrote its own `human` copy when the operator hit send), so they should
+    // never arrive here. Map to `human` — NOT the `bot` default — as defense
+    // in depth: countMessages() excludes `human`, so a leaked agent message
+    // can't inflate the bot-message count and desync the append-by-count sync,
+    // and it can never again masquerade as a duplicate bot bubble.
+    if (v === 'agent') return 'human';
     return 'bot'; // bot | assistant | ai | anything else
   }
 
@@ -459,10 +467,15 @@ export class IngestService {
       : 'phone';
   }
 
-  /** Bot channels already match our enum; anything unexpected falls back to web. */
+  /**
+   * Bot channels already match our enum; anything unexpected falls back to
+   * webchat — historically the generic `web` catch-all this replaced was, in
+   * practice, always the browser widget anyway (see the 2026-07-20 migration
+   * that removed `web` from the Channel enum and backfilled those rows).
+   */
   private mapChannel(raw: string | undefined): Channel {
     const value = (raw ?? '').trim().toLowerCase() as Channel;
-    return CHANNELS.includes(value) ? value : 'web';
+    return CHANNELS.includes(value) ? value : 'webchat';
   }
 
   /** The bot stores language as a full word ("russian") or a code ("ru"). */
