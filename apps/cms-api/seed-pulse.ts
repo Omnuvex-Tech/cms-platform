@@ -24,25 +24,25 @@ async function main() {
 
   // ── Authors ──────────────────────────────────────────
   const AUTHORS_DATA = [
-    { name: 'Emil Qurbanov', slug: 'emil-qurbanov', title: 'Satış üzrə Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69fd8ce9412d4296bff1111a_Emil%20Qurbanov.webp' },
-    { name: 'Cavid Axundov', slug: 'cavid-axundov', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69b1127e23e0494e172f15d1_freepik__keep-everything-exactly-the-same-in-the-image-the-__62478.webp' },
-    { name: 'Nəzrin Kərimli', slug: 'nezrin-kerimli', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69d8f643447acae0af6ad0cd_Nezrin%20K%C9%99rimli%20(1).webp' },
-    { name: 'Türkan Mamedova', slug: 'turkan-mamedova', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69d39344f03dd689a3df5f48_Turkan%20Mamedova%20(1)d.webp' },
-    { name: 'Leyla Bağırzadə', slug: 'leyla-bagirzade', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69eb87ce2666e56cda7df5f6_leyla-autor.webp' },
-    { name: 'Tural Nəcəfov', slug: 'tural-necfov', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69f20b608b4bce1864a0a1a0_Tural%20Necefov.webp' },
-    { name: 'Səbinə Muxtarova', slug: 'sebine-muxtarova', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69bbd13d1d6e953bdfa53e4f_Sebine.webp' },
-    { name: 'Batula Mohubbi', slug: 'batula-mohubbi', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69b40fd1699b4c83ff918f97_batula.webp' },
-    { name: 'İlhamə Paşazadə', slug: 'ilhame-paszazade', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69a7d6a31b4102cd82150c58_1x1%20size%20qadin%20(1).webp' },
-    { name: 'Tərlan Kərimov', slug: 'terlan-kerimov', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6989c5263e93fc7d31871a9e_IMAGE.jpeg' },
-    { name: 'Həcər Nağıyeva', slug: 'hecer-nagiyeva', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/69b4284aff4b24810b7251ff_hecer.webp' },
-    { name: 'Fərid Əlipənahov', slug: 'farid-alipanahov', title: 'Menecer', avatar: 'https://cdn.prod.website-files.com/685e5b3de579c8df7030142b/6971fdc542706589755deb51_profil%20photo.webp' },
+    { name: 'Emil Qurbanov', slug: 'emil-qurbanov', title: 'Satış üzrə Menecer' },
+    { name: 'Cavid Axundov', slug: 'cavid-axundov', title: 'Menecer' },
+    { name: 'Nəzrin Kərimli', slug: 'nezrin-kerimli', title: 'Menecer' },
+    { name: 'Türkan Mamedova', slug: 'turkan-mamedova', title: 'Menecer' },
+    { name: 'Leyla Bağırzadə', slug: 'leyla-bagirzade', title: 'Menecer' },
+    { name: 'Tural Nəcəfov', slug: 'tural-necfov', title: 'Menecer' },
+    { name: 'Səbinə Muxtarova', slug: 'sebine-muxtarova', title: 'Menecer' },
+    { name: 'Batula Mohubbi', slug: 'batula-mohubbi', title: 'Menecer' },
+    { name: 'İlhamə Paşazadə', slug: 'ilhame-paszazade', title: 'Menecer' },
+    { name: 'Tərlan Kərimov', slug: 'terlan-kerimov', title: 'Menecer' },
+    { name: 'Həcər Nağıyeva', slug: 'hecer-nagiyeva', title: 'Menecer' },
+    { name: 'Fərid Əlipənahov', slug: 'farid-alipanahov', title: 'Menecer' },
   ];
 
   const createdAuthors: Record<string, any> = {};
   for (const a of AUTHORS_DATA) {
     const author = await prisma.pulseAuthor.upsert({
       where: { slug: a.slug },
-      update: { name: a.name, title: a.title, avatar: a.avatar },
+      update: { name: a.name, title: a.title },
       create: a,
     });
     createdAuthors[a.slug] = author;

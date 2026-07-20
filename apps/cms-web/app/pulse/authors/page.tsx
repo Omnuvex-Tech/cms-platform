@@ -6,6 +6,13 @@ import styles from "@/styles/blog.module.css";
 
 type Author = { id: string; name: string; slug: string; title?: string; avatar?: string; description?: string };
 
+const PULSE_UPLOAD_PREFIX = "/uploads/pulse/";
+
+function normalizePulseAvatar(avatar?: string | null) {
+    if (!avatar) return "";
+    return avatar.startsWith(PULSE_UPLOAD_PREFIX) ? avatar : "";
+}
+
 export default function PulseAuthorsPage() {
     const [authors, setAuthors] = useState<Author[]>([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +35,7 @@ export default function PulseAuthorsPage() {
     useEffect(() => { load(); }, []);
 
     const openCreate = () => { setEditItem(null); setName(""); setSlug(""); setTitle(""); setAvatar(""); setDescription(""); setModalOpen(true); };
-    const openEdit = (a: Author) => { setEditItem(a); setName(a.name); setSlug(a.slug); setTitle(a.title || ""); setAvatar(a.avatar || ""); setDescription(a.description || ""); setModalOpen(true); };
+    const openEdit = (a: Author) => { setEditItem(a); setName(a.name); setSlug(a.slug); setTitle(a.title || ""); setAvatar(normalizePulseAvatar(a.avatar)); setDescription(a.description || ""); setModalOpen(true); };
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -40,7 +47,7 @@ export default function PulseAuthorsPage() {
         if (!name.trim()) return;
         setSaving(true);
         try {
-            const body = { name, slug: slug || generateSlug(name), title, avatar: avatar || null, description };
+            const body = { name, slug: slug || generateSlug(name), title, avatar: normalizePulseAvatar(avatar) || null, description };
             if (editItem) await apiFetch(`/pulse/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/authors", { method: "POST", body: JSON.stringify(body) });
             setModalOpen(false); load();

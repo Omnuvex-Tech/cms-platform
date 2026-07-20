@@ -9,6 +9,8 @@ import { UpdatePulseKeywordDto } from './dto/update-pulse-keyword.dto';
 import { CreatePulseCategoryDto } from './dto/create-pulse-category.dto';
 import { UpdatePulseCategoryDto } from './dto/update-pulse-category.dto';
 
+const PULSE_UPLOAD_PREFIX = '/uploads/pulse/';
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -17,6 +19,30 @@ function slugify(text: string): string {
     .replace(/[^\w\-]+/g, '')
     .replace(/\-\-+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function sanitizePulseAvatar(avatar?: string | null): string | undefined {
+  if (!avatar) return undefined;
+  return avatar.startsWith(PULSE_UPLOAD_PREFIX) ? avatar : undefined;
+}
+
+function sanitizeAuthorEntity<T extends { avatar?: string | null } | null>(author: T): T {
+  if (!author) return author;
+  return {
+    ...author,
+    avatar: sanitizePulseAvatar(author.avatar),
+  } as T;
+}
+
+function sanitizeArticleEntity<T extends { author?: any; selectedArticles?: any[] } | null>(article: T): T {
+  if (!article) return article;
+  return {
+    ...article,
+    author: sanitizeAuthorEntity(article.author),
+    selectedArticles: Array.isArray(article.selectedArticles)
+      ? article.selectedArticles.map((selectedArticle) => sanitizeArticleEntity(selectedArticle))
+      : article.selectedArticles,
+  } as T;
 }
 
 @Injectable()
@@ -64,23 +90,27 @@ export class PulseService {
       });
     }
 
-    return articles;
+    return articles.map((article: any) => sanitizeArticleEntity(article));
   }
 
-  findArticleById(id: string) {
-    return this.repo.findArticleById(id);
+  async findArticleById(id: string) {
+    const article = await this.repo.findArticleById(id);
+    return sanitizeArticleEntity(article);
   }
 
-  findArticleBySlug(slug: string) {
-    return this.repo.findArticleBySlug(slug);
+  async findArticleBySlug(slug: string) {
+    const article = await this.repo.findArticleBySlug(slug);
+    return sanitizeArticleEntity(article);
   }
 
-  findHeaderArticles(position: string) {
-    return this.repo.findHeaderArticles(position);
+  async findHeaderArticles(position: string) {
+    const articles = await this.repo.findHeaderArticles(position);
+    return articles.map((article: any) => sanitizeArticleEntity(article));
   }
 
-  findFeaturedArticles() {
-    return this.repo.findFeaturedArticles();
+  async findFeaturedArticles() {
+    const articles = await this.repo.findFeaturedArticles();
+    return articles.map((article: any) => sanitizeArticleEntity(article));
   }
 
   async createArticle(dto: CreatePulseArticleDto) {
@@ -90,10 +120,11 @@ export class PulseService {
     }
     const titleObj = dto.title as any;
     const titleText = typeof titleObj === 'object' && titleObj !== null ? (titleObj.az || Object.values(titleObj)[0] || '') : titleObj;
-    return this.repo.createArticle({
+    const article = await this.repo.createArticle({
       ...dto,
       slug: dto.slug || slugify(titleText),
     });
+    return sanitizeArticleEntity(article);
   }
 
   async updateArticle(id: string, dto: UpdatePulseArticleDto) {
@@ -105,7 +136,8 @@ export class PulseService {
       if (duplicate && duplicate.id !== id) throw new ConflictException('Bu slug artıq istifadə olunur');
     }
 
-    return this.repo.updateArticle(id, dto);
+    const article = await this.repo.updateArticle(id, dto);
+    return sanitizeArticleEntity(article);
   }
 
   async deleteArticle(id: string) {
@@ -115,16 +147,19 @@ export class PulseService {
   }
 
   // ── Authors ──────────────────────────────────────────
-  findAllAuthors() {
-    return this.repo.findAllAuthors();
+  async findAllAuthors() {
+    const authors = await this.repo.findAllAuthors();
+    return authors.map((author: any) => sanitizeAuthorEntity(author));
   }
 
-  findAuthorById(id: string) {
-    return this.repo.findAuthorById(id);
+  async findAuthorById(id: string) {
+    const author = await this.repo.findAuthorById(id);
+    return sanitizeAuthorEntity(author);
   }
 
-  findAuthorBySlug(slug: string) {
-    return this.repo.findAuthorBySlug(slug);
+  async findAuthorBySlug(slug: string) {
+    const author = await this.repo.findAuthorBySlug(slug);
+    return sanitizeAuthorEntity(author);
   }
 
   async createAuthor(dto: CreatePulseAuthorDto) {
@@ -132,16 +167,22 @@ export class PulseService {
       const existing = await this.repo.findAuthorBySlug(dto.slug);
       if (existing) throw new ConflictException('Bu author artıq istifadə olunur');
     }
-    return this.repo.createAuthor({
+    const author = await this.repo.createAuthor({
       ...dto,
+      avatar: sanitizePulseAvatar(dto.avatar),
       slug: dto.slug || slugify(dto.name),
     });
+    return sanitizeAuthorEntity(author);
   }
 
   async updateAuthor(id: string, dto: UpdatePulseAuthorDto) {
     const existing = await this.repo.findAuthorById(id);
     if (!existing) throw new NotFoundException('Müəllif tapılmadı');
-    return this.repo.updateAuthor(id, dto);
+    const author = await this.repo.updateAuthor(id, {
+      ...dto,
+      ...(dto.avatar !== undefined && { avatar: sanitizePulseAvatar(dto.avatar) }),
+    });
+    return sanitizeAuthorEntity(author);
   }
 
   async deleteAuthor(id: string) {
