@@ -37,6 +37,18 @@ function getLocalizedName(name: string | { az?: string; en?: string; ru?: string
     return name.az || Object.values(name)[0] || "";
 }
 
+function toDateInputValue(value?: string | null): string {
+    if (!value) return "";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragraph" }; onChange: (b: Block) => void }) {
     const ref = useRef<HTMLDivElement>(null);
     const [showLinkPopup, setShowLinkPopup] = useState(false);
@@ -361,6 +373,7 @@ export default function PulseArticleEditPage() {
     const [slug, setSlug] = useState("");
     const [category, setCategory] = useState("");
     const [excerpt, setExcerpt] = useState("");
+    const [publishDate, setPublishDate] = useState("");
     const [coverImage, setCoverImage] = useState("");
     const [authorId, setAuthorId] = useState("");
     const [published, setPublished] = useState(false);
@@ -399,6 +412,7 @@ export default function PulseArticleEditPage() {
                 setSlug(a.slug);
                 setCategory(a.category && typeof a.category === "object" ? (a.category?.az || Object.values(a.category)[0] || "") : (a.category || ""));
                 setExcerpt(a.excerpt && typeof a.excerpt === "object" ? (a.excerpt?.az || Object.values(a.excerpt)[0] || "") : (a.excerpt || ""));
+                setPublishDate(toDateInputValue(a.date || a.createdAt));
                 setCoverImage(a.coverImage || "");
                 setAuthorId(a.authorId || ""); setPublished(a.published);
                 setFeatured(a.featured); setHeaderPositions(Array.isArray(a.headerPositions) ? a.headerPositions : []);
@@ -461,6 +475,7 @@ export default function PulseArticleEditPage() {
             const body = {
                 title: { az: title }, slug, category: { az: category },
                 excerpt: excerpt ? { az: excerpt } : null,
+                ...(publishDate ? { date: publishDate } : {}),
                 coverImage: coverImage || null,
                 authorId: authorType === "existing" ? (authorId || null) : null,
                 published, featured,
@@ -587,6 +602,16 @@ export default function PulseArticleEditPage() {
                 <div className={styles.field}>
                     <label>Qısa məzmun</label>
                     <textarea className={styles.input} rows={3} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Məqalənin qısa təsviri" />
+                </div>
+
+                <div className={styles.field}>
+                    <label>Dərc olunma tarixi</label>
+                    <input
+                        type="date"
+                        className={styles.input}
+                        value={publishDate}
+                        onChange={e => setPublishDate(e.target.value)}
+                    />
                 </div>
 
                 <div className={styles.field}>

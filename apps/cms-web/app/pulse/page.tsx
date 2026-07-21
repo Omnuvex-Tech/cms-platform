@@ -19,6 +19,17 @@ function getLocalizedName(value: string | { az?: string; en?: string; ru?: strin
     return value.az || Object.values(value)[0] || "";
 }
 
+function formatArticleDate(date?: string): string {
+    if (!date) return "—";
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return "—";
+
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const year = parsed.getFullYear();
+    return `${day}.${month}.${year}`;
+}
+
 export default function PulseArticlesPage() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,6 +90,7 @@ export default function PulseArticlesPage() {
                                         <th>Başlıq</th>
                                         <th>Kateqoriya</th>
                                         <th>Müəllif</th>
+                                        <th>Dərc tarixi</th>
                                         <th>Header</th>
                                         <th>Status</th>
                                         <th>Əməliyyatlar</th>
@@ -100,6 +112,7 @@ export default function PulseArticlesPage() {
                                             </td>
                                             <td><span className={styles.badgeTag}>{getLocalizedName(a.category)}</span></td>
                                             <td>{a.author?.name || "—"}</td>
+                                            <td>{formatArticleDate(a.date)}</td>
                                             <td>{positionBadge(a.headerPositions)}</td>
                                             <td>
                                                 <span className={`${styles.statusBadge} ${a.published ? styles.badgeVisible : styles.badgeHidden}`}>
