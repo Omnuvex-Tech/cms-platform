@@ -31,7 +31,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe());
+  // whitelist strips any request-body property not declared on the target DTO
+  // (e.g. a client echoing back `id` on a PATCH) instead of passing it through
+  // to Prisma, which rejects unknown fields.
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   app.useStaticAssets(join(process.cwd(), 'public'));
 
