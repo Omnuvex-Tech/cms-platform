@@ -110,13 +110,13 @@
 .serviceItemHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 
 /* Modal */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
-.modal { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-.modalHeader { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.modal { background: #fff; border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; box-shadow: 0 20px 60px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+.modalHeader { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
 .modalHeader h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; }
-.modalBody { padding: 24px; }
+.modalBody { padding: 24px; overflow-y: auto; flex: 1; }
 .modalBody p { color: #475569; font-size: 15px; line-height: 1.6; margin: 0; }
-.modalFooter { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #f1f5f9; }
+.modalFooter { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #f1f5f9; flex-shrink: 0; }
 .saveBtn { padding: 9px 20px; border-radius: 8px; border: none; background: #2563eb; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
 .saveBtn:hover { background: #1d4ed8; }
 .saveBtn:disabled { background: #93c5fd; cursor: not-allowed; }
