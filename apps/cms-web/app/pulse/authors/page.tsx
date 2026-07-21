@@ -14,10 +14,16 @@ function normalizePulseAvatar(avatar?: string | null) {
     return avatar.startsWith(PULSE_UPLOAD_PREFIX) ? avatar : "";
 }
 
-function getLocalizedValue(value: LocalizedValue | undefined, locale: "az" | "en" | "ru" = "az"): string {
+function getLocalizedValue(value: any, locale: "az" | "en" | "ru" = "az"): string {
     if (!value) return "";
     if (typeof value === "string") return value;
-    return value[locale] || value.az || value.en || value.ru || Object.values(value)[0] || "";
+    if (typeof value === "object") {
+        const val = value[locale] || value.az || value.en || value.ru;
+        if (typeof val === "string") return val;
+        const firstVal = Object.values(value).find(v => typeof v === "string");
+        if (firstVal) return firstVal as string;
+    }
+    return "";
 }
 
 function toLocalizedFields(value: LocalizedValue | undefined) {

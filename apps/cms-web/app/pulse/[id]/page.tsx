@@ -31,10 +31,16 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
     { type: "gallery", label: "Qalereya", icon: "⊞" },
 ];
 
-function getLocalizedName(name: string | { az?: string; en?: string; ru?: string } | undefined): string {
+function getLocalizedName(name: any): string {
     if (!name) return "";
     if (typeof name === "string") return name;
-    return name.az || Object.values(name)[0] || "";
+    if (typeof name === "object") {
+        const val = name.az || name.en || name.ru;
+        if (typeof val === "string") return val;
+        const firstVal = Object.values(name).find(v => typeof v === "string");
+        if (firstVal) return firstVal as string;
+    }
+    return "";
 }
 
 function toDateInputValue(value?: string | null): string {

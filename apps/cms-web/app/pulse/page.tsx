@@ -13,10 +13,16 @@ type Article = {
     author?: { name: string }; keywords?: { name: string | { az?: string; en?: string; ru?: string } }[];
 };
 
-function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {
+function getLocalizedName(value: any): string {
     if (!value) return "";
     if (typeof value === "string") return value;
-    return value.az || Object.values(value)[0] || "";
+    if (typeof value === "object") {
+        const val = value.az || value.en || value.ru;
+        if (typeof val === "string") return val;
+        const firstVal = Object.values(value).find(v => typeof v === "string");
+        if (firstVal) return firstVal as string;
+    }
+    return "";
 }
 
 function formatArticleDate(date?: string): string {
@@ -111,7 +117,7 @@ export default function PulseArticlesPage() {
                                                 </div>
                                             </td>
                                             <td><span className={styles.badgeTag}>{getLocalizedName(a.category)}</span></td>
-                                            <td>{a.author?.name || "—"}</td>
+                                            <td>{getLocalizedName(a.author?.name) || "—"}</td>
                                             <td>{formatArticleDate(a.date)}</td>
                                             <td>{positionBadge(a.headerPositions)}</td>
                                             <td>

@@ -7,10 +7,16 @@ import styles from "@/styles/blog.module.css";
 type LocalizedName = string | { az?: string; en?: string; ru?: string };
 type Keyword = { id: string; name: LocalizedName; slug: string };
 
-function getLocalizedName(name: LocalizedName | undefined, locale: "az" | "en" | "ru" = "az"): string {
+function getLocalizedName(name: any, locale: "az" | "en" | "ru" = "az"): string {
     if (!name) return "";
     if (typeof name === "string") return name;
-    return name[locale] || name.az || name.en || name.ru || Object.values(name)[0] || "";
+    if (typeof name === "object") {
+        const val = name[locale] || name.az || name.en || name.ru;
+        if (typeof val === "string") return val;
+        const firstVal = Object.values(name).find(v => typeof v === "string");
+        if (firstVal) return firstVal as string;
+    }
+    return "";
 }
 
 function toLocalizedKeywordName(name: LocalizedName | undefined) {
