@@ -37,8 +37,7 @@ const childrenInclude = {
  * This is the panel side of the "panel pushes on publish" bridge: when a
  * project is published (or an already-published project is edited or removed),
  * the panel POSTs it — mapped into the bot's KB schema — to the bot's KB-sync
- * webhook. The bot-side receiver is built in a later session; until it exists,
- * this feature stays OFF (BOT_SYNC_ENABLED unset) and is a complete no-op.
+ * webhook. Until SYNC_ENABLED is on, this feature is a complete no-op.
  *
  * Design notes:
  *  - Settings are read live from process.env on each call (same pattern as
@@ -56,10 +55,8 @@ export class BotSyncService {
   constructor(private readonly prisma: PrismaService) {}
 
   private settings(urlEnvVar = 'BOT_KB_WEBHOOK_URL'): BotSyncSettings {
-    // SYNC_ENABLED is the single master switch for every cms<->bot sync; the
-    // legacy per-flow BOT_SYNC_ENABLED remains a fallback when it is unset.
-    const raw = process.env.SYNC_ENABLED ?? process.env.BOT_SYNC_ENABLED ?? '';
-    const flag = raw.trim().toLowerCase();
+    // SYNC_ENABLED is the single master switch for every cms<->bot sync flow.
+    const flag = (process.env.SYNC_ENABLED ?? '').trim().toLowerCase();
     return {
       enabled: ['1', 'true', 'yes', 'on'].includes(flag),
       url: (process.env[urlEnvVar] ?? '').trim(),
@@ -81,7 +78,7 @@ export class BotSyncService {
     if (!settings.enabled) return { ok: false, skipped: true, reason: 'disabled' };
     if (!settings.url || !settings.apiKey) {
       this.logger.warn(
-        'BOT_SYNC_ENABLED is on but BOT_KB_WEBHOOK_URL/BOT_SYNC_API_KEY is unset; skipping push',
+        'SYNC_ENABLED is on but BOT_KB_WEBHOOK_URL/BOT_SYNC_API_KEY is unset; skipping push',
       );
       return { ok: false, skipped: true, reason: 'unconfigured' };
     }

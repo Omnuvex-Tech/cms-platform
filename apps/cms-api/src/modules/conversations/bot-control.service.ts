@@ -21,25 +21,16 @@ const SEND_SUPPORTED_CHANNELS = new Set(['telegram', 'webchat']);
  * `<BOT_BASE_URL>/internal/conversations/*`, keyed by the same threadId the
  * panel stores on Conversation.
  *
- * OFF by default (SYNC_ENABLED / BOT_CONTROL_ENABLED unset) — until then this
- * is a no-op and setBot/reply behave exactly as before (DB-only).
+ * OFF by default (SYNC_ENABLED unset) — until then this is a no-op and
+ * setBot/reply behave exactly as before (DB-only).
  */
 @Injectable()
 export class BotControlService {
   private readonly logger = new Logger(BotControlService.name);
 
   private settings(): BotControlSettings {
-    // Same precedence as BotSyncService: the shared SYNC_ENABLED master switch
-    // wins; BOT_CONTROL_ENABLED lets this flow be toggled independently; and
-    // BOT_SYNC_ENABLED (the panel's existing legacy flag for bot-related
-    // pushes) is the last-resort fallback so setups that only set that one
-    // still pick this feature up.
-    const raw =
-      process.env.SYNC_ENABLED ??
-      process.env.BOT_CONTROL_ENABLED ??
-      process.env.BOT_SYNC_ENABLED ??
-      '';
-    const flag = raw.trim().toLowerCase();
+    // SYNC_ENABLED is the single master switch for every cms<->bot flow.
+    const flag = (process.env.SYNC_ENABLED ?? '').trim().toLowerCase();
     return {
       enabled: ['1', 'true', 'yes', 'on'].includes(flag),
       url: (process.env.BOT_BASE_URL ?? '').trim().replace(/\/+$/, ''),
