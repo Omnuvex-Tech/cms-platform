@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
-type Author = { id: string; name: string; slug: string };
-type Keyword = { id: string; name: string; slug: string };
+type Author = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
+type Keyword = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 type ArticleSummary = { id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; coverImage?: string; category?: string | { az?: string; en?: string; ru?: string } };
 
@@ -568,7 +568,7 @@ export default function PulseArticleEditPage() {
                         {authorType === "existing" ? (
                             <select className={styles.input} value={authorId} onChange={e => setAuthorId(e.target.value)}>
                                 <option value="">Seçin...</option>
-                                {authors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                {authors.map(a => <option key={a.id} value={a.id}>{getLocalizedName(a.name)}</option>)}
                             </select>
                         ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -645,7 +645,7 @@ export default function PulseArticleEditPage() {
                                 background: selectedKeywords.includes(k.id) ? "#2563eb" : "transparent",
                                 color: selectedKeywords.includes(k.id) ? "#fff" : "#64748b",
                             }}>
-                            {k.name}
+                            {getLocalizedName(k.name)}
                         </button>
                     ))}
                 </div>

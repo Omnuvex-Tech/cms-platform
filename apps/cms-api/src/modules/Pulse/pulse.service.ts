@@ -10,6 +10,7 @@ import { CreatePulseCategoryDto } from './dto/create-pulse-category.dto';
 import { UpdatePulseCategoryDto } from './dto/update-pulse-category.dto';
 
 const PULSE_UPLOAD_PREFIX = '/uploads/pulse/';
+type LocalizedText = string | { az?: string; en?: string; ru?: string } | null | undefined;
 
 function slugify(text: string): string {
   return text
@@ -43,6 +44,31 @@ function sanitizeArticleEntity<T extends { author?: any; selectedArticles?: any[
       ? article.selectedArticles.map((selectedArticle) => sanitizeArticleEntity(selectedArticle))
       : article.selectedArticles,
   } as T;
+}
+
+function getPrimaryLocalizedValue(value: LocalizedText): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+
+  const normalizedEntries = [value.az, value.en, value.ru, ...Object.values(value)]
+    .map((entry) => String(entry ?? '').trim())
+    .filter(Boolean);
+
+  return normalizedEntries[0] || '';
+}
+
+function normalizeLocalizedText(value: LocalizedText): { az: string; en: string; ru: string } {
+  const fallback = getPrimaryLocalizedValue(value);
+
+  if (typeof value === 'string' || !value) {
+    return { az: fallback, en: fallback, ru: fallback };
+  }
+
+  const az = String(value.az ?? '').trim() || fallback;
+  const en = String(value.en ?? '').trim() || az || fallback;
+  const ru = String(value.ru ?? '').trim() || az || fallback;
+
+  return { az, en, ru };
 }
 
 @Injectable()
@@ -167,10 +193,16 @@ export class PulseService {
       const existing = await this.repo.findAuthorBySlug(dto.slug);
       if (existing) throw new ConflictException('Bu author artıq istifadə olunur');
     }
+    const normalizedName = normalizeLocalizedText(dto.name);
+    const normalizedTitle = dto.title !== undefined ? normalizeLocalizedText(dto.title) : undefined;
+    const normalizedDescription = dto.description !== undefined ? normalizeLocalizedText(dto.description) : undefined;
     const author = await this.repo.createAuthor({
       ...dto,
+      name: normalizedName,
+      ...(normalizedTitle !== undefined && { title: normalizedTitle }),
+      ...(normalizedDescription !== undefined && { description: normalizedDescription }),
       avatar: sanitizePulseAvatar(dto.avatar),
-      slug: dto.slug || slugify(dto.name),
+      slug: dto.slug || slugify(getPrimaryLocalizedValue(normalizedName)),
     });
     return sanitizeAuthorEntity(author);
   }
@@ -178,8 +210,17 @@ export class PulseService {
   async updateAuthor(id: string, dto: UpdatePulseAuthorDto) {
     const existing = await this.repo.findAuthorById(id);
     if (!existing) throw new NotFoundException('Müəllif tapılmadı');
+
+    if (dto.slug) {
+      const duplicate = await this.repo.findAuthorBySlug(dto.slug);
+      if (duplicate && duplicate.id !== id) throw new ConflictException('Bu author artıq istifadə olunur');
+    }
+
     const author = await this.repo.updateAuthor(id, {
       ...dto,
+      ...(dto.name !== undefined && { name: normalizeLocalizedText(dto.name) }),
+      ...(dto.title !== undefined && { title: normalizeLocalizedText(dto.title) }),
+      ...(dto.description !== undefined && { description: normalizeLocalizedText(dto.description) }),
       ...(dto.avatar !== undefined && { avatar: sanitizePulseAvatar(dto.avatar) }),
     });
     return sanitizeAuthorEntity(author);
@@ -205,20 +246,33 @@ export class PulseService {
   }
 
   async createKeyword(dto: CreatePulseKeywordDto) {
+    const normalizedName = normalizeLocalizedText(dto.name);
+
     if (dto.slug) {
       const existing = await this.repo.findKeywordBySlug(dto.slug);
       if (existing) throw new ConflictException('Bu keyword artıq istifadə olunur');
     }
+
     return this.repo.createKeyword({
       ...dto,
-      slug: dto.slug || slugify(dto.name),
+      name: normalizedName,
+      slug: dto.slug || slugify(getPrimaryLocalizedValue(normalizedName)),
     });
   }
 
   async updateKeyword(id: string, dto: UpdatePulseKeywordDto) {
     const existing = await this.repo.findKeywordById(id);
     if (!existing) throw new NotFoundException('Açar söz tapılmadı');
-    return this.repo.updateKeyword(id, dto);
+
+    if (dto.slug) {
+      const duplicate = await this.repo.findKeywordBySlug(dto.slug);
+      if (duplicate && duplicate.id !== id) throw new ConflictException('Bu keyword artıq istifadə olunur');
+    }
+
+    return this.repo.updateKeyword(id, {
+      ...dto,
+      ...(dto.name !== undefined && { name: normalizeLocalizedText(dto.name) }),
+    });
   }
 
   async deleteKeyword(id: string) {
@@ -237,16 +291,24 @@ export class PulseService {
   }
 
   async createCategory(dto: CreatePulseCategoryDto) {
+    const normalizedName = normalizeLocalizedText(dto.name);
     const existing = await this.repo.findAllCategories();
-    const newName = typeof dto.name === 'object' ? ((dto.name as any)?.az || Object.values(dto.name as any)[0] || '') : dto.name;
+    const newName = getPrimaryLocalizedValue(normalizedName);
     const duplicate = existing.find((c) => {
       const cNameVal = c.name as any;
       const cName = typeof cNameVal === 'object' && cNameVal !== null ? (cNameVal.az || Object.values(cNameVal)[0] || '') : cNameVal;
       return cName?.toLowerCase?.() === newName.toLowerCase();
     });
     if (duplicate) throw new ConflictException('Bu kateqoriya artıq mövcuddur');
+
+    if (dto.slug) {
+      const duplicateSlug = existing.find((category) => category.slug === dto.slug);
+      if (duplicateSlug) throw new ConflictException('Bu slug artıq istifadə olunur');
+    }
+
     return this.repo.createCategory({
       ...dto,
+      name: normalizedName,
       slug: dto.slug || slugify(newName),
     });
   }
@@ -254,6 +316,31 @@ export class PulseService {
   async updateCategory(id: string, dto: UpdatePulseCategoryDto) {
     const existing = await this.repo.findCategoryById(id);
     if (!existing) throw new NotFoundException('Kateqoriya tapılmadı');
+
+    const categories = await this.repo.findAllCategories();
+
+    if (dto.slug) {
+      const duplicateSlug = categories.find((category) => category.slug === dto.slug && category.id !== id);
+      if (duplicateSlug) throw new ConflictException('Bu slug artıq istifadə olunur');
+    }
+
+    if (dto.name !== undefined) {
+      const normalizedName = normalizeLocalizedText(dto.name);
+      const newName = getPrimaryLocalizedValue(normalizedName);
+      const duplicateName = categories.find((category) => {
+        if (category.id === id) return false;
+        const categoryName = getPrimaryLocalizedValue(category.name as LocalizedText);
+        return categoryName.toLowerCase() === newName.toLowerCase();
+      });
+
+      if (duplicateName) throw new ConflictException('Bu kateqoriya artıq mövcuddur');
+
+      return this.repo.updateCategory(id, {
+        ...dto,
+        name: normalizedName,
+      });
+    }
+
     return this.repo.updateCategory(id, dto);
   }
 

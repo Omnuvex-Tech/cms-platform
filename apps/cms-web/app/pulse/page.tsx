@@ -10,7 +10,7 @@ type Article = {
     date: string; coverImage?: string; excerpt?: string;
     published: boolean; featured: boolean;
     headerPositions?: string[]; headerOrder?: number;
-    author?: { name: string }; keywords?: { name: string }[];
+    author?: { name: string }; keywords?: { name: string | { az?: string; en?: string; ru?: string } }[];
 };
 
 function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {

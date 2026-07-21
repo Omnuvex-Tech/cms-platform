@@ -1,22 +1,37 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsObject, IsOptional, IsString, ValidateIf } from 'class-validator';
+
+type LocalizedTextInput = string | { az?: string; en?: string; ru?: string };
 
 export class CreatePulseAuthorDto {
+  @ValidateIf((_, value) => typeof value === 'string')
   @IsString()
-  name: string;
+  @ValidateIf((_, value) => typeof value === 'object' && value !== null)
+  @IsObject()
+  name: LocalizedTextInput;
 
   @IsString()
   @IsOptional()
   slug?: string;
 
+  @IsOptional()
+  @ValidateIf((_, value) => typeof value === 'string')
+  @IsString()
+  @ValidateIf((_, value) => typeof value === 'object' && value !== null)
+  @IsObject()
+  title?: LocalizedTextInput;
+
   @IsString()
   @IsOptional()
-  title?: string;
+  linkedin?: string;
 
   @IsString()
   @IsOptional()
   avatar?: string;
 
-  @IsString()
   @IsOptional()
-  description?: string;
+  @ValidateIf((_, value) => typeof value === 'string')
+  @IsString()
+  @ValidateIf((_, value) => typeof value === 'object' && value !== null)
+  @IsObject()
+  description?: LocalizedTextInput;
 }

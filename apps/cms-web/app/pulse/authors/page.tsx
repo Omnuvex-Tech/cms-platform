@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
 
-type Author = { id: string; name: string; slug: string; title?: string; avatar?: string; description?: string };
+type LocalizedValue = string | { az?: string; en?: string; ru?: string };
+type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue };
 
 const PULSE_UPLOAD_PREFIX = "/uploads/pulse/";
 
@@ -13,16 +14,43 @@ function normalizePulseAvatar(avatar?: string | null) {
     return avatar.startsWith(PULSE_UPLOAD_PREFIX) ? avatar : "";
 }
 
+function getLocalizedValue(value: LocalizedValue | undefined, locale: "az" | "en" | "ru" = "az"): string {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value[locale] || value.az || value.en || value.ru || Object.values(value)[0] || "";
+}
+
+function toLocalizedFields(value: LocalizedValue | undefined) {
+    const base = getLocalizedValue(value, "az");
+
+    if (!value || typeof value === "string") {
+        return { az: base, en: base, ru: base };
+    }
+
+    return {
+        az: getLocalizedValue(value, "az"),
+        en: getLocalizedValue(value, "en") || base,
+        ru: getLocalizedValue(value, "ru") || base,
+    };
+}
+
 export default function PulseAuthorsPage() {
     const [authors, setAuthors] = useState<Author[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editItem, setEditItem] = useState<Author | null>(null);
-    const [name, setName] = useState("");
+    const [nameAz, setNameAz] = useState("");
+    const [nameEn, setNameEn] = useState("");
+    const [nameRu, setNameRu] = useState("");
     const [slug, setSlug] = useState("");
-    const [title, setTitle] = useState("");
+    const [titleAz, setTitleAz] = useState("");
+    const [titleEn, setTitleEn] = useState("");
+    const [titleRu, setTitleRu] = useState("");
+    const [linkedin, setLinkedin] = useState("");
     const [avatar, setAvatar] = useState("");
-    const [description, setDescription] = useState("");
+    const [descriptionAz, setDescriptionAz] = useState("");
+    const [descriptionEn, setDescriptionEn] = useState("");
+    const [descriptionRu, setDescriptionRu] = useState("");
     const [saving, setSaving] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -34,8 +62,37 @@ export default function PulseAuthorsPage() {
 
     useEffect(() => { load(); }, []);
 
-    const openCreate = () => { setEditItem(null); setName(""); setSlug(""); setTitle(""); setAvatar(""); setDescription(""); setModalOpen(true); };
-    const openEdit = (a: Author) => { setEditItem(a); setName(a.name); setSlug(a.slug); setTitle(a.title || ""); setAvatar(normalizePulseAvatar(a.avatar)); setDescription(a.description || ""); setModalOpen(true); };
+    const openCreate = () => {
+        setEditItem(null);
+        setNameAz(""); setNameEn(""); setNameRu("");
+        setSlug("");
+        setTitleAz(""); setTitleEn(""); setTitleRu("");
+        setLinkedin("");
+        setAvatar("");
+        setDescriptionAz(""); setDescriptionEn(""); setDescriptionRu("");
+        setModalOpen(true);
+    };
+
+    const openEdit = (a: Author) => {
+        const localizedName = toLocalizedFields(a.name);
+        const localizedTitle = toLocalizedFields(a.title);
+        const localizedDescription = toLocalizedFields(a.description);
+
+        setEditItem(a);
+        setNameAz(localizedName.az);
+        setNameEn(localizedName.en);
+        setNameRu(localizedName.ru);
+        setSlug(a.slug);
+        setTitleAz(localizedTitle.az);
+        setTitleEn(localizedTitle.en);
+        setTitleRu(localizedTitle.ru);
+        setLinkedin(a.linkedin || "");
+        setAvatar(normalizePulseAvatar(a.avatar));
+        setDescriptionAz(localizedDescription.az);
+        setDescriptionEn(localizedDescription.en);
+        setDescriptionRu(localizedDescription.ru);
+        setModalOpen(true);
+    };
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -44,10 +101,36 @@ export default function PulseAuthorsPage() {
     };
 
     const save = async () => {
-        if (!name.trim()) return;
+        if (!nameAz.trim()) return;
         setSaving(true);
         try {
-            const body = { name, slug: slug || generateSlug(name), title, avatar: normalizePulseAvatar(avatar) || null, description };
+            const normalizedName = nameAz.trim();
+            const normalizedTitleAz = titleAz.trim();
+            const normalizedDescriptionAz = descriptionAz.trim();
+            const body = {
+                name: {
+                    az: normalizedName,
+                    en: nameEn.trim() || normalizedName,
+                    ru: nameRu.trim() || normalizedName,
+                },
+                slug: slug || generateSlug(normalizedName),
+                ...(normalizedTitleAz && {
+                    title: {
+                        az: normalizedTitleAz,
+                        en: titleEn.trim() || normalizedTitleAz,
+                        ru: titleRu.trim() || normalizedTitleAz,
+                    },
+                }),
+                linkedin: linkedin || undefined,
+                avatar: normalizePulseAvatar(avatar) || undefined,
+                ...(normalizedDescriptionAz && {
+                    description: {
+                        az: normalizedDescriptionAz,
+                        en: descriptionEn.trim() || normalizedDescriptionAz,
+                        ru: descriptionRu.trim() || normalizedDescriptionAz,
+                    },
+                }),
+            };
             if (editItem) await apiFetch(`/pulse/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/authors", { method: "POST", body: JSON.stringify(body) });
             setModalOpen(false); load();
@@ -71,14 +154,16 @@ export default function PulseAuthorsPage() {
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>Şəkil</th><th>Ad</th><th>Slug</th><th>Vəzifə</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>Şəkil</th><th>AZ</th><th>EN</th><th>RU</th><th>Slug</th><th>Vəzifə (AZ)</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {authors.map(a => (
                                         <tr key={a.id}>
                                             <td>{a.avatar && <img src={toAbsUrl(a.avatar)} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />}</td>
-                                            <td><strong>{a.name}</strong></td>
+                                            <td><strong>{getLocalizedValue(a.name, "az")}</strong></td>
+                                            <td>{getLocalizedValue(a.name, "en")}</td>
+                                            <td>{getLocalizedValue(a.name, "ru")}</td>
                                             <td><span className={styles.blogSlug}>/{a.slug}</span></td>
-                                            <td>{a.title || "—"}</td>
+                                            <td>{getLocalizedValue(a.title, "az") || "—"}</td>
                                             <td>
                                                 <div className={styles.actions}>
                                                     <button className={styles.editBtn} onClick={() => openEdit(a)}>Düzəlt</button>
@@ -100,16 +185,36 @@ export default function PulseAuthorsPage() {
                         </div>
                         <div className={styles.modalBody}>
                             <div className={styles.field}>
-                                <label>Ad *</label>
-                                <input className={styles.input} value={name} onChange={e => { setName(e.target.value); if (!editItem) setSlug(generateSlug(e.target.value)); }} />
+                                <label>Ad (AZ) *</label>
+                                <input className={styles.input} value={nameAz} onChange={e => { setNameAz(e.target.value); if (!editItem) setSlug(generateSlug(e.target.value)); }} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Ad (EN)</label>
+                                <input className={styles.input} value={nameEn} onChange={e => setNameEn(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Ad (RU)</label>
+                                <input className={styles.input} value={nameRu} onChange={e => setNameRu(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label>Slug</label>
                                 <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} />
                             </div>
                             <div className={styles.field}>
-                                <label>Vəzifə</label>
-                                <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} placeholder="Baş redaktor" />
+                                <label>Vəzifə (AZ)</label>
+                                <input className={styles.input} value={titleAz} onChange={e => setTitleAz(e.target.value)} placeholder="Baş redaktor" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Vəzifə (EN)</label>
+                                <input className={styles.input} value={titleEn} onChange={e => setTitleEn(e.target.value)} placeholder="Editor in Chief" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Vəzifə (RU)</label>
+                                <input className={styles.input} value={titleRu} onChange={e => setTitleRu(e.target.value)} placeholder="Главный редактор" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>LinkedIn linki</label>
+                                <input className={styles.input} value={linkedin} onChange={e => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/..." />
                             </div>
                             <div className={styles.field}>
                                 <label>Şəkil</label>
@@ -119,8 +224,16 @@ export default function PulseAuthorsPage() {
                                 </div>
                             </div>
                             <div className={styles.field}>
-                                <label>Təsvir</label>
-                                <textarea className={styles.input} rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+                                <label>Təsvir (AZ)</label>
+                                <textarea className={styles.input} rows={3} value={descriptionAz} onChange={e => setDescriptionAz(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Təsvir (EN)</label>
+                                <textarea className={styles.input} rows={3} value={descriptionEn} onChange={e => setDescriptionEn(e.target.value)} />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Təsvir (RU)</label>
+                                <textarea className={styles.input} rows={3} value={descriptionRu} onChange={e => setDescriptionRu(e.target.value)} />
                             </div>
                         </div>
                         <div className={styles.modalFooter}>

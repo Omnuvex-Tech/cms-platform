@@ -24,18 +24,18 @@ async function main() {
 
   // ── Authors ──────────────────────────────────────────
   const AUTHORS_DATA = [
-    { name: 'Emil Qurbanov', slug: 'emil-qurbanov', title: 'Satış üzrə Menecer' },
-    { name: 'Cavid Axundov', slug: 'cavid-axundov', title: 'Menecer' },
-    { name: 'Nəzrin Kərimli', slug: 'nezrin-kerimli', title: 'Menecer' },
-    { name: 'Türkan Mamedova', slug: 'turkan-mamedova', title: 'Menecer' },
-    { name: 'Leyla Bağırzadə', slug: 'leyla-bagirzade', title: 'Menecer' },
-    { name: 'Tural Nəcəfov', slug: 'tural-necfov', title: 'Menecer' },
-    { name: 'Səbinə Muxtarova', slug: 'sebine-muxtarova', title: 'Menecer' },
-    { name: 'Batula Mohubbi', slug: 'batula-mohubbi', title: 'Menecer' },
-    { name: 'İlhamə Paşazadə', slug: 'ilhame-paszazade', title: 'Menecer' },
-    { name: 'Tərlan Kərimov', slug: 'terlan-kerimov', title: 'Menecer' },
-    { name: 'Həcər Nağıyeva', slug: 'hecer-nagiyeva', title: 'Menecer' },
-    { name: 'Fərid Əlipənahov', slug: 'farid-alipanahov', title: 'Menecer' },
+    { name: { az: 'Emil Qurbanov', en: 'Emil Qurbanov', ru: 'Emil Qurbanov' }, slug: 'emil-qurbanov', title: { az: 'Satış üzrə Menecer', en: 'Satış üzrə Menecer', ru: 'Satış üzrə Menecer' } },
+    { name: { az: 'Cavid Axundov', en: 'Cavid Axundov', ru: 'Cavid Axundov' }, slug: 'cavid-axundov', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Nəzrin Kərimli', en: 'Nəzrin Kərimli', ru: 'Nəzrin Kərimli' }, slug: 'nezrin-kerimli', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Türkan Mamedova', en: 'Türkan Mamedova', ru: 'Türkan Mamedova' }, slug: 'turkan-mamedova', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Leyla Bağırzadə', en: 'Leyla Bağırzadə', ru: 'Leyla Bağırzadə' }, slug: 'leyla-bagirzade', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Tural Nəcəfov', en: 'Tural Nəcəfov', ru: 'Tural Nəcəfov' }, slug: 'tural-necfov', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Səbinə Muxtarova', en: 'Səbinə Muxtarova', ru: 'Səbinə Muxtarova' }, slug: 'sebine-muxtarova', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Batula Mohubbi', en: 'Batula Mohubbi', ru: 'Batula Mohubbi' }, slug: 'batula-mohubbi', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'İlhamə Paşazadə', en: 'İlhamə Paşazadə', ru: 'İlhamə Paşazadə' }, slug: 'ilhame-paszazade', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Tərlan Kərimov', en: 'Tərlan Kərimov', ru: 'Tərlan Kərimov' }, slug: 'terlan-kerimov', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Həcər Nağıyeva', en: 'Həcər Nağıyeva', ru: 'Həcər Nağıyeva' }, slug: 'hecer-nagiyeva', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
+    { name: { az: 'Fərid Əlipənahov', en: 'Fərid Əlipənahov', ru: 'Fərid Əlipənahov' }, slug: 'farid-alipanahov', title: { az: 'Menecer', en: 'Menecer', ru: 'Menecer' } },
   ];
 
   const createdAuthors: Record<string, any> = {};
@@ -51,16 +51,16 @@ async function main() {
 
   // ── Keywords ──────────────────────────────────────────
   const KEYWORDS_DATA = [
-    { name: 'Daşınmaz Əmlak', slug: 'dasinmaz-emlak' },
-    { name: 'Bakıda Evlər', slug: 'bakida-evler' },
-    { name: 'Sea Breeze', slug: 'sea-breeze' },
-    { name: 'İnvestisiya', slug: 'investisiya' },
-    { name: 'Premium Əmlak', slug: 'premium-emlak' },
-    { name: 'Kampaniya', slug: 'kampaniya' },
-    { name: 'Bloq', slug: 'bloq' },
-    { name: 'Tədbir', slug: 'tedbir' },
-    { name: 'İpoteka', slug: 'ipoteka' },
-    { name: 'Layihə', slug: 'layihe' },
+    { name: { az: 'Daşınmaz Əmlak', en: 'Daşınmaz Əmlak', ru: 'Daşınmaz Əmlak' }, slug: 'dasinmaz-emlak' },
+    { name: { az: 'Bakıda Evlər', en: 'Bakıda Evlər', ru: 'Bakıda Evlər' }, slug: 'bakida-evler' },
+    { name: { az: 'Sea Breeze', en: 'Sea Breeze', ru: 'Sea Breeze' }, slug: 'sea-breeze' },
+    { name: { az: 'İnvestisiya', en: 'İnvestisiya', ru: 'İnvestisiya' }, slug: 'investisiya' },
+    { name: { az: 'Premium Əmlak', en: 'Premium Əmlak', ru: 'Premium Əmlak' }, slug: 'premium-emlak' },
+    { name: { az: 'Kampaniya', en: 'Kampaniya', ru: 'Kampaniya' }, slug: 'kampaniya' },
+    { name: { az: 'Bloq', en: 'Bloq', ru: 'Bloq' }, slug: 'bloq' },
+    { name: { az: 'Tədbir', en: 'Tədbir', ru: 'Tədbir' }, slug: 'tedbir' },
+    { name: { az: 'İpoteka', en: 'İpoteka', ru: 'İpoteka' }, slug: 'ipoteka' },
+    { name: { az: 'Layihə', en: 'Layihə', ru: 'Layihə' }, slug: 'layihe' },
   ];
 
   const createdKeywords: Record<string, any> = {};

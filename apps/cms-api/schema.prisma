@@ -527,11 +527,12 @@ model PulseArticle {
 
 model PulseAuthor {
   id          String   @id @default(cuid())
-  name        String
+  name        Json     @default("{}")
   slug        String   @unique
-  title       String?
+  title       Json?
+  linkedin    String?
   avatar      String?
-  description String?
+  description Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   articles    PulseArticle[]
@@ -541,7 +542,7 @@ model PulseAuthor {
 
 model PulseKeyword {
   id       String   @id @default(cuid())
-  name     String   @unique
+  name     Json     @default("{}")
   slug     String   @unique
   articles PulseArticle[]
 

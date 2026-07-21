@@ -6,10 +6,24 @@ import styles from "@/styles/blog.module.css";
 
 type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 
-function getLocalizedName(name: string | { az?: string; en?: string; ru?: string } | undefined): string {
+function getLocalizedName(name: string | { az?: string; en?: string; ru?: string } | undefined, locale: "az" | "en" | "ru" = "az"): string {
     if (!name) return "";
     if (typeof name === "string") return name;
-    return name.az || Object.values(name)[0] || "";
+    return name[locale] || name.az || name.en || name.ru || Object.values(name)[0] || "";
+}
+
+function toLocalizedCategoryName(name: string | { az?: string; en?: string; ru?: string } | undefined) {
+    const base = getLocalizedName(name, "az");
+
+    if (!name || typeof name === "string") {
+        return { az: base, en: base, ru: base };
+    }
+
+    return {
+        az: getLocalizedName(name, "az"),
+        en: getLocalizedName(name, "en") || base,
+        ru: getLocalizedName(name, "ru") || base,
+    };
 }
 
 export default function PulseCategoriesPage() {
@@ -17,7 +31,9 @@ export default function PulseCategoriesPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editItem, setEditItem] = useState<Category | null>(null);
-    const [name, setName] = useState("");
+    const [nameAz, setNameAz] = useState("");
+    const [nameEn, setNameEn] = useState("");
+    const [nameRu, setNameRu] = useState("");
     const [slug, setSlug] = useState("");
     const [saving, setSaving] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -29,14 +45,38 @@ export default function PulseCategoriesPage() {
 
     useEffect(() => { load(); }, []);
 
-    const openCreate = () => { setEditItem(null); setName(""); setSlug(""); setModalOpen(true); };
-    const openEdit = (c: Category) => { setEditItem(c); setName(getLocalizedName(c.name)); setSlug(c.slug); setModalOpen(true); };
+    const openCreate = () => {
+        setEditItem(null);
+        setNameAz("");
+        setNameEn("");
+        setNameRu("");
+        setSlug("");
+        setModalOpen(true);
+    };
+
+    const openEdit = (c: Category) => {
+        const localized = toLocalizedCategoryName(c.name);
+        setEditItem(c);
+        setNameAz(localized.az);
+        setNameEn(localized.en);
+        setNameRu(localized.ru);
+        setSlug(c.slug);
+        setModalOpen(true);
+    };
 
     const save = async () => {
-        if (!name.trim()) return;
+        if (!nameAz.trim()) return;
         setSaving(true);
         try {
-            const body = { name: { az: name }, slug: slug || generateSlug(name) };
+            const normalizedAz = nameAz.trim();
+            const body = {
+                name: {
+                    az: normalizedAz,
+                    en: nameEn.trim() || normalizedAz,
+                    ru: nameRu.trim() || normalizedAz,
+                },
+                slug: slug || generateSlug(normalizedAz),
+            };
             if (editItem) await apiFetch(`/pulse/categories/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/categories", { method: "POST", body: JSON.stringify(body) });
             setModalOpen(false); load();
@@ -60,11 +100,13 @@ export default function PulseCategoriesPage() {
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>Ad</th><th>Slug</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>AZ</th><th>EN</th><th>RU</th><th>Slug</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {categories.map(c => (
                                         <tr key={c.id}>
-                                            <td><strong>{getLocalizedName(c.name)}</strong></td>
+                                            <td><strong>{getLocalizedName(c.name, "az")}</strong></td>
+                                            <td>{getLocalizedName(c.name, "en")}</td>
+                                            <td>{getLocalizedName(c.name, "ru")}</td>
                                             <td><span className={styles.blogSlug}>/{c.slug}</span></td>
                                             <td>
                                                 <div className={styles.actions}>
@@ -87,8 +129,16 @@ export default function PulseCategoriesPage() {
                         </div>
                         <div className={styles.modalBody}>
                             <div className={styles.field}>
-                                <label>Ad *</label>
-                                <input className={styles.input} value={name} onChange={e => { setName(e.target.value); if (!editItem) setSlug(generateSlug(e.target.value)); }} placeholder="Bloq" />
+                                <label>Ad (AZ) *</label>
+                                <input className={styles.input} value={nameAz} onChange={e => { setNameAz(e.target.value); if (!editItem) setSlug(generateSlug(e.target.value)); }} placeholder="Bloq" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Ad (EN)</label>
+                                <input className={styles.input} value={nameEn} onChange={e => setNameEn(e.target.value)} placeholder="Blog" />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Ad (RU)</label>
+                                <input className={styles.input} value={nameRu} onChange={e => setNameRu(e.target.value)} placeholder="Блог" />
                             </div>
                             <div className={styles.field}>
                                 <label>Slug</label>

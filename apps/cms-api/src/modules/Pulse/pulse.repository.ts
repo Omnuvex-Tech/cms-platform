@@ -142,7 +142,7 @@ export class PulseRepository {
 
   // ── Authors ──────────────────────────────────────────
   findAllAuthors() {
-    return this.prisma.pulseAuthor.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.pulseAuthor.findMany({ orderBy: { slug: 'asc' } });
   }
 
   findAuthorById(id: string) {
@@ -170,7 +170,7 @@ export class PulseRepository {
 
   // ── Keywords ──────────────────────────────────────────
   findAllKeywords() {
-    return this.prisma.pulseKeyword.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.pulseKeyword.findMany({ orderBy: { slug: 'asc' } });
   }
 
   findKeywordById(id: string) {
@@ -198,7 +198,7 @@ export class PulseRepository {
 
   // ── Categories ──────────────────────────────────────────
   findAllCategories() {
-    return this.prisma.pulseCategory.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.pulseCategory.findMany({ orderBy: { slug: 'asc' } });
   }
 
   findCategoryById(id: string) {

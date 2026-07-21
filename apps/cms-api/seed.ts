@@ -591,30 +591,30 @@ async function main() {
   console.log('✅ Pulse categories seeded');
 
   const pulseAuthors = [
-    { name: 'Əli Məmmədov', slug: 'ali-mammadov', title: 'Baş redaktor', description: 'Pulse baş redaktoru' },
-    { name: 'Leyla Hüseynova', slug: 'leyla-huseynova', title: 'Müəllif', description: 'Texnologiya üzrə müəllif' },
-    { name: 'Kənan Rəhimov', slug: 'kenan-rahimov', title: 'Müəllif', description: 'Biznes üzrə müəllif' },
+    { name: { az: 'Əli Məmmədov', en: 'Əli Məmmədov', ru: 'Əli Məmmədov' }, slug: 'ali-mammadov', title: { az: 'Baş redaktor', en: 'Baş redaktor', ru: 'Baş redaktor' }, description: { az: 'Pulse baş redaktoru', en: 'Pulse baş redaktoru', ru: 'Pulse baş redaktoru' } },
+    { name: { az: 'Leyla Hüseynova', en: 'Leyla Hüseynova', ru: 'Leyla Hüseynova' }, slug: 'leyla-huseynova', title: { az: 'Müəllif', en: 'Müəllif', ru: 'Müəllif' }, description: { az: 'Texnologiya üzrə müəllif', en: 'Texnologiya üzrə müəllif', ru: 'Texnologiya üzrə müəllif' } },
+    { name: { az: 'Kənan Rəhimov', en: 'Kənan Rəhimov', ru: 'Kənan Rəhimov' }, slug: 'kenan-rahimov', title: { az: 'Müəllif', en: 'Müəllif', ru: 'Müəllif' }, description: { az: 'Biznes üzrə müəllif', en: 'Biznes üzrə müəllif', ru: 'Biznes üzrə müəllif' } },
   ];
   for (const author of pulseAuthors) {
     await prisma.pulseAuthor.upsert({
       where: { slug: author.slug },
-      update: {},
+      update: { name: author.name, title: author.title, description: author.description },
       create: author,
     });
   }
   console.log('✅ Pulse authors seeded');
 
   const pulseKeywords = [
-    { name: 'Texnologiya', slug: 'texnologiya' },
-    { name: 'Biznes', slug: 'biznes' },
-    { name: 'Marketing', slug: 'marketing' },
-    { name: 'Startap', slug: 'startap' },
-    { name: 'Rəqəmsal', slug: 'reqemsal' },
+    { name: { az: 'Texnologiya', en: 'Texnologiya', ru: 'Texnologiya' }, slug: 'texnologiya' },
+    { name: { az: 'Biznes', en: 'Biznes', ru: 'Biznes' }, slug: 'biznes' },
+    { name: { az: 'Marketing', en: 'Marketing', ru: 'Marketing' }, slug: 'marketing' },
+    { name: { az: 'Startap', en: 'Startap', ru: 'Startap' }, slug: 'startap' },
+    { name: { az: 'Rəqəmsal', en: 'Rəqəmsal', ru: 'Rəqəmsal' }, slug: 'reqemsal' },
   ];
   for (const kw of pulseKeywords) {
     await prisma.pulseKeyword.upsert({
       where: { slug: kw.slug },
-      update: {},
+      update: { name: kw.name },
       create: kw,
     });
   }
