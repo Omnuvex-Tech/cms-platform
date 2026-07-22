@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
+import { LangInput } from "@/components/LangInput";
 import styles from "@/styles/blog.module.css";
 
 type Author = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
@@ -10,15 +11,18 @@ type Keyword = { id: string; name: string | { az?: string; en?: string; ru?: str
 type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 type ArticleSummary = { id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; coverImage?: string; category?: string | { az?: string; en?: string; ru?: string } };
 
+type LocalizedText = string | { az?: string; en?: string; ru?: string } | null | undefined;
+type EditorLocale = "az" | "en" | "ru";
+
 type Block =
-    | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; text: string }
-    | { type: "paragraph"; text: string }
-    | { type: "image"; url: string; alt: string; caption?: string }
-    | { type: "list"; ordered: boolean; items: string[] }
-    | { type: "faq"; question: string; answer: string }
-    | { type: "quote"; text: string; author?: string }
+    | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; text: LocalizedText }
+    | { type: "paragraph"; text: LocalizedText }
+    | { type: "image"; url: string; alt: LocalizedText; caption?: LocalizedText }
+    | { type: "list"; ordered: boolean; items: LocalizedText[] }
+    | { type: "faq"; question: LocalizedText; answer: LocalizedText }
+    | { type: "quote"; text: LocalizedText; author?: LocalizedText }
     | { type: "video"; url: string }
-    | { type: "gallery"; images: { url: string; alt: string }[] };
+    | { type: "gallery"; images: { url: string; alt: LocalizedText }[] };
 
 const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
     { type: "heading", label: "Başlıq", icon: "H" },
@@ -29,6 +33,12 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
     { type: "quote", label: "Sitat", icon: "❝" },
     { type: "video", label: "Video", icon: "▶" },
     { type: "gallery", label: "Qalereya", icon: "⊞" },
+];
+
+const EDITOR_LANGS: { key: EditorLocale; label: string }[] = [
+    { key: "az", label: "AZ" },
+    { key: "en", label: "EN" },
+    { key: "ru", label: "RU" },
 ];
 
 function getLocalizedName(name: any): string {
@@ -43,6 +53,22 @@ function getLocalizedName(name: any): string {
     return "";
 }
 
+type LocalizedValue = Record<string, string>;
+
+function toLocalizedValue(value: any): LocalizedValue {
+    if (!value) return { az: "", en: "", ru: "" };
+    if (typeof value === "string") return { az: value, en: value, ru: value };
+    return {
+        az: typeof value.az === "string" ? value.az : "",
+        en: typeof value.en === "string" ? value.en : "",
+        ru: typeof value.ru === "string" ? value.ru : "",
+    };
+}
+
+function hasLocalizedValue(value: LocalizedValue): boolean {
+    return Object.values(value).some((item) => item.trim().length > 0);
+}
+
 function toDateInputValue(value?: string | null): string {
     if (!value) return "";
 
@@ -55,16 +81,98 @@ function toDateInputValue(value?: string | null): string {
     return `${year}-${month}-${day}`;
 }
 
-function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragraph" }; onChange: (b: Block) => void }) {
+function getPrimaryLocalizedValue(value: LocalizedText): string {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    const entries = [value.az, value.en, value.ru, ...Object.values(value)]
+        .map((entry) => String(entry ?? ""))
+        .filter(Boolean);
+    return entries[0] || "";
+}
+
+function normalizeLocalizedText(value: LocalizedText): { az: string; en: string; ru: string } {
+    if (!value) return { az: "", en: "", ru: "" };
+    if (typeof value === "string") return { az: value, en: value, ru: value };
+    const az = typeof value.az === "string" ? value.az : "";
+    const en = typeof value.en === "string" ? value.en : "";
+    const ru = typeof value.ru === "string" ? value.ru : "";
+    const fallback = az || en || ru || getPrimaryLocalizedValue(value);
+    return {
+        az: az || fallback,
+        en: en || az || fallback,
+        ru: ru || az || fallback,
+    };
+}
+
+function setLocalizedText(value: LocalizedText, locale: EditorLocale, nextValue: string): { az: string; en: string; ru: string } {
+    const current = normalizeLocalizedText(value);
+    const updated = nextValue ?? "";
+
+    if (locale === "az") {
+        return {
+            az: updated,
+            en: current.en?.trim() ? current.en : updated,
+            ru: current.ru?.trim() ? current.ru : updated,
+        };
+    }
+
+    return {
+        ...current,
+        [locale]: updated,
+    };
+}
+
+function normalizeBlocks(input: Block[]): any[] {
+    return (input || []).map((block) => {
+        switch (block.type) {
+            case "heading":
+                return { ...block, text: normalizeLocalizedText(block.text) };
+            case "paragraph":
+                return { ...block, text: normalizeLocalizedText(block.text) };
+            case "image":
+                return {
+                    ...block,
+                    alt: normalizeLocalizedText(block.alt),
+                    ...(block.caption !== undefined ? { caption: normalizeLocalizedText(block.caption) } : {}),
+                };
+            case "list":
+                return { ...block, items: (block.items || []).map((item) => normalizeLocalizedText(item)) };
+            case "faq":
+                return {
+                    ...block,
+                    question: normalizeLocalizedText(block.question),
+                    answer: normalizeLocalizedText(block.answer),
+                };
+            case "quote":
+                return {
+                    ...block,
+                    text: normalizeLocalizedText(block.text),
+                    ...(block.author !== undefined ? { author: normalizeLocalizedText(block.author) } : {}),
+                };
+            case "video":
+                return block;
+            case "gallery":
+                return {
+                    ...block,
+                    images: (block.images || []).map((img) => ({
+                        url: img.url,
+                        alt: normalizeLocalizedText(img.alt),
+                    })),
+                };
+        }
+    });
+}
+
+function ParagraphEditor({ block, locale, onChange }: { block: Block & { type: "paragraph" }; locale: EditorLocale; onChange: (b: Block) => void }) {
     const ref = useRef<HTMLDivElement>(null);
     const [showLinkPopup, setShowLinkPopup] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const [linkNewTab, setLinkNewTab] = useState(true);
 
     useEffect(() => {
-        if (ref.current && ref.current.innerHTML !== block.text)
-            ref.current.innerHTML = block.text;
-    }, []);
+        const current = normalizeLocalizedText(block.text)[locale] || "";
+        if (ref.current && ref.current.innerHTML !== current) ref.current.innerHTML = current;
+    }, [block.text, locale]);
 
     const wrapSelection = (tag: string) => {
         const sel = window.getSelection();
@@ -73,7 +181,7 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
         const el = document.createElement(tag);
         try { range.surroundContents(el); sel.removeAllRanges(); } catch {}
         const active = document.activeElement as HTMLElement;
-        if (active) onChange({ ...block, text: active.innerHTML });
+        if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
     };
 
     const openLinkPopup = () => {
@@ -95,7 +203,7 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
         if (linkNewTab) a.target = "_blank";
         try { range.surroundContents(a); sel.removeAllRanges(); } catch {}
         const active = document.activeElement as HTMLElement;
-        if (active) onChange({ ...block, text: active.innerHTML });
+        if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
     };
 
     const removeLink = () => {
@@ -107,7 +215,7 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
             node.replaceWith(...node.childNodes);
             sel.removeAllRanges();
             const active = document.activeElement as HTMLElement;
-            if (active) onChange({ ...block, text: active.innerHTML });
+            if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
         }
     };
 
@@ -151,15 +259,15 @@ function ParagraphEditor({ block, onChange }: { block: Block & { type: "paragrap
             <div ref={ref} contentEditable suppressHydrationWarning
                 className={styles.input}
                 style={{ minHeight: 80, whiteSpace: "pre-wrap" }}
-                onBlur={e => onChange({ ...block, text: e.currentTarget.innerHTML })}
+                onBlur={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.currentTarget.innerHTML) })}
             />
         </div>
     );
 }
 
-function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
+function BlockItem({ block, index, locale, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
     block: Block; index: number; onChange: (b: Block) => void; onRemove: () => void;
-    onMoveUp: () => void; onMoveDown: () => void; isFirst: boolean; isLast: boolean;
+    locale: EditorLocale; onMoveUp: () => void; onMoveDown: () => void; isFirst: boolean; isLast: boolean;
 }) {
     const [uploading, setUploading] = useState(false);
 
@@ -171,7 +279,7 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
             const url = await uploadFile(file);
             if (block.type === "image") onChange({ ...block, url });
             else if (block.type === "gallery") {
-                const newImages = [...block.images, { url, alt: "" }];
+                const newImages = [...block.images, { url, alt: { az: "", en: "", ru: "" } }];
                 onChange({ ...block, images: newImages });
             }
         } catch (err: any) { alert(err.message); }
@@ -185,8 +293,8 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
                             <label>Başlıq mətni</label>
-                            <input className={styles.input} value={block.text}
-                                onChange={e => onChange({ ...block, text: e.target.value })} placeholder="Başlıq" />
+                            <input className={styles.input} value={normalizeLocalizedText(block.text)[locale] || ""}
+                                onChange={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.target.value) })} placeholder="Başlıq" />
                         </div>
                         <div className={styles.field}>
                             <label>Səviyyə</label>
@@ -203,7 +311,7 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                     </div>
                 );
             case "paragraph":
-                return <ParagraphEditor block={block} onChange={onChange} />;
+                return <ParagraphEditor block={block} locale={locale} onChange={onChange} />;
             case "image":
                 return (
                     <div className={styles.field}>
@@ -213,10 +321,10 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                                 <input className={styles.input} value={block.url}
                                     onChange={e => onChange({ ...block, url: e.target.value })} placeholder="Şəkil URL və ya yükləyin" />
                                 <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                                    <input className={styles.input} value={block.alt}
-                                        onChange={e => onChange({ ...block, alt: e.target.value })} placeholder="Alt text" style={{ flex: 1 }} />
-                                    <input className={styles.input} value={block.caption || ""}
-                                        onChange={e => onChange({ ...block, caption: e.target.value })} placeholder="Caption (ixtiyari)" style={{ flex: 1 }} />
+                                    <input className={styles.input} value={normalizeLocalizedText(block.alt)[locale] || ""}
+                                        onChange={e => onChange({ ...block, alt: setLocalizedText(block.alt, locale, e.target.value) })} placeholder="Alt text" style={{ flex: 1 }} />
+                                    <input className={styles.input} value={normalizeLocalizedText(block.caption || "")[locale] || ""}
+                                        onChange={e => onChange({ ...block, caption: setLocalizedText(block.caption, locale, e.target.value) })} placeholder="Caption (ixtiyari)" style={{ flex: 1 }} />
                                 </div>
                             </div>
                             <div>
@@ -228,7 +336,7 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                             </div>
                         </div>
                         {block.url && (
-                            <img src={toAbsUrl(block.url)} alt={block.alt} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 6, marginTop: 8 }} />
+                            <img src={toAbsUrl(block.url)} alt={getPrimaryLocalizedValue(block.alt)} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 6, marginTop: 8 }} />
                         )}
                     </div>
                 );
@@ -257,10 +365,10 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                         </label>
                         {block.items.map((item, i) => (
                             <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-                                <input className={styles.input} value={item}
+                                <input className={styles.input} value={normalizeLocalizedText(item)[locale] || ""}
                                     onChange={e => {
                                         const newItems = [...block.items];
-                                        newItems[i] = e.target.value;
+                                        newItems[i] = setLocalizedText(item, locale, e.target.value);
                                         onChange({ ...block, items: newItems });
                                     }} placeholder={`Element ${i + 1}`} />
                                 <button type="button" onClick={() => {
@@ -269,7 +377,7 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                                 }} style={{ padding: "4px 8px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, cursor: "pointer" }}>Sil</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => onChange({ ...block, items: [...block.items, ""] })}
+                        <button type="button" onClick={() => onChange({ ...block, items: [...block.items, { az: "", en: "", ru: "" }] })}
                             style={{ padding: "6px 12px", border: "1px dashed #cbd5e1", borderRadius: 6, background: "#f8fafc", cursor: "pointer", fontSize: 13 }}>+ Element əlavə et</button>
                     </div>
                 );
@@ -278,13 +386,13 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <div className={styles.field}>
                             <label>Sual</label>
-                            <input className={styles.input} value={block.question}
-                                onChange={e => onChange({ ...block, question: e.target.value })} placeholder="Sualı yazın" />
+                            <input className={styles.input} value={normalizeLocalizedText(block.question)[locale] || ""}
+                                onChange={e => onChange({ ...block, question: setLocalizedText(block.question, locale, e.target.value) })} placeholder="Sualı yazın" />
                         </div>
                         <div className={styles.field}>
                             <label>Cavab</label>
-                            <textarea className={styles.input} rows={3} value={block.answer}
-                                onChange={e => onChange({ ...block, answer: e.target.value })} placeholder="Cavabı yazın" />
+                            <textarea className={styles.input} rows={3} value={normalizeLocalizedText(block.answer)[locale] || ""}
+                                onChange={e => onChange({ ...block, answer: setLocalizedText(block.answer, locale, e.target.value) })} placeholder="Cavabı yazın" />
                         </div>
                     </div>
                 );
@@ -293,13 +401,13 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <div className={styles.field}>
                             <label>Sitat mətni</label>
-                            <textarea className={styles.input} rows={2} value={block.text}
-                                onChange={e => onChange({ ...block, text: e.target.value })} placeholder="Sitatı yazın" />
+                            <textarea className={styles.input} rows={2} value={normalizeLocalizedText(block.text)[locale] || ""}
+                                onChange={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.target.value) })} placeholder="Sitatı yazın" />
                         </div>
                         <div className={styles.field}>
                             <label>Müəllif (ixtiyari)</label>
-                            <input className={styles.input} value={block.author || ""}
-                                onChange={e => onChange({ ...block, author: e.target.value })} placeholder="Müəllif adı" />
+                            <input className={styles.input} value={normalizeLocalizedText(block.author || "")[locale] || ""}
+                                onChange={e => onChange({ ...block, author: setLocalizedText(block.author, locale, e.target.value) })} placeholder="Müəllif adı" />
                         </div>
                     </div>
                 );
@@ -323,12 +431,12 @@ function BlockItem({ block, index, onChange, onRemove, onMoveUp, onMoveDown, isF
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                             {block.images.map((img, i) => (
                                 <div key={i} style={{ position: "relative", width: 120 }}>
-                                    <img src={toAbsUrl(img.url)} alt={img.alt} style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />
-                                    <input className={styles.input} value={img.alt} placeholder="Alt"
+                                    <img src={toAbsUrl(img.url)} alt={getPrimaryLocalizedValue(img.alt)} style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />
+                                    <input className={styles.input} value={normalizeLocalizedText(img.alt)[locale] || ""} placeholder="Alt"
                                         onChange={e => {
                                             const newImages = [...block.images];
                                             const current = newImages[i]!;
-                                            newImages[i] = { url: current.url || "", alt: e.target.value };
+                                            newImages[i] = { url: current.url || "", alt: setLocalizedText(current.alt, locale, e.target.value) };
                                             onChange({ ...block, images: newImages });
                                         }} style={{ fontSize: 11, marginTop: 2 }} />
                                     <button type="button" onClick={() => {
@@ -375,10 +483,10 @@ export default function PulseArticleEditPage() {
     const router = useRouter();
     const isNew = id === "new";
 
-    const [title, setTitle] = useState("");
+    const [title, setTitle] = useState<LocalizedValue>({ az: "", en: "", ru: "" });
     const [slug, setSlug] = useState("");
-    const [category, setCategory] = useState("");
-    const [excerpt, setExcerpt] = useState("");
+    const [category, setCategory] = useState<LocalizedValue>({ az: "", en: "", ru: "" });
+    const [excerpt, setExcerpt] = useState<LocalizedValue>({ az: "", en: "", ru: "" });
     const [publishDate, setPublishDate] = useState("");
     const [coverImage, setCoverImage] = useState("");
     const [authorId, setAuthorId] = useState("");
@@ -388,6 +496,7 @@ export default function PulseArticleEditPage() {
     const [headerOrder, setHeaderOrder] = useState<number>(0);
     const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
     const [blocks, setBlocks] = useState<Block[]>([]);
+    const [blockLocale, setBlockLocale] = useState<EditorLocale>("az");
     const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
     const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
     const [authorType, setAuthorType] = useState<"existing" | "custom">("existing");
@@ -414,17 +523,17 @@ export default function PulseArticleEditPage() {
             });
         if (!isNew) {
             apiFetch(`/pulse/articles/${id}`).then(a => {
-                setTitle(a.title && typeof a.title === "object" ? (a.title?.az || Object.values(a.title)[0] || "") : (a.title || ""));
+                setTitle(toLocalizedValue(a.title));
                 setSlug(a.slug);
-                setCategory(a.category && typeof a.category === "object" ? (a.category?.az || Object.values(a.category)[0] || "") : (a.category || ""));
-                setExcerpt(a.excerpt && typeof a.excerpt === "object" ? (a.excerpt?.az || Object.values(a.excerpt)[0] || "") : (a.excerpt || ""));
+                setCategory(toLocalizedValue(a.category));
+                setExcerpt(toLocalizedValue(a.excerpt));
                 setPublishDate(toDateInputValue(a.date || a.createdAt));
                 setCoverImage(a.coverImage || "");
                 setAuthorId(a.authorId || ""); setPublished(a.published);
                 setFeatured(a.featured); setHeaderPositions(Array.isArray(a.headerPositions) ? a.headerPositions : []);
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
-                setBlocks(Array.isArray(a.blocks) ? (a.blocks as Block[]) : []);
+                setBlocks(Array.isArray(a.blocks) ? (normalizeBlocks(a.blocks as Block[]) as Block[]) : []);
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
                 setSocialLinks(a.socialLinks || {});
                 setCustomAuthorName(a.socialLinks?.name || "");
@@ -445,12 +554,12 @@ export default function PulseArticleEditPage() {
     const addBlock = (type: Block["type"]) => {
         let newBlock: Block;
         switch (type) {
-            case "heading": newBlock = { type: "heading", level: 2, text: "" }; break;
-            case "paragraph": newBlock = { type: "paragraph", text: "" }; break;
-            case "image": newBlock = { type: "image", url: "", alt: "" }; break;
-            case "list": newBlock = { type: "list", ordered: false, items: [""] }; break;
-            case "faq": newBlock = { type: "faq", question: "", answer: "" }; break;
-            case "quote": newBlock = { type: "quote", text: "", author: "" }; break;
+            case "heading": newBlock = { type: "heading", level: 2, text: { az: "", en: "", ru: "" } }; break;
+            case "paragraph": newBlock = { type: "paragraph", text: { az: "", en: "", ru: "" } }; break;
+            case "image": newBlock = { type: "image", url: "", alt: { az: "", en: "", ru: "" } }; break;
+            case "list": newBlock = { type: "list", ordered: false, items: [{ az: "", en: "", ru: "" }] }; break;
+            case "faq": newBlock = { type: "faq", question: { az: "", en: "", ru: "" }, answer: { az: "", en: "", ru: "" } }; break;
+            case "quote": newBlock = { type: "quote", text: { az: "", en: "", ru: "" }, author: { az: "", en: "", ru: "" } }; break;
             case "video": newBlock = { type: "video", url: "" }; break;
             case "gallery": newBlock = { type: "gallery", images: [] }; break;
         }
@@ -475,19 +584,21 @@ export default function PulseArticleEditPage() {
     }, []);
 
     const save = async () => {
-        if (!title.trim() || !slug.trim() || !category) return;
+        if (!hasLocalizedValue(title) || !slug.trim() || !hasLocalizedValue(category)) return;
         setSaving(true);
         try {
             const body = {
-                title: { az: title }, slug, category: { az: category },
-                excerpt: excerpt ? { az: excerpt } : null,
+                title,
+                slug,
+                category,
+                excerpt: hasLocalizedValue(excerpt) ? excerpt : null,
                 ...(publishDate ? { date: publishDate } : {}),
                 coverImage: coverImage || null,
                 authorId: authorType === "existing" ? (authorId || null) : null,
                 published, featured,
                 headerPositions,
                 headerOrder: headerOrder || null,
-                blocks,
+                blocks: normalizeBlocks(blocks),
                 socialLinks: authorType === "custom" ? {
                     ...socialLinks,
                     ...(customAuthorName ? { name: customAuthorName } : {}),
@@ -532,8 +643,17 @@ export default function PulseArticleEditPage() {
                 <h3 className={styles.settingsGroupTitle}>Əsas məlumatlar</h3>
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
-                        <label>Başlıq *</label>
-                        <input className={styles.input} value={title} onChange={e => { setTitle(e.target.value); if (!isNew) setSlug(generateSlug(e.target.value)); }} placeholder="Məqalə başlığı" />
+                        <LangInput
+                            label="Başlıq *"
+                            value={title}
+                            onChange={(value) => {
+                                setTitle(value);
+                                if (!isNew) {
+                                    setSlug(generateSlug(value.az || value.en || value.ru || ""));
+                                }
+                            }}
+                            placeholder="Məqalə başlığı"
+                        />
                     </div>
                     <div className={styles.field}>
                         <label>Slug *</label>
@@ -543,11 +663,23 @@ export default function PulseArticleEditPage() {
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
                         <label>Kateqoriya *</label>
-                        <select className={styles.input} value={category} onChange={e => setCategory(e.target.value)}>
+                        <select
+                            className={styles.input}
+                            value={(() => {
+                                const currentName = getLocalizedName(category);
+                                const found = categories.find((c) => getLocalizedName(c.name) === currentName);
+                                return found?.id || "";
+                            })()}
+                            onChange={e => {
+                                const selected = categories.find(c => c.id === e.target.value);
+                                if (selected) setCategory(toLocalizedValue(selected.name));
+                                else setCategory({ az: "", en: "", ru: "" });
+                            }}
+                        >
                             <option value="">Seçin...</option>
                             {categories.map(c => {
                                 const catName = typeof c.name === "string" ? c.name : (c.name?.az || Object.values(c.name)[0] || "");
-                                return <option key={c.id} value={catName}>{catName}</option>;
+                                return <option key={c.id} value={c.id}>{catName}</option>;
                             })}
                         </select>
                     </div>
@@ -606,8 +738,13 @@ export default function PulseArticleEditPage() {
                     </div>
                 </div>
                 <div className={styles.field}>
-                    <label>Qısa məzmun</label>
-                    <textarea className={styles.input} rows={3} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Məqalənin qısa təsviri" />
+                    <LangInput
+                        label="Qısa məzmun"
+                        value={excerpt}
+                        onChange={setExcerpt}
+                        type="textarea"
+                        placeholder="Məqalənin qısa təsviri"
+                    />
                 </div>
 
                 <div className={styles.field}>
@@ -705,10 +842,32 @@ export default function PulseArticleEditPage() {
 
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Məzmun blokları</h3>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                    {EDITOR_LANGS.map((lang) => (
+                        <button
+                            key={lang.key}
+                            type="button"
+                            onClick={() => setBlockLocale(lang.key)}
+                            style={{
+                                padding: "6px 14px",
+                                borderRadius: 999,
+                                border: "1.5px solid",
+                                borderColor: blockLocale === lang.key ? "#2563eb" : "#e2e8f0",
+                                background: blockLocale === lang.key ? "#2563eb" : "#fff",
+                                color: blockLocale === lang.key ? "#fff" : "#475569",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            {lang.label}
+                        </button>
+                    ))}
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {blocks.map((block, i) => (
                         <BlockItem
-                            key={i} block={block} index={i}
+                            key={`${i}-${blockLocale}`} block={block} index={i} locale={blockLocale}
                             onChange={b => updateBlock(i, b)}
                             onRemove={() => removeBlock(i)}
                             onMoveUp={() => i > 0 && moveBlock(i, i - 1)}
