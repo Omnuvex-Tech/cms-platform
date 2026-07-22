@@ -2,7 +2,7 @@ services:
   postgres:
     # Matches the local dev server (postgresql-x64-18) so the migrated dump
     # (pg_dump 18.x) restores in cleanly with no cross-major-version surprises.
-    image: postgres:18-alpine
+    image: postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -41,6 +41,8 @@ services:
         condition: service_healthy
     expose:
       - "4000"
+    volumes:
+      - /var/www/treva-sales-agent:/treva_sales_bot
 
   cms-web:
     build:
