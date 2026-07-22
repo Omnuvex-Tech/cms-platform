@@ -65,18 +65,18 @@ async function prepareImageFile(file: File): Promise<File> {
 
 interface FeatureSection {
   id: string;
-  titleItalic: string;
-  titleRest: string;
-  subtitle: string;
-  items: string[];
+  titleItalic: Record<string, string>;
+  titleRest: Record<string, string>;
+  subtitle: Record<string, string>;
+  items: Record<string, string>[];
   dark: boolean;
   image: string;
   imageLeft: boolean;
 }
 
 interface OverviewDataRow {
-  key: string;
-  value: string;
+  key: Record<string, string>;
+  value: Record<string, string>;
 }
 
 interface HeroImage {
@@ -218,9 +218,9 @@ const emptyDetail: ProjectDetailData = {
   overviewImageSmall: "",
   overviewImageSmallLabel: { az: "", en: "", ru: "" },
   overviewDataRows: [
-    { key: "Project Type", value: "" },
-    { key: "Year of Completion", value: "" },
-    { key: "Price Range", value: "" },
+    { key: { az: "Layihə Tipi", en: "Project Type", ru: "Тип проекта" }, value: { az: "", en: "", ru: "" } },
+    { key: { az: "Tamamlanma İli", en: "Year of Completion", ru: "Год завершения" }, value: { az: "", en: "", ru: "" } },
+    { key: { az: "Qiymət Aralığı", en: "Price Range", ru: "Ценовой диапазон" }, value: { az: "", en: "", ru: "" } },
   ],
   featuresHeaderMain: { az: "", en: "", ru: "" },
   featuresHeaderSub: { az: "", en: "", ru: "" },
@@ -298,9 +298,23 @@ export default function ProjectDetailEditor() {
           seoDescription: ensureObj(data.seoDescription),
           heroImages: Array.isArray(data.heroImages) ? data.heroImages : [],
           overviewDataRows: Array.isArray(data.overviewDataRows) && data.overviewDataRows.length > 0
-            ? data.overviewDataRows
+            ? data.overviewDataRows.map((row: any) => ({
+                key: toObj(row.key),
+                value: toObj(row.value),
+              }))
             : emptyDetail.overviewDataRows,
-          featuresSections: Array.isArray(data.featuresSections) ? data.featuresSections : [],
+          featuresSections: Array.isArray(data.featuresSections)
+            ? data.featuresSections.map((sec: any, index: number) => ({
+                id: String(sec?.id ?? String(index + 1).padStart(2, "0")),
+                titleItalic: toObj(sec?.titleItalic),
+                titleRest: toObj(sec?.titleRest),
+                subtitle: toObj(sec?.subtitle),
+                items: Array.isArray(sec?.items) ? sec.items.map((item: any) => toObj(item)) : [],
+                dark: Boolean(sec?.dark),
+                image: sec?.image || "",
+                imageLeft: Boolean(sec?.imageLeft),
+              }))
+            : [],
         });
       }
     } catch (err) {
@@ -401,10 +415,10 @@ export default function ProjectDetailEditor() {
       ...sections,
       {
         id: newId,
-        titleItalic: "",
-        titleRest: "",
-        subtitle: "",
-        items: [""],
+        titleItalic: { az: "", en: "", ru: "" },
+        titleRest: { az: "", en: "", ru: "" },
+        subtitle: { az: "", en: "", ru: "" },
+        items: [{ az: "", en: "", ru: "" }],
         dark: sections.length % 2 === 0,
         image: "",
         imageLeft: sections.length % 2 === 0,
@@ -428,11 +442,11 @@ export default function ProjectDetailEditor() {
     const sections = [...(detail.featuresSections || [])];
     const sec = sections[sectionIndex];
     if (!sec) return;
-    sections[sectionIndex] = { ...sec, items: [...sec.items, ""] } as FeatureSection;
+    sections[sectionIndex] = { ...sec, items: [...sec.items, { az: "", en: "", ru: "" }] } as FeatureSection;
     updateField("featuresSections", sections);
   };
 
-  const updateFeatureItem = (sectionIndex: number, itemIndex: number, value: string) => {
+  const updateFeatureItem = (sectionIndex: number, itemIndex: number, value: Record<string, string>) => {
     const sections = [...(detail.featuresSections || [])];
     const sec = sections[sectionIndex];
     if (!sec) return;
@@ -455,11 +469,11 @@ export default function ProjectDetailEditor() {
   const addDataRow = () => {
     updateField("overviewDataRows", [
       ...(detail.overviewDataRows || []),
-      { key: "", value: "" },
+      { key: { az: "", en: "", ru: "" }, value: { az: "", en: "", ru: "" } },
     ]);
   };
 
-  const updateDataRow = (index: number, field: "key" | "value", value: string) => {
+  const updateDataRow = (index: number, field: "key" | "value", value: Record<string, string>) => {
     const rows = [...(detail.overviewDataRows || [])];
     const row = rows[index];
     if (!row) return;
@@ -593,10 +607,14 @@ export default function ProjectDetailEditor() {
         </Field>
         <Field label="Data Rows">
           {(detail.overviewDataRows || []).map((row, idx) => (
-            <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-              <input value={row.key} onChange={(e) => updateDataRow(idx, "key", e.target.value)} placeholder="Key" style={{ ...input, flex: 1 }} />
-              <input value={row.value} onChange={(e) => updateDataRow(idx, "value", e.target.value)} placeholder="Value" style={{ ...input, flex: 2 }} />
-              <button onClick={() => removeDataRow(idx)} style={removeBtn}>✕</button>
+            <div key={idx} style={{ border: "1px solid #e5e7eb", borderRadius:8, padding:12, marginBottom:8, background: "#fafafa" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 8 }}>
+                <LangInput label="Key" value={row.key} onChange={(v) => updateDataRow(idx, "key", v)} />
+                <LangInput label="Value" value={row.value} onChange={(v) => updateDataRow(idx, "value", v)} />
+              </div>
+              <div style={{display:"flex", justifyContent:"flex-end"}}>
+                <button onClick={() => removeDataRow(idx)} style={removeBtn}>✕</button>
+              </div>
             </div>
           ))}
           <button onClick={addDataRow} style={addBtn}>+ Row əlavə et</button>
@@ -627,11 +645,13 @@ export default function ProjectDetailEditor() {
                 <strong>Bölmə {sec.id}</strong>
                 <button onClick={() => removeFeatureSection(sIdx)} style={removeBtn}>Sil</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <input value={sec.titleItalic} onChange={(e) => updateFeatureSection(sIdx, "titleItalic", e.target.value)} placeholder="Title Italic" style={input} />
-                <input value={sec.titleRest} onChange={(e) => updateFeatureSection(sIdx, "titleRest", e.target.value)} placeholder="Title Rest" style={input} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <LangInput label="Title Italic" value={sec.titleItalic} onChange={(v) => updateFeatureSection(sIdx, "titleItalic", v)} />
+                <LangInput label="Title Rest" value={sec.titleRest} onChange={(v) => updateFeatureSection(sIdx, "titleRest", v)} />
               </div>
-              <input value={sec.subtitle} onChange={(e) => updateFeatureSection(sIdx, "subtitle", e.target.value)} placeholder="Subtitle" style={{ ...input, marginTop: 8 }} />
+              <div style={{ marginTop: 8 }}>
+                <LangInput label="Subtitle" value={sec.subtitle} onChange={(v) => updateFeatureSection(sIdx, "subtitle", v)} />
+              </div>
               <div style={{ marginTop: 8 }}>
                 <FileUploadButton
                   currentUrl={sec.image}
@@ -662,8 +682,10 @@ export default function ProjectDetailEditor() {
               <div style={{ marginTop: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>Items:</span>
                 {sec.items.map((item, iIdx) => (
-                  <div key={iIdx} style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                    <input value={item} onChange={(e) => updateFeatureItem(sIdx, iIdx, e.target.value)} placeholder={`Item ${iIdx + 1}`} style={{ ...input, flex: 1 }} />
+                  <div key={iIdx} style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "flex-end" }}>
+                    <div style={{ flex: 1 }}>
+                      <LangInput label={`Item ${iIdx + 1}`} value={item} onChange={(v) => updateFeatureItem(sIdx, iIdx, v)} />
+                    </div>
                     <button onClick={() => removeFeatureItem(sIdx, iIdx)} style={removeBtn}>✕</button>
                   </div>
                 ))}
