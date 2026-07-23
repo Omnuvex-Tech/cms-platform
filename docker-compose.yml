@@ -17,6 +17,8 @@ services:
       retries: 20
     expose:
       - "5432"
+    networks:
+      - default
 
   cms-api:
     build:
@@ -65,6 +67,8 @@ services:
       - "3001"
     ports:
       - "127.0.0.1:3001:3001"
+    networks:
+      - default
 
   caddy:
     image: caddy:2
@@ -86,6 +90,8 @@ services:
     depends_on:
       - cms-web
       - cms-api
+    networks:
+      - default
 
 volumes:
   postgres-data:
