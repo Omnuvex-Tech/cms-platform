@@ -29,7 +29,6 @@ model Faq {
   @@map("faqs")
 }
 
-
 model TestimonialsSection {
   id           Int           @id @default(autoincrement())
   createdAt    DateTime      @default(now())
@@ -94,7 +93,7 @@ model Vacancy {
   seoTitle       Json?
   seoDescription Json?
   seoKeywords    Json?
-  schema             Json?
+  schema         Json?
 }
 
 model VacancyPageHeader {
@@ -138,7 +137,6 @@ model VacancySettings {
 
   @@map("vacancy_settings")
 }
-
 
 model VacancySubmission {
   id           Int      @id @default(autoincrement())
@@ -243,7 +241,7 @@ model Service {
   badge                 Json     @default("{}")
   title                 Json     @default("{}")
   description           Json     @default("{}")
- image                 String
+  image                 String
   imageAlt              Json     @default("{}")
   homeCoverImage        String?
   gif                   String?
@@ -261,7 +259,7 @@ model Service {
   seoDescription Json?
   seoKeywords    Json?
   schema                Json?
-createdAt             DateTime @default(now())
+  createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   portfolios            PortfolioService[]
 

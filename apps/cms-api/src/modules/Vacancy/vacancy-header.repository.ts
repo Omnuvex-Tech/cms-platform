@@ -1,4 +1,3 @@
-// vacancy-header.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateVacancyHeaderDto } from './dto/update-vacancy-header.dto';

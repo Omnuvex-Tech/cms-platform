@@ -1,4 +1,3 @@
-// create-vacancy.dto.ts
 import {
   IsObject, IsInt, IsBoolean, IsOptional,
   IsArray, IsEnum, IsDateString, IsString, Min,

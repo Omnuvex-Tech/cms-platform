@@ -17,9 +17,6 @@ await prisma.user.upsert({
 });
   console.log('✅ User seeded');
 
-  // ─────────────────────────────────────────
-  // FAQ
-  // ─────────────────────────────────────────
   const faqs = [
     {
       question: { az: 'Sualınız nədir?', en: 'What is your question?', ru: 'Каков ваш вопрос?' },

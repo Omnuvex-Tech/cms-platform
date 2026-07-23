@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
-
 type Lang = "az" | "en" | "ru";
 
 const PAGE_KEYS = [
@@ -74,7 +73,6 @@ export default function SeoPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
-
   const [schemaByLang, setSchemaByLang] = useState<Record<string, any>>({});
   const [schemaText, setSchemaText] = useState("");
   const [schemaError, setSchemaError] = useState<string | null>(null);
@@ -200,7 +198,6 @@ export default function SeoPage() {
       setSchemaError("Sıfırlanarkən xəta baş verdi");
     }
   };
-
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -220,7 +217,6 @@ export default function SeoPage() {
           </button>
         </div>
       </div>
-
       <div className={styles.fullDrawerSection} style={{ marginBottom: 24 }}>
         <h3 className={styles.drawerSectionTitle}>Səhifə seçin</h3>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -243,15 +239,12 @@ export default function SeoPage() {
           ))}
         </div>
       </div>
-
       {loading ? (
         <div className={styles.empty}>Yüklənir...</div>
       ) : (
         <>
           <LangTabs active={activeLang} onChange={setActiveLang} />
-
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>SEO Title ({activeLang.toUpperCase()})</h3>
               <div className={styles.field}>
@@ -263,7 +256,6 @@ export default function SeoPage() {
                 />
               </div>
             </div>
-
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>SEO Description ({activeLang.toUpperCase()})</h3>
               <div className={styles.field}>
@@ -276,7 +268,6 @@ export default function SeoPage() {
                 />
               </div>
             </div>
-
             <div className={styles.fullDrawerSection}>
               <h3 className={styles.drawerSectionTitle}>SEO Keywords ({activeLang.toUpperCase()})</h3>
               <div className={styles.field}>
@@ -284,11 +275,9 @@ export default function SeoPage() {
                   className={styles.input}
                   value={data.seoKeywords?.[activeLang] ?? ""}
                   placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
-                  onChange={(e) => updateField("seoKeywords", activeLang, e.target.value)}
-                />
+                  onChange={(e) => updateField("seoKeywords", activeLang, e.target.value)}/>
               </div>
             </div>
-
             <div className={styles.fullDrawerSection}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <h3 className={styles.drawerSectionTitle} style={{ marginBottom: 0 }}>
@@ -302,8 +291,7 @@ export default function SeoPage() {
                       padding: "4px 12px", borderRadius: 6, fontSize: 13,
                       border: "1.5px solid #333", background: "transparent",
                       color: "#888", cursor: "pointer",
-                    }}
-                  >
+                    }}>
                     Sıfırla
                   </button>
                   <button
@@ -314,8 +302,7 @@ export default function SeoPage() {
                       padding: "4px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600,
                       border: "1.5px solid #3b82f6", background: "#1e3a5f",
                       color: "#fff", cursor: "pointer",
-                    }}
-                  >
+                    }}>
                     {schemaGenerating ? "Yaradılır..." : "⚡ Generate Et"}
                   </button>
                   <button
@@ -332,18 +319,15 @@ export default function SeoPage() {
                   </button>
                 </div>
               </div>
-
               {schemaSaveStatus === "success" && (
                 <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 8 }}>✓ Schema saxlanıldı</p>
               )}
               {schemaSaveStatus === "error" && (
                 <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 8 }}>✕ Xəta baş verdi</p>
               )}
-
               <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
                 ℹ Hər dil üçün ayrı schema generasiya olunur. "Generate Et" ilə yarat, lazım gəlsə redaktə et, "Saxla" ilə yadda saxla. "Sıfırla" kodun avtomatik yaratdığına qaytarır və dərhal saxlayır.
               </p>
-
               <div className={styles.field}>
                 <textarea
                   className={styles.input}
@@ -354,15 +338,13 @@ export default function SeoPage() {
                   style={{ fontFamily: "monospace", fontSize: 12 }}
                 />
               </div>
-
               {schemaError && (
                 <p style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}>⚠ {schemaError}</p>
               )}
             </div>
-
           </div>
-        </>
+        </>                                                                                                                                                                                                                                                                                                                                                                                                              
       )}
     </div>
   );
-}
+}   

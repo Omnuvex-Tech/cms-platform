@@ -1,4 +1,3 @@
-// update-vacancy-category.dto.ts
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateVacancyCategoryDto } from './create-vacancy-category.dto';
 

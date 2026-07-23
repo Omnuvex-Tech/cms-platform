@@ -1,4 +1,3 @@
-// vacancy-settings.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateVacancySettingsDto } from './dto/update-vacancy-settings.dto';
