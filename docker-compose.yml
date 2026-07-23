@@ -44,7 +44,10 @@ services:
     volumes:
       - /var/www/treva-sales-agent:/treva_sales_bot
     ports:
-    - "127.0.0.1:4000:4000"
+      - "127.0.0.1:4000:4000"
+    networks:
+      - default
+      - treva_bot_net
 
   cms-web:
     build:
@@ -61,7 +64,7 @@ services:
     expose:
       - "3001"
     ports:
-    - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3001:3001"
 
   caddy:
     image: caddy:2
@@ -88,3 +91,10 @@ volumes:
   postgres-data:
   caddy-data:
   caddy-config:
+
+networks:
+  default:
+    driver: bridge
+  treva_bot_net:
+    external: true
+    name: treva-sales-agent_default
