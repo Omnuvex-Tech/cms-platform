@@ -14,7 +14,7 @@
 
 FROM node:20-bookworm-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------
 # 1. Prune the monorepo down to cms-web's slice (incl. @repo/shared, @repo/types, @repo/ui).
@@ -61,5 +61,11 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 EXPOSE 3001
+
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WIDGET_URL
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WIDGET_URL=$NEXT_PUBLIC_WIDGET_URL
 
 CMD ["node", "server.js"]
