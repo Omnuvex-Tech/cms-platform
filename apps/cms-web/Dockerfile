@@ -3,9 +3,9 @@
 # Turborepo workspace: build context is the REPO ROOT, not this directory:
 #   docker build -f apps/cms-web/Dockerfile --build-arg NEXT_PUBLIC_API_URL=https://api.example.com -t cms-web .
 #
-# NEXT_PUBLIC_API_URL is a build ARG, not a runtime env var: Next.js inlines
-# NEXT_PUBLIC_* values into the client bundle at `next build` time, so it must
-# be known when this image is built, and changing it means rebuilding the image.
+# NEXT_PUBLIC_API_URL and NEXT_PUBLIC_WIDGET_URL are build ARGs, not runtime env vars: Next.js inlines
+# NEXT_PUBLIC_* values into the client bundle at `next build` time, so they must
+# be known when this image is built, and changing them means rebuilding the image.
 #
 # Uses `output: "standalone"` (next.config.js) — in a monorepo, Next traces
 # the workspace root's node_modules, so the standalone output nests as
@@ -37,7 +37,10 @@ RUN npm ci
 COPY --from=pruner /app/out/full/ .
 
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WIDGET_URL
+
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WIDGET_URL=$NEXT_PUBLIC_WIDGET_URL
 
 RUN npx turbo run build --filter=cms-web
 
