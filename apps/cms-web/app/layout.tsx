@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body>
                 <Providers>{children}</Providers>
                 <Script
-                    src="http://localhost:3000/webchat/widget.js"
+                    src={process.env.NEXT_PUBLIC_WIDGET_URL || "http://localhost:3000/webchat/widget.js"}
                     data-title="TREVA Assistant"
                     strategy="lazyOnload"
                 />

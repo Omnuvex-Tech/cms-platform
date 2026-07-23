@@ -59,6 +59,7 @@ services:
         # Build-time only — inlined into the client bundle by `next build`.
         # Changing this requires rebuilding the image, not just restarting it.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_WIDGET_URL: ${NEXT_PUBLIC_WIDGET_URL}
     image: cms-web:latest
     restart: unless-stopped
     depends_on:
