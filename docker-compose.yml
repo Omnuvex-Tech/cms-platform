@@ -43,6 +43,8 @@ services:
       - "4000"
     volumes:
       - /var/www/treva-sales-agent:/treva_sales_bot
+    ports:
+    - "127.0.0.1:4000:4000"
 
   cms-web:
     build:
@@ -58,6 +60,8 @@ services:
       - cms-api
     expose:
       - "3001"
+    ports:
+    - "127.0.0.1:3001:3001"
 
   caddy:
     image: caddy:2
