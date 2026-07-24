@@ -1,8 +1,22 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const envPaths = [
+  join(process.cwd(), '.env'),
+  join(process.cwd(), 'apps', 'cms-api', '.env'),
+];
+
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    process.loadEnvFile?.(envPath);
+    break;
+  }
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
