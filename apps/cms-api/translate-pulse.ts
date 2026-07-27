@@ -37,6 +37,47 @@ type MultilingualObject = {
   [key: string]: any;
 };
 
+type ProcessResult<T> = {
+  value: T;
+  changed: boolean;
+};
+
+const missingOnly = process.argv.includes('--missing-only') || !process.argv.includes('--force');
+
+function normalizeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getSourceText(value: string | MultilingualObject): string {
+  if (typeof value === 'string') {
+    return normalizeText(value);
+  }
+
+  const candidates = [value.az, value.en, value.ru, ...Object.values(value)];
+  for (const candidate of candidates) {
+    const normalized = normalizeText(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return '';
+}
+
+function shouldTranslateLocale(source: string, current: unknown): boolean {
+  const target = normalizeText(current);
+
+  if (!source) {
+    return false;
+  }
+
+  if (!missingOnly) {
+    return true;
+  }
+
+  return !target || target === source;
+}
+
 /**
  * Translate text to target language using DeepL (auto-detects source language)
  */
@@ -56,146 +97,222 @@ async function translateText(text: string, targetLang: 'en-US' | 'ru'): Promise<
 /**
  * Convert a string to a multilingual object and translate it
  */
-async function processLocalizedString(value: string | MultilingualObject): Promise<MultilingualObject> {
-  // If it's already a multilingual object, just make sure it has all languages
-  if (typeof value === 'object' && value !== null && value.az) {
-    const result: MultilingualObject = { ...value };
-    if (!result.en) {
-      result.en = await translateText(result.az, 'en-US');
+async function processLocalizedString(value: string | MultilingualObject): Promise<ProcessResult<MultilingualObject>> {
+  const source = getSourceText(value);
+  const base: MultilingualObject =
+    typeof value === 'object' && value !== null
+      ? { ...value, az: normalizeText(value.az) || source }
+      : { az: source };
+
+  let changed = typeof value === 'string';
+
+  if (shouldTranslateLocale(base.az, base.en)) {
+    const translated = await translateText(base.az, 'en-US');
+    if (translated !== base.en) {
+      base.en = translated;
+      changed = true;
     }
-    if (!result.ru) {
-      result.ru = await translateText(result.az, 'ru');
+  }
+
+  if (shouldTranslateLocale(base.az, base.ru)) {
+    const translated = await translateText(base.az, 'ru');
+    if (translated !== base.ru) {
+      base.ru = translated;
+      changed = true;
     }
-    return result;
   }
-  // If it's a string, treat it as Azerbaijani and translate
-  if (typeof value === 'string') {
-    return {
-      az: value,
-      en: await translateText(value, 'en-US'),
-      ru: await translateText(value, 'ru'),
-    };
-  }
-  return value as MultilingualObject;
+
+  return { value: base, changed };
 }
 
 /**
  * Process and translate a Pulse block from AZ to EN and RU
  */
-async function processBlock(block: PulseBlock): Promise<PulseBlock> {
+async function processBlock(block: PulseBlock): Promise<ProcessResult<PulseBlock>> {
   const processedBlock: PulseBlock = { ...block };
+  let changed = false;
 
   // Translate text fields
   if (block.text) {
-    processedBlock.text = await processLocalizedString(block.text);
+    const result = await processLocalizedString(block.text);
+    processedBlock.text = result.value;
+    changed = changed || result.changed;
   }
 
   // Translate list items
   if (block.items && Array.isArray(block.items)) {
-    processedBlock.items = await Promise.all(
-      block.items.map(item => processLocalizedString(item))
-    );
+    const items = await Promise.all(block.items.map((item) => processLocalizedString(item)));
+    processedBlock.items = items.map((item) => item.value);
+    changed = changed || items.some((item) => item.changed);
   }
 
   // Translate alt text for images
   if (block.alt) {
-    processedBlock.alt = await processLocalizedString(block.alt);
+    const result = await processLocalizedString(block.alt);
+    processedBlock.alt = result.value;
+    changed = changed || result.changed;
   }
 
   // Translate captions
   if (block.caption) {
-    processedBlock.caption = await processLocalizedString(block.caption);
+    const result = await processLocalizedString(block.caption);
+    processedBlock.caption = result.value;
+    changed = changed || result.changed;
   }
 
   // Translate FAQ fields
   if (block.question) {
-    processedBlock.question = await processLocalizedString(block.question);
+    const result = await processLocalizedString(block.question);
+    processedBlock.question = result.value;
+    changed = changed || result.changed;
   }
   if (block.answer) {
-    processedBlock.answer = await processLocalizedString(block.answer);
+    const result = await processLocalizedString(block.answer);
+    processedBlock.answer = result.value;
+    changed = changed || result.changed;
   }
 
   // Translate quote author
   if (block.author) {
-    processedBlock.author = await processLocalizedString(block.author);
+    const result = await processLocalizedString(block.author);
+    processedBlock.author = result.value;
+    changed = changed || result.changed;
   }
 
   // Translate gallery image alts
   if (block.images && Array.isArray(block.images)) {
-    processedBlock.images = await Promise.all(
-      block.images.map(async (img) => ({
-        ...img,
-        alt: img.alt ? await processLocalizedString(img.alt) : img.alt,
-      }))
+    const images = await Promise.all(
+      block.images.map(async (img) => {
+        if (!img.alt) {
+          return { value: img, changed: false };
+        }
+
+        const result = await processLocalizedString(img.alt);
+        return {
+          value: {
+            ...img,
+            alt: result.value,
+          },
+          changed: result.changed,
+        };
+      }),
     );
+    processedBlock.images = images.map((img) => img.value);
+    changed = changed || images.some((img) => img.changed);
   }
 
-  return processedBlock;
+  return { value: processedBlock, changed };
 }
 
 async function main() {
-  console.log('🚀 Starting Pulse articles translation...');
+  console.log(`🚀 Starting Pulse articles translation (${missingOnly ? 'missing-only mode' : 'force mode'})...`);
 
   // Fetch all Pulse articles
   const articles = await prisma.pulseArticle.findMany();
   console.log(`✅ Found ${articles.length} articles`);
 
+  let updatedCount = 0;
+  let skippedCount = 0;
+
   for (const article of articles) {
     console.log(`\n📄 Processing article: ${article.slug}`);
     const updateData: any = {};
+    let articleChanged = false;
 
     // Process title
     if (article.title) {
-      updateData.title = await processLocalizedString(article.title as any);
-      console.log('  ✅ Title translated');
+      const result = await processLocalizedString(article.title as any);
+      if (result.changed) {
+        updateData.title = result.value;
+        articleChanged = true;
+        console.log('  ✅ Title translated');
+      } else {
+        console.log('  ⏭️ Title skipped');
+      }
     }
 
     // Process category
     if (article.category) {
-      updateData.category = await processLocalizedString(article.category as any);
-      console.log('  ✅ Category translated');
+      const result = await processLocalizedString(article.category as any);
+      if (result.changed) {
+        updateData.category = result.value;
+        articleChanged = true;
+        console.log('  ✅ Category translated');
+      } else {
+        console.log('  ⏭️ Category skipped');
+      }
     }
 
     // Process excerpt
     if (article.excerpt) {
-      updateData.excerpt = await processLocalizedString(article.excerpt as any);
-      console.log('  ✅ Excerpt translated');
+      const result = await processLocalizedString(article.excerpt as any);
+      if (result.changed) {
+        updateData.excerpt = result.value;
+        articleChanged = true;
+        console.log('  ✅ Excerpt translated');
+      } else {
+        console.log('  ⏭️ Excerpt skipped');
+      }
     }
 
     // Process metaTitle
     if (article.metaTitle) {
-      updateData.metaTitle = await processLocalizedString(article.metaTitle as any);
-      console.log('  ✅ Meta title translated');
+      const result = await processLocalizedString(article.metaTitle as any);
+      if (result.changed) {
+        updateData.metaTitle = result.value;
+        articleChanged = true;
+        console.log('  ✅ Meta title translated');
+      } else {
+        console.log('  ⏭️ Meta title skipped');
+      }
     }
 
     // Process metaDescription
     if (article.metaDescription) {
-      updateData.metaDescription = await processLocalizedString(article.metaDescription as any);
-      console.log('  ✅ Meta description translated');
+      const result = await processLocalizedString(article.metaDescription as any);
+      if (result.changed) {
+        updateData.metaDescription = result.value;
+        articleChanged = true;
+        console.log('  ✅ Meta description translated');
+      } else {
+        console.log('  ⏭️ Meta description skipped');
+      }
     }
 
     // Process blocks
     if (article.blocks && Array.isArray(article.blocks)) {
       const processedBlocks: PulseBlock[] = [];
+      let blocksChanged = false;
       for (const block of article.blocks as PulseBlock[]) {
         const processed = await processBlock(block);
-        processedBlocks.push(processed);
+        processedBlocks.push(processed.value);
+        blocksChanged = blocksChanged || processed.changed;
       }
-      updateData.blocks = processedBlocks;
-      console.log('  ✅ Blocks translated');
+
+      if (blocksChanged) {
+        updateData.blocks = processedBlocks;
+        articleChanged = true;
+        console.log('  ✅ Blocks translated');
+      } else {
+        console.log('  ⏭️ Blocks skipped');
+      }
     }
 
     // Update the article in DB
-    if (Object.keys(updateData).length > 0) {
+    if (articleChanged && Object.keys(updateData).length > 0) {
       await prisma.pulseArticle.update({
         where: { id: article.id },
         data: updateData,
       });
       console.log(`  ✅ Article "${article.slug}" updated successfully!`);
+      updatedCount += 1;
+    } else {
+      console.log(`  ⏭️ Article "${article.slug}" already translated, skipped`);
+      skippedCount += 1;
     }
   }
 
-  console.log('\n🎉 All Pulse articles translated successfully!');
+  console.log(`\n🎉 Pulse translation finished. Updated: ${updatedCount}, skipped: ${skippedCount}`);
 }
 
 main()
