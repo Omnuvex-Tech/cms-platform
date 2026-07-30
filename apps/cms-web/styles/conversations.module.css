@@ -30,6 +30,54 @@
     flex: 1;
     min-width: 0;
 }
+.inboxExportRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* Export-all popover (anchored by .menu in ui.module.css) */
+.exportPanel {
+    width: 288px;
+    padding: 8px;
+}
+.exportDates {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.exportDate {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: #8a9099;
+}
+.exportDate input {
+    padding: 7px 8px;
+    font-size: 12px;
+}
+.exportHint {
+    margin-top: 8px;
+    padding: 0 2px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #9aa0a6;
+}
+.exportFormats {
+    display: flex;
+    gap: 6px;
+    padding: 2px;
+}
+.exportFormats button {
+    flex: 1;
+    padding: 0 6px;
+    gap: 5px;
+}
+
 .inboxList {
     flex: 1;
     overflow-y: auto;

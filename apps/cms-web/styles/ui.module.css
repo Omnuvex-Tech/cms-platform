@@ -199,6 +199,92 @@
     border-radius: 8px;
 }
 
+/* ---- Dropdown menu ---- */
+.menuWrap {
+    position: relative;
+    display: inline-flex;
+}
+.menuChevron,
+.menuChevronOpen {
+    color: #8a9099;
+    transition: transform 0.15s ease;
+}
+.menuChevronOpen {
+    transform: rotate(180deg);
+}
+.menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    z-index: 60;
+    min-width: 190px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 20, 30, 0.14);
+    animation: menuIn 0.12s ease;
+}
+.menuAlignRight {
+    right: 0;
+}
+.menuAlignLeft {
+    left: 0;
+}
+.menuItem {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    color: #2a2d33;
+    text-align: left;
+    cursor: pointer;
+}
+.menuItem:hover {
+    background: #f2f5f9;
+}
+.menuItem svg {
+    color: #8a9099;
+    flex-shrink: 0;
+}
+.menuItemLabel {
+    flex: 1;
+    min-width: 0;
+}
+.menuItemHint {
+    font-size: 11px;
+    color: #9aa0a6;
+    flex-shrink: 0;
+}
+.menuLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8a9099;
+    padding: 6px 10px 4px;
+}
+.menuDivider {
+    height: 1px;
+    margin: 6px 0;
+    background: rgba(0, 0, 0, 0.07);
+}
+@keyframes menuIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* ---- Side sheet ---- */
 .sheetOverlay {
     position: fixed;

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { exportInclude } from './conversation-export';
 
 const listSelect = {
   id: true,
@@ -45,6 +46,27 @@ export class ConversationsRepository {
     return this.prisma.conversation.findUnique({
       where: { id },
       include: detailInclude,
+    });
+  }
+
+  findByIdForExport(id: number) {
+    return this.prisma.conversation.findUnique({
+      where: { id },
+      include: exportInclude,
+    });
+  }
+
+  /**
+   * Full threads (every message + note) for a download. `take` is required by
+   * the caller rather than optional: this pulls whole transcripts into memory,
+   * so an unbounded "all time" export on a busy inbox must not be one typo away.
+   */
+  findManyForExport(where: Prisma.ConversationWhereInput, take: number) {
+    return this.prisma.conversation.findMany({
+      where,
+      include: exportInclude,
+      orderBy: { lastMessageAt: 'desc' },
+      take,
     });
   }
 

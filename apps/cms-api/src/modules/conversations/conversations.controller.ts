@@ -8,16 +8,21 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { Channel, ConversationStatus } from '@prisma/client';
 import { ConversationsService } from './conversations.service';
 import {
   AddNoteDto,
   AssignDto,
+  ExportThreadDto,
+  ExportThreadsDto,
   ReplyDto,
   SetBotDto,
   SetStatusDto,
 } from './dto/conversation.dto';
+import { ExportFile } from './conversation-export';
 import {
   CurrentUser,
   AuthUser,
@@ -42,9 +47,47 @@ export class ConversationsController {
     });
   }
 
+  /**
+   * Declared before ':id' so the static path matches first — otherwise
+   * ParseIntPipe rejects "export" as a conversation id.
+   */
+  @Get('export')
+  async exportAll(
+    @Query() dto: ExportThreadsDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.send(res, await this.conversationsService.exportMany(dto));
+  }
+
   @Get(':id')
   get(@Param('id', ParseIntPipe) id: number) {
     return this.conversationsService.get(id);
+  }
+
+  @Get(':id/export')
+  async exportOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() dto: ExportThreadDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.send(
+      res,
+      // html by default — see the comment on exportMany's same default.
+      await this.conversationsService.exportOne(id, dto.format ?? 'html'),
+    );
+  }
+
+  /**
+   * Content-Type and filename vary per format, so they are set here rather than
+   * with the static @Header decorator used by the leads CSV export.
+   */
+  private send(res: Response, file: ExportFile): string {
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${file.filename}"`,
+    );
+    return file.body;
   }
 
   @Post(':id/reply')

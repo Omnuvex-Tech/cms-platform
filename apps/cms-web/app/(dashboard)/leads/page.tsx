@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Download, Users, ExternalLink, Clock } from "lucide-react";
-import { api, downloadCsv } from "@/lib/api";
+import { api, downloadFile } from "@/lib/api";
 import {
     leadStatus,
     temperature as tempMeta,
@@ -126,7 +126,7 @@ function LeadsInner() {
                     <button
                         className={`${ui.btn} ${ui.btnGhost}`}
                         onClick={() =>
-                            downloadCsv(`/leads/export${qs ? `?${qs}` : ""}`, "leads.csv")
+                            downloadFile(`/leads/export${qs ? `?${qs}` : ""}`, "leads.csv")
                         }
                     >
                         <Download size={15} /> Export CSV

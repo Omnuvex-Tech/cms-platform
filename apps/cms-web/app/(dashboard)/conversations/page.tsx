@@ -12,12 +12,17 @@ import {
     ExternalLink,
     Trash2,
     MessagesSquare,
+    Download,
+    FileCode,
+    FileText,
+    FileJson,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, downloadFile } from "@/lib/api";
 import { conversationStatus, channelLabel, languageLabel } from "@/lib/status";
 import { relativeTime, initials } from "@/lib/format";
 import { useReps } from "@/lib/hooks/useReps";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { Menu, MenuItem } from "@/components/ui/Menu";
 import { Transcript, TranscriptMessage } from "@/components/ui/Transcript";
 import { Loading, EmptyState, Avatar } from "@/components/ui/States";
 import ui from "@/styles/ui.module.css";
@@ -193,6 +198,12 @@ function ConversationsInner() {
                             ))}
                         </select>
                     </div>
+                    <div className={styles.inboxExportRow}>
+                        <span className={ui.muted} style={{ fontSize: 12 }}>
+                            {list ? `${list.length} thread${list.length === 1 ? "" : "s"}` : "—"}
+                        </span>
+                        <ExportAllMenu filterQs={qs} />
+                    </div>
                 </div>
                 <div className={styles.inboxList}>
                     {isLoading ? (
@@ -258,6 +269,7 @@ function ConversationsInner() {
                                     {detail.botActive ? <BotOff size={14} /> : <Bot size={14} />}
                                     {detail.botActive ? "Pause bot" : "Resume bot"}
                                 </button>
+                                <ThreadDownloadMenu id={detail.id} />
                             </div>
                         </div>
 
@@ -376,6 +388,194 @@ function ConversationsInner() {
                 </div>
             )}
         </div>
+    );
+}
+
+type ExportFormat = "html" | "md" | "json";
+
+/** Download one thread's full transcript. */
+function ThreadDownloadMenu({ id }: { id: number }) {
+    const download = (format: ExportFormat) =>
+        downloadFile(
+            `/conversations/${id}/export?format=${format}`,
+            `conversation-${id}.${format}`,
+        );
+
+    return (
+        <Menu label="Download" icon={<Download size={14} />}>
+            {(close) => (
+                <>
+                    <div className={ui.menuLabel}>This thread</div>
+                    <MenuItem
+                        icon={<FileCode size={14} />}
+                        hint=".html"
+                        onClick={() => {
+                            download("html");
+                            close();
+                        }}
+                    >
+                        HTML (readable)
+                    </MenuItem>
+                    <MenuItem
+                        icon={<FileText size={14} />}
+                        hint=".md"
+                        onClick={() => {
+                            download("md");
+                            close();
+                        }}
+                    >
+                        Markdown
+                    </MenuItem>
+                    <MenuItem
+                        icon={<FileJson size={14} />}
+                        hint=".json"
+                        onClick={() => {
+                            download("json");
+                            close();
+                        }}
+                    >
+                        JSON
+                    </MenuItem>
+                </>
+            )}
+        </Menu>
+    );
+}
+
+const RANGES = [
+    { key: "7d", label: "Last 7 days", days: 7 },
+    { key: "30d", label: "Last 30 days", days: 30 },
+    { key: "90d", label: "Last 3 months", days: 90 },
+    { key: "all", label: "All time", days: null },
+    { key: "custom", label: "Custom range…", days: null },
+] as const;
+
+type RangeKey = (typeof RANGES)[number]["key"];
+
+/**
+ * Bulk export. The range bounds a thread's *last activity* (matching the API), so
+ * "last 7 days" means threads that were live this week — not only ones opened in it.
+ */
+function ExportAllMenu({ filterQs }: { filterQs: string }) {
+    const [range, setRange] = useState<RangeKey>("30d");
+    const [from, setFrom] = useState("");
+    const [to, setTo] = useState("");
+
+    // A custom range with no start would silently mean "all time", which is not
+    // what someone who opened the date pickers is asking for.
+    const ready = range !== "custom" || !!from;
+
+    const download = (format: ExportFormat) => {
+        const params = new URLSearchParams(filterQs);
+        params.set("format", format);
+        if (range === "custom") {
+            if (from) params.set("since", from);
+            if (to) params.set("until", to);
+        } else {
+            const preset = RANGES.find((r) => r.key === range);
+            if (preset?.days) {
+                const since = new Date();
+                since.setDate(since.getDate() - preset.days);
+                params.set("since", since.toISOString());
+            }
+        }
+        downloadFile(`/conversations/export?${params}`, `conversations.${format}`);
+    };
+
+    return (
+        <Menu
+            label="Export all"
+            icon={<Download size={14} />}
+            align="right"
+            panelClassName={styles.exportPanel}
+        >
+            {(close) => (
+                <>
+                    <div className={ui.menuLabel}>Threads active in</div>
+                    <select
+                        className={ui.select}
+                        style={{ width: "100%" }}
+                        value={range}
+                        onChange={(e) => setRange(e.target.value as RangeKey)}
+                    >
+                        {RANGES.map((r) => (
+                            <option key={r.key} value={r.key}>
+                                {r.label}
+                            </option>
+                        ))}
+                    </select>
+
+                    {range === "custom" && (
+                        <div className={styles.exportDates}>
+                            <label className={styles.exportDate}>
+                                <span>From</span>
+                                <input
+                                    type="date"
+                                    className={ui.input}
+                                    value={from}
+                                    max={to || undefined}
+                                    onChange={(e) => setFrom(e.target.value)}
+                                />
+                            </label>
+                            <label className={styles.exportDate}>
+                                <span>To</span>
+                                <input
+                                    type="date"
+                                    className={ui.input}
+                                    value={to}
+                                    min={from || undefined}
+                                    onChange={(e) => setTo(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                    )}
+
+                    {filterQs && (
+                        <p className={styles.exportHint}>
+                            The search and filters above are applied too.
+                        </p>
+                    )}
+
+                    <div className={ui.menuDivider} />
+                    <div className={ui.menuLabel}>Download as</div>
+                    <div className={styles.exportFormats}>
+                        <button
+                            className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
+                            disabled={!ready}
+                            onClick={() => {
+                                download("html");
+                                close();
+                            }}
+                        >
+                            <FileCode size={14} /> .html
+                        </button>
+                        <button
+                            className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
+                            disabled={!ready}
+                            onClick={() => {
+                                download("md");
+                                close();
+                            }}
+                        >
+                            <FileText size={14} /> .md
+                        </button>
+                        <button
+                            className={`${ui.btn} ${ui.btnGhost} ${ui.btnSm}`}
+                            disabled={!ready}
+                            onClick={() => {
+                                download("json");
+                                close();
+                            }}
+                        >
+                            <FileJson size={14} /> .json
+                        </button>
+                    </div>
+                    <p className={styles.exportHint}>
+                        HTML opens in any browser — the one to share with non-technical people.
+                    </p>
+                </>
+            )}
+        </Menu>
     );
 }
 

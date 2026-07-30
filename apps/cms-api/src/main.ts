@@ -29,6 +29,10 @@ async function bootstrap() {
   app.enableCors({
     origin: resolveCorsOrigins(),
     credentials: true,
+    // The panel names downloaded files from the server's Content-Disposition
+    // (conversation exports, leads CSV); without this the browser hides the
+    // header from cross-origin fetch and every download falls back to a guess.
+    exposedHeaders: ['Content-Disposition'],
   });
 
   // whitelist strips any request-body property not declared on the target DTO

@@ -9,10 +9,17 @@ import { BotControlService } from './bot-control.service';
 import {
   AddNoteDto,
   AssignDto,
+  ExportThreadsDto,
   ReplyDto,
   SetBotDto,
   SetStatusDto,
 } from './dto/conversation.dto';
+import {
+  buildBundleExport,
+  buildSingleExport,
+  ExportFile,
+  ExportFormat,
+} from './conversation-export';
 
 interface ListFilters {
   search?: string;
@@ -21,6 +28,13 @@ interface ListFilters {
   assignedToId?: number;
 }
 
+/**
+ * A bundle export pulls every message of every matching thread into memory, so
+ * "all time" on a busy inbox is capped instead of being allowed to OOM the API.
+ * The export reports the cut so nobody analyses a silently trimmed file.
+ */
+const EXPORT_MAX_CONVERSATIONS = 500;
+
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -28,7 +42,7 @@ export class ConversationsService {
     private readonly botControlService: BotControlService,
   ) {}
 
-  list(filters: ListFilters) {
+  private buildWhere(filters: ListFilters): Prisma.ConversationWhereInput {
     const where: Prisma.ConversationWhereInput = {};
     if (filters.status) where.status = filters.status;
     if (filters.channel) where.channel = filters.channel;
@@ -41,7 +55,11 @@ export class ConversationsService {
         { messages: { some: { content: { contains: filters.search, mode: 'insensitive' } } } },
       ];
     }
-    return this.conversationsRepository.findMany(where);
+    return where;
+  }
+
+  list(filters: ListFilters) {
+    return this.conversationsRepository.findMany(this.buildWhere(filters));
   }
 
   async get(id: number) {
@@ -134,5 +152,86 @@ export class ConversationsService {
     // break the panel's toggle action.
     void this.botControlService.setBotActive(conversation.threadId, dto.active);
     return updated;
+  }
+
+  /**
+   * Accepts `YYYY-MM-DD` or a full ISO timestamp. A bare date is widened to the
+   * edge of that UTC day so `?since=2026-07-01&until=2026-07-31` covers all of
+   * July rather than stopping at midnight on the 31st.
+   */
+  private parseBoundary(
+    value: string | undefined,
+    edge: 'start' | 'end',
+  ): Date | undefined {
+    if (!value) return undefined;
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const parsed = new Date(
+      dateOnly
+        ? `${value}T${edge === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`
+        : value,
+    );
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException(`Invalid date: ${value}`);
+    }
+    return parsed;
+  }
+
+  async exportOne(id: number, format: ExportFormat): Promise<ExportFile> {
+    const conversation =
+      await this.conversationsRepository.findByIdForExport(id);
+    if (!conversation) throw new NotFoundException('Conversation not found');
+    return buildSingleExport(conversation, format);
+  }
+
+  async exportMany(dto: ExportThreadsDto): Promise<ExportFile> {
+    // html is the default: it's the format a non-technical reader can actually
+    // open, so a caller that doesn't specify one should get that, not the
+    // markdown a browser or Notepad would otherwise show as raw `**`/`>` text.
+    const format = dto.format ?? 'html';
+    const since = this.parseBoundary(dto.since, 'start');
+    const until = this.parseBoundary(dto.until, 'end');
+    if (since && until && since > until) {
+      throw new BadRequestException('`since` must not be after `until`.');
+    }
+
+    const where = this.buildWhere({
+      search: dto.search,
+      status: dto.status,
+      channel: dto.channel,
+      assignedToId: dto.assignedToId ? Number(dto.assignedToId) : undefined,
+    });
+    // Ranged on last activity, not creation: the operator asking for "the last
+    // week" wants the threads that were live that week, including long-running
+    // ones that opened earlier.
+    if (since || until) {
+      where.lastMessageAt = {
+        ...(since ? { gte: since } : {}),
+        ...(until ? { lte: until } : {}),
+      };
+    }
+
+    // One extra row is the truncation probe — if it comes back, there was more.
+    const rows = await this.conversationsRepository.findManyForExport(
+      where,
+      EXPORT_MAX_CONVERSATIONS + 1,
+    );
+    const truncated = rows.length > EXPORT_MAX_CONVERSATIONS;
+
+    return buildBundleExport(
+      truncated ? rows.slice(0, EXPORT_MAX_CONVERSATIONS) : rows,
+      format,
+      {
+        since,
+        until,
+        filters: {
+          search: dto.search,
+          status: dto.status,
+          channel: dto.channel,
+          assignedToId: dto.assignedToId,
+        },
+        truncated,
+        limit: EXPORT_MAX_CONVERSATIONS,
+      },
+    );
   }
 }

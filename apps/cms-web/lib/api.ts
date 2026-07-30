@@ -57,8 +57,21 @@ export const api = {
     delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
-/** Fetches a raw text body (used for the leads CSV export) as a download. */
-export async function downloadCsv(path: string, filename: string) {
+/** Pulls the server's chosen filename out of `Content-Disposition`, if it set one. */
+function filenameFromHeaders(res: Response): string | null {
+    const header = res.headers.get("Content-Disposition");
+    if (!header) return null;
+    const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Downloads an authenticated export endpoint as a file (leads CSV, conversation
+ * transcripts). The server names the file via Content-Disposition — which it
+ * knows best, since the name encodes the thread id or date range — and
+ * `fallbackName` only covers the case where that header is missing.
+ */
+export async function downloadFile(path: string, fallbackName: string) {
     const token = getToken();
     const res = await fetch(`${API_URL}${path}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -68,9 +81,13 @@ export async function downloadCsv(path: string, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
+    a.download = filenameFromHeaders(res) ?? fallbackName;
+    // Firefox ignores a click on a detached anchor, and revoking the URL in the
+    // same tick can cancel the download — so attach, click, then clean up after.
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export { API_URL };
