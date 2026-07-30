@@ -68,7 +68,7 @@ export function Sidebar() {
         <aside className={styles.sidebar}>
             <div className={styles.logoWrap}>
                 <span className={styles.logo}>
-                    Emla<span className={styles.logoAccent}>X</span>
+                    Emla<span className={styles.logoAccent}>X</span> Agent
                 </span>
             </div>
 

@@ -62,13 +62,21 @@ function ConversationsInner() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [channelFilter, setChannelFilter] = useState("");
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    // Deep link from a lead / handoff / contact-request card: ?open=<conversationId>.
+    // Resolved during render (not in an effect) so the very first commit already
+    // has the right thread selected — otherwise the "select the first thread"
+    // effect below runs in the same commit, still sees a null selectedId, and
+    // clobbers the deep link with the top of the inbox.
+    const openParam = params.get("open");
+    const openId =
+        openParam && Number.isFinite(Number(openParam)) ? Number(openParam) : null;
+
+    const [selectedId, setSelectedId] = useState<number | null>(openId);
     const { data: reps } = useReps();
 
     useEffect(() => {
-        const open = params.get("open");
-        if (open) setSelectedId(Number(open));
-    }, [params]);
+        if (openId !== null) setSelectedId(openId);
+    }, [openId]);
 
     const query = new URLSearchParams();
     if (search) query.set("search", search);
@@ -94,9 +102,12 @@ function ConversationsInner() {
         refetchInterval: 2_000,
     });
 
+    // Default to the newest thread, but never override an explicit deep link.
     useEffect(() => {
-        if (!selectedId && list && list.length > 0) setSelectedId(list[0]!.id);
-    }, [list, selectedId]);
+        if (openId === null && !selectedId && list && list.length > 0) {
+            setSelectedId(list[0]!.id);
+        }
+    }, [list, selectedId, openId]);
 
     const refresh = () => {
         qc.invalidateQueries({ queryKey: ["conversations"] });
