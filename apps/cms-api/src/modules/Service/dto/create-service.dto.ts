@@ -30,6 +30,9 @@ export class CreateServiceDto {
   @IsOptional()
   @IsString()
   homeCoverImage?: string;
+   @IsOptional()
+  @IsString()
+  homeGif?: string;
   @IsOptional()
   features?: any[];
 

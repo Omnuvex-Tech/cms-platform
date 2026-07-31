@@ -8,8 +8,10 @@ export class UpdateServiceDto {
   @IsOptional() @IsObject() description?: Record<string, string>;
   @IsOptional() @IsString() image?: string;
   @IsOptional() @IsObject() imageAlt?: Record<string, string>;
-@IsOptional() @IsString() gif?: string;
-  @IsOptional() @IsString() homeCoverImage?: string;  @IsOptional() features?: any[];
+  @IsOptional() @IsString() gif?: string;
+  @IsOptional() @IsString() homeCoverImage?: string;
+  @IsOptional() @IsString() homeGif?: string;
+  @IsOptional() features?: any[];
   @IsOptional() @IsObject() portfolioButtonText?: Record<string, string>;
   @IsOptional() @IsString() portfolioButtonLink?: string;
   @IsOptional() @IsBoolean() portfolioButtonNewTab?: boolean;
@@ -22,6 +24,6 @@ export class UpdateServiceDto {
   @IsOptional() @IsObject() seoDescription?: Record<string, string>;
   @IsOptional() @IsObject() seoKeywords?: Record<string, string>;
   @IsOptional() sections?: any[];
-    @IsOptional()
+  @IsOptional()
   schema?: Record<string, any> | null;
 }

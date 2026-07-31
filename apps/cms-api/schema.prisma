@@ -244,6 +244,7 @@ model Service {
   image                 String
   imageAlt              Json     @default("{}")
   homeCoverImage        String?
+  homeGif               String? 
   gif                   String?
   features              Json     @default("[]")
   portfolioButtonText   Json     @default("{}")

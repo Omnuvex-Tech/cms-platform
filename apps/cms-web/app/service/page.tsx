@@ -713,9 +713,10 @@ export default function ServicePage() {
     const [slug, setSlug] = useState("");
     const [badge, setBadge] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [description, setDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-   const [image, setImage] = useState("");
+    const [image, setImage] = useState("");
     const [imageAlt, setImageAlt] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [homeCoverImage, setHomeCoverImage] = useState("");
+    const [homeGif, setHomeGif] = useState("");
     const [gif, setGif] = useState("");
     const [features, setFeatures] = useState<any[]>([]);
     const [portfolioButtonText, setPortfolioButtonText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
@@ -757,8 +758,8 @@ export default function ServicePage() {
         setNumber(""); setTitle({ az: "", en: "", ru: "" }); setSlug("");
         setBadge({ az: "", en: "", ru: "" });
         setDescription({ az: "", en: "", ru: "" });
-        setImage(""); setImageAlt({ az: "", en: "", ru: "" }); setHomeCoverImage(""); setGif("");
-        setFeatures([]);
+        setImage(""); setImageAlt({ az: "", en: "", ru: "" });
+        setHomeCoverImage(""); setHomeGif(""); setGif(""); setFeatures([]);
         setPortfolioButtonText({ az: "", en: "", ru: "" });
         setPortfolioButtonLink(""); setPortfolioButtonNewTab(false);
         setDetailButtonText({ az: "", en: "", ru: "" });
@@ -782,6 +783,7 @@ export default function ServicePage() {
         setImage(s.image ?? "");
         setImageAlt(s.imageAlt ?? { az: "", en: "", ru: "" });
         setHomeCoverImage(s.homeCoverImage ?? "");
+        setHomeGif(s.homeGif ?? "");
         setGif(s.gif ?? "");
         const normalizedFeatures = (s.features ?? []).map((f: any) => ({
             ...f,
@@ -881,9 +883,10 @@ export default function ServicePage() {
         if (!title.az || !slug) return;
         setSaving(true);
         try {
-           const payload = {
+            const payload = {
                 number, title, slug, badge, description, image, imageAlt,
                 homeCoverImage: homeCoverImage || null,
+                homeGif: homeGif || null,
                 gif: gif || null, features, sections,
                 portfolioButtonText,
                 portfolioButtonLink: portfolioButtonLink || null,
@@ -1004,13 +1007,14 @@ export default function ServicePage() {
                                 <LocalizedRichEditor value={description} lang={activeLang}
                                     onChange={setDescription} />
                             </div>
-                          <SingleImageUpload label="Şəkil (WebP)" value={image} onChange={setImage} />
+                            <SingleImageUpload label="Şəkil (WebP)" value={image} onChange={setImage} />
                             <div className={styles.field}><label>Şəkil alt mətn ({activeLang.toUpperCase()})</label>
                                 <input className={styles.input}
                                     value={imageAlt[activeLang] || ""}
                                     onChange={e => setImageAlt(prev => ({ ...prev, [activeLang]: e.target.value }))} />
                             </div>
                             <SingleImageUpload label="Home səhifə üçün Cover şəkil (optional)" value={homeCoverImage} onChange={setHomeCoverImage} />
+                            <SingleImageUpload label="Home səhifə hover GIF/Video (optional)" value={homeGif} onChange={setHomeGif} accept="image/gif,image/webp,video/mp4" />
                             <SingleImageUpload label="GIF (optional)" value={gif} onChange={setGif} accept="image/gif,image/webp,video/mp4" />
                         </div>
 

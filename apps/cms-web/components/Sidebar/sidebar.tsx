@@ -161,13 +161,11 @@ export function Sidebar() {
                     </div>
                 ))}
             </nav>
-
-            <div className={styles.logoutWrap}>
+<div className={styles.logoutWrap}>
                 <button className={styles.logoutBtn} onClick={handleLogout}>
                     <LogOut size={16} />
                     <span>Çıxış</span>
-                </button>
-            </div>
+                </button>            </div>
         </aside>
     );
 }

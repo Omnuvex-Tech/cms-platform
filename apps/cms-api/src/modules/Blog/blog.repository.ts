@@ -183,10 +183,10 @@ update(id: number, dto: UpdateBlogDto) {
     return this.prisma.$transaction(updates);
   }
 
-  findFeatured() {
+findFeatured() {
     return this.prisma.blog.findMany({
       where: { isVisible: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       include: { author: true, category: true },
     });
   }

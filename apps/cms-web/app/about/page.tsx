@@ -130,9 +130,15 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
         },
       }),
     ],
-    content: value,
+  content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
   });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
 
   const openLinkPopup = () => {
     if (!editor) return;

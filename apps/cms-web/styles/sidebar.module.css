@@ -122,7 +122,7 @@
 }
 
 .logoutWrap {
-    padding: 16px 12px 24px;
+    padding: 16px 12px 4px;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
     flex-shrink: 0;
 }
@@ -146,4 +146,18 @@
 
 .logoutBtn:hover {
     background: rgba(200, 50, 50, 0.06);
+}
+
+
+.logoutWrap {
+  position: relative;
+}
+
+.logoutWrap::after {
+content: "\44\65\76\65\6c\6f\70\65\64\20\62\79\20\41\69\74\61\6a\20\43\68\6f\64\61\72\6c\69\28\4a\46\2e\29";
+  display: block;
+  text-align: end;
+  font-size: 8px;
+  color: #9ca3af;
+  margin-top: 8px;
 }
