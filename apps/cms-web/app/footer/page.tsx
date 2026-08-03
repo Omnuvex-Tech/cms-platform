@@ -40,6 +40,23 @@ async function apiFetch(path: string, options?: RequestInit) {
     return text ? JSON.parse(text) : null;
 }
 
+function parseLocationMapUrl(raw: string | null): { url: string; newTab: boolean } {
+    if (!raw) return { url: "", newTab: false };
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.url === "string") {
+            return { url: parsed.url, newTab: !!parsed.newTab };
+        }
+    } catch {
+    }
+    return { url: raw, newTab: false };
+}
+
+function buildLocationMapUrl(url: string, newTab: boolean): string | null {
+    if (!url) return null;
+    return JSON.stringify({ url, newTab });
+}
+
 function toAbsUrl(path: string) {
     if (!path) return "";
     if (path.startsWith("http") || path.startsWith("blob:") || path.startsWith("data:")) return path;
@@ -74,6 +91,7 @@ interface FooterSettings {
     phoneLabel: LocalizedString;
     emailLabel: LocalizedString;
     locationValue: LocalizedString;
+    locationMapUrl: string | null;
     phoneValue: LocalizedString;
     emailValue: LocalizedString;
     navLinks: FooterNavLink[];
@@ -298,8 +316,9 @@ export default function FooterPage() {
     const [settings, setSettings] = useState<FooterSettings | null>(null);
     const [navLinks, setNavLinks] = useState<FooterNavLink[]>([]);
     const [socialLinks, setSocialLinks] = useState<FooterSocialLink[]>([]);
-    const [activeLang, setActiveLang] = useState<Lang>("az");
-
+const [activeLang, setActiveLang] = useState<Lang>("az");
+    const [mapUrl, setMapUrl] = useState("");
+    const [mapNewTab, setMapNewTab] = useState(false);
     const sensors = useSensors(useSensor(PointerSensor));
     const MAX_NAV_LINKS = 6;
     const MAX_SOCIAL_LINKS = 6;
@@ -308,6 +327,9 @@ export default function FooterPage() {
         apiFetch("/footer/admin")
             .then((d: FooterSettings) => {
                 setSettings(d);
+                const parsedMap = parseLocationMapUrl(d.locationMapUrl);
+                setMapUrl(parsedMap.url);
+                setMapNewTab(parsedMap.newTab);
                 setNavLinks([...d.navLinks].sort((a, b) => a.order - b.order));
                 setSocialLinks([...d.socialLinks].sort((a, b) => a.order - b.order));
             })
@@ -409,7 +431,8 @@ export default function FooterPage() {
                     locationLabel: settings.locationLabel,
                     phoneLabel: settings.phoneLabel,
                     emailLabel: settings.emailLabel,
-                    locationValue: settings.locationValue,
+                  locationValue: settings.locationValue,
+                    locationMapUrl: buildLocationMapUrl(mapUrl, mapNewTab),
                     phoneValue: settings.phoneValue,
                     emailValue: settings.emailValue,
                 }),
@@ -509,6 +532,19 @@ export default function FooterPage() {
                                 onChange={e => updL("locationValue", activeLang, e.target.value)} />
                         </div>
                     </div>
+                 <div className={styles.field}>
+                        <label>Xəritə linki (Google Maps)</label>
+                        <input className={styles.input} value={mapUrl}
+                            placeholder="https://maps.app.goo.gl/..."
+                            onChange={e => setMapUrl(e.target.value)} />
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", marginTop: 6 }}>
+                            <input type="checkbox" checked={mapNewTab}
+                                onChange={e => setMapNewTab(e.target.checked)} />
+                            Yeni tabda aç
+                        </label>
+                    </div>
+
+
                     <div className={styles.twoCol}>
                         <div className={styles.field}>
                             <label>Telefon başlığı ({activeLang.toUpperCase()})</label>

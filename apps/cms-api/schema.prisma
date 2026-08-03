@@ -420,6 +420,7 @@ model FooterSettings {
   copyrightText Json               @default("{}")
   privacyText   Json               @default("{}")
   locationLabel Json               @default("{}")
+  locationMapUrl String?
   phoneLabel    Json               @default("{}")
   emailLabel    Json               @default("{}")
   locationValue Json               @default("{}")

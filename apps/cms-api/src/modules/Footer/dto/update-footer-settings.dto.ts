@@ -25,6 +25,11 @@ export class UpdateFooterSettingsDto {
   @IsObject()
   locationLabel?: Record<string, string>;
 
+
+  @IsOptional()
+  @IsString()
+  locationMapUrl?: string;
+
   @IsOptional()
   @IsObject()
   phoneLabel?: Record<string, string>;

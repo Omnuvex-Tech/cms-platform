@@ -43,6 +43,7 @@ export class FooterRepository {
             ...(dto.phoneLabel !== undefined && { phoneLabel: dto.phoneLabel }),
             ...(dto.emailLabel !== undefined && { emailLabel: dto.emailLabel }),
             ...(dto.locationValue !== undefined && { locationValue: dto.locationValue }),
+            ...(dto.locationMapUrl !== undefined && { locationMapUrl: dto.locationMapUrl }),
             ...(dto.phoneValue !== undefined && { phoneValue: dto.phoneValue }),
             ...(dto.emailValue !== undefined && { emailValue: dto.emailValue }),
         },
