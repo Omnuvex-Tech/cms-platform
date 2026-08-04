@@ -257,7 +257,6 @@ function SortableNavLinkRow({
                     />
                 </div>
             </div>
-
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                 <input type="checkbox" checked={link.openInNewTab}
                     onChange={e => onUpdate(link.id, { openInNewTab: e.target.checked })} />
@@ -316,10 +315,10 @@ export default function FooterPage() {
     const [settings, setSettings] = useState<FooterSettings | null>(null);
     const [navLinks, setNavLinks] = useState<FooterNavLink[]>([]);
     const [socialLinks, setSocialLinks] = useState<FooterSocialLink[]>([]);
-const [activeLang, setActiveLang] = useState<Lang>("az");
+    const [activeLang, setActiveLang] = useState<Lang>("az");
     const [mapUrl, setMapUrl] = useState("");
     const [mapNewTab, setMapNewTab] = useState(false);
-    const sensors = useSensors(useSensor(PointerSensor));
+    const sensors = useSensors(useSensor(PointerSensor)); 
     const MAX_NAV_LINKS = 6;
     const MAX_SOCIAL_LINKS = 6;
 

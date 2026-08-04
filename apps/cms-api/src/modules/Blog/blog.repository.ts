@@ -242,14 +242,14 @@ findFeatured() {
     });
   }
 
-  findAboutTeamAuthors() {
-    return this.prisma.blogAuthor.findMany({
-      where: { isOurTeam: true, isVisible: true },
-      orderBy: { order: 'asc' },
-      take: 6,
-    });
-  }
-
+findAboutTeamAuthors() {
+  return this.prisma.blogAuthor.findMany({
+    where: { isOurTeam: true, isVisible: true },
+    orderBy: { order: 'asc' },
+    skip: 1,
+    take: 6,
+  });
+}
   async reorderAuthors(ids: number[]) {
     const updates = ids.map((id, index) =>
       this.prisma.blogAuthor.update({ where: { id }, data: { order: index } })
