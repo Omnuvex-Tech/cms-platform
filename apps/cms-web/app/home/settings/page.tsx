@@ -103,8 +103,7 @@ export default function HomeSettingsPage() {
   const [teamBtnText, setTeamBtnText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [teamBtnLink, setTeamBtnLink] = useState("");
   const [teamBtnNewTab, setTeamBtnNewTab] = useState(false);
-  const [teamImage, setTeamImage] = useState("");
-
+const [teamText, setTeamText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsTitle, setBlogsTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsBtnText, setBlogsBtnText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsBtnLink, setBlogsBtnLink] = useState("");
@@ -122,7 +121,7 @@ export default function HomeSettingsPage() {
         setTeamBtnText(data.teamBtnText ?? { az: "", en: "", ru: "" });
         setTeamBtnLink(data.teamBtnLink ?? "");
         setTeamBtnNewTab(data.teamBtnNewTab ?? false);
-        setTeamImage(data.teamImage ?? "");
+setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         setBlogsTitle(data.blogsTitle ?? { az: "", en: "", ru: "" });
         setBlogsBtnText(data.blogsBtnText ?? { az: "", en: "", ru: "" });
         setBlogsBtnLink(data.blogsBtnLink ?? "");
@@ -141,7 +140,7 @@ export default function HomeSettingsPage() {
         method: "PUT",
         body: JSON.stringify({
           projectsTitle, projectsBtnText, projectsBtnLink, projectsBtnNewTab,
-          teamTitle, teamBtnText, teamBtnLink, teamBtnNewTab, teamImage,
+         teamTitle, teamBtnText, teamBtnLink, teamBtnNewTab, teamText,
           blogsTitle, blogsBtnText, blogsBtnLink, blogsBtnNewTab,
         }),
       });
@@ -246,7 +245,14 @@ export default function HomeSettingsPage() {
             {teamBtnNewTab ? "Yeni tab" : "Eyni tab"}
           </button>
         </div>
-        <ImageUpload label="Şəkil" value={teamImage} onChange={setTeamImage} />
+        <div className={styles.field}>
+          <label>Mətn ({activeLang.toUpperCase()})</label>
+          <textarea className={styles.input}
+            value={teamText[activeLang] || ""}
+            onChange={e => setTeamText(prev => ({ ...prev, [activeLang]: e.target.value }))}
+            placeholder="Komanda haqqında mətn"
+            rows={4} />
+        </div>
       </div>
 
       <div className={styles.settingsCard}>

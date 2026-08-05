@@ -7,7 +7,7 @@ export class UpdateHomeDto {
   teamBtnText?: Record<string, string>;
   teamBtnLink?: string;
   teamBtnNewTab?: boolean;
-  teamImage?: string;
+  teamText?: Record<string, string>;
   blogsTitle?: Record<string, string>;
   blogsBtnText?: Record<string, string>;
   blogsBtnLink?: string;

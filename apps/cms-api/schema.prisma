@@ -575,7 +575,7 @@ model HomeSettings {
   teamBtnText           Json     @default("{}")
   teamBtnLink           String   @default("/team")
   teamBtnNewTab         Boolean  @default(false)
-  teamImage             String?
+  teamText              Json     @default("{}")
   blogsTitle            Json     @default("{}")
   blogsBtnText          Json     @default("{}")
   blogsBtnLink          String   @default("/blog")
