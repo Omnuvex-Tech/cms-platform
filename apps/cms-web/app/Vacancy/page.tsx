@@ -163,17 +163,6 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
   );
 }
 
-
-
-
-
-
-
-
-
-
-
-
 function SortableCategoryRow({ cat, index, lang, onEdit, onDelete }: {
   cat: VacancyCategory; index: number; lang: Lang;
   onEdit: (c: VacancyCategory) => void;
