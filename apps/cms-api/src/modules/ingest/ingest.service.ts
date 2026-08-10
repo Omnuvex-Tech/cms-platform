@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { IngestRepository } from './ingest.repository';
 import { BotControlService } from '../conversations/bot-control.service';
+import { TelegramAlertsService } from '../telegram/telegram-alerts.service';
 import { IngestLeadDto } from './dto/ingest-lead.dto';
 import { IngestContactRequestDto } from './dto/ingest-contact-request.dto';
 import { IngestConversationDto } from './dto/ingest-conversation.dto';
@@ -58,6 +59,7 @@ export class IngestService {
   constructor(
     private readonly ingestRepository: IngestRepository,
     private readonly botControlService: BotControlService,
+    private readonly telegramAlerts: TelegramAlertsService,
   ) {}
 
   /**
@@ -388,24 +390,22 @@ export class IngestService {
     }
 
     const reason = this.buildEscalationReason(dto);
-    if (existingHandoff) {
-      await this.ingestRepository.updateHandoff(existingHandoff.id, {
-        status: 'new',
-        priority: 'normal',
-        slaState: 'on_track',
-        reason,
-        dueAt: null,
-        resolvedAt: null,
-        assignedTo: { disconnect: true },
-      });
-    } else {
-      await this.ingestRepository.createHandoff({
-        conversation: { connect: { id: conversationId } },
-        status: 'new',
-        priority: 'normal',
-        reason,
-      });
-    }
+    const handoff = existingHandoff
+      ? await this.ingestRepository.updateHandoff(existingHandoff.id, {
+          status: 'new',
+          priority: 'normal',
+          slaState: 'on_track',
+          reason,
+          dueAt: null,
+          resolvedAt: null,
+          assignedTo: { disconnect: true },
+        })
+      : await this.ingestRepository.createHandoff({
+          conversation: { connect: { id: conversationId } },
+          status: 'new',
+          priority: 'normal',
+          reason,
+        });
 
     await this.ingestRepository.updateConversation(conversationId, {
       status: 'waiting_for_human',
@@ -415,6 +415,10 @@ export class IngestService {
     // until it is told. Never write botActive without this call.
     await this.botControlService.setBotActive(threadId, false);
     this.logger.log(`Escalation queued: handoff for conversation ${conversationId}`);
+    // Fire-and-forget: nobody watches the Handoff Queue all day, so the ops
+    // group is how this actually reaches a human. A Telegram outage must not
+    // fail the ingest push that carried the escalation.
+    void this.telegramAlerts.notifyEscalation(handoff.id);
   }
 
   /** Best-effort human-readable reason: the customer's own last message. */

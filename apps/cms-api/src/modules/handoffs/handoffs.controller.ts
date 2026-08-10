@@ -42,13 +42,17 @@ export class HandoffsController {
   botControl(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: BotControlDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.handoffsService.botControl(id, dto);
+    return this.handoffsService.botControl(id, dto, user.sub);
   }
 
   @Post(':id/resolve')
-  resolve(@Param('id', ParseIntPipe) id: number) {
-    return this.handoffsService.resolve(id);
+  resolve(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.handoffsService.resolve(id, user.sub);
   }
 
   @Patch(':id/notes')

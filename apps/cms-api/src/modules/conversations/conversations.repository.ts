@@ -100,6 +100,18 @@ export class ConversationsRepository {
     });
   }
 
+  /**
+   * The id of the open handoff resolveOpenHandoff is about to close, read
+   * beforehand because `updateMany` reports only a count — and the Telegram
+   * alert has to be edited by handoff id.
+   */
+  findOpenHandoffId(conversationId: number) {
+    return this.prisma.handoff.findFirst({
+      where: { conversationId, status: { in: ['new', 'active', 'assigned'] } },
+      select: { id: true },
+    });
+  }
+
   addNote(data: Prisma.InternalNoteUncheckedCreateInput) {
     return this.prisma.internalNote.create({
       data,

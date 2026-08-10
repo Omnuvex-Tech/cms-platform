@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { HandoffStatus, Prisma } from '@prisma/client';
 import { HandoffsRepository } from './handoffs.repository';
 import { BotControlService } from '../conversations/bot-control.service';
+import { TelegramAlertsService } from '../telegram/telegram-alerts.service';
 import { BotAction, BotControlDto, HandoffNotesDto } from './dto/handoff.dto';
 
 const OPEN_STATUSES: HandoffStatus[] = ['new', 'active', 'assigned'];
@@ -11,6 +12,7 @@ export class HandoffsService {
   constructor(
     private readonly handoffsRepository: HandoffsRepository,
     private readonly botControlService: BotControlService,
+    private readonly telegramAlerts: TelegramAlertsService,
   ) {}
 
   list(status?: HandoffStatus | 'open') {
@@ -39,13 +41,16 @@ export class HandoffsService {
       assignedTo: { connect: { id: userId } },
     });
     await this.pushBotState(handoff.conversation.threadId, false);
-    return this.handoffsRepository.update(id, {
+    const updated = await this.handoffsRepository.update(id, {
       status: 'assigned',
       assignedTo: { connect: { id: userId } },
     });
+    // Retire the group's Accept button — this escalation now has an owner.
+    void this.telegramAlerts.markClaimed(id, { userId });
+    return updated;
   }
 
-  async botControl(id: number, dto: BotControlDto) {
+  async botControl(id: number, dto: BotControlDto, userId?: number) {
     const handoff = await this.get(id);
 
     if (dto.action === BotAction.pause) {
@@ -71,25 +76,30 @@ export class HandoffsService {
       assignedTo: { disconnect: true },
     });
     await this.pushBotState(handoff.conversation.threadId, true);
-    return this.handoffsRepository.update(id, {
+    const updated = await this.handoffsRepository.update(id, {
       status: 'resolved',
       resolvedAt: new Date(),
       assignedTo: { disconnect: true },
     });
+    void this.telegramAlerts.markResolved(id, { userId });
+    return updated;
   }
 
   /** Resolve a handoff and hand the thread back to the bot (mirrors return_to_bot). */
-  async resolve(id: number) {
+  async resolve(id: number, userId?: number) {
     const handoff = await this.get(id);
     await this.handoffsRepository.updateConversation(handoff.conversationId, {
       botActive: true,
       status: 'active',
     });
     await this.pushBotState(handoff.conversation.threadId, true);
-    return this.handoffsRepository.update(id, {
+    const updated = await this.handoffsRepository.update(id, {
       status: 'resolved',
       resolvedAt: new Date(),
     });
+    // Close the group's alert out too, so the thread reads as finished there.
+    void this.telegramAlerts.markResolved(id, { userId });
+    return updated;
   }
 
   /**

@@ -15,6 +15,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { UsersModule } from './modules/users/users.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { IngestModule } from './modules/ingest/ingest.module';
+import { TelegramModule } from './modules/telegram/telegram.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { IngestModule } from './modules/ingest/ingest.module';
     UsersModule,
     StatsModule,
     IngestModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [

@@ -42,6 +42,10 @@ async function bootstrap() {
 
   app.useStaticAssets(join(process.cwd(), 'public'));
 
+  // So OnModuleDestroy actually runs on SIGTERM — the Telegram long poll needs
+  // to be aborted on shutdown rather than left hanging on an open request.
+  app.enableShutdownHooks();
+
   await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

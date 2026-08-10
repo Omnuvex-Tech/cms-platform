@@ -38,6 +38,15 @@ services:
       BOT_INFO_WEBHOOK_URL: ${BOT_INFO_WEBHOOK_URL:-}
       BOT_BASE_URL: ${BOT_BASE_URL:-}
       BOT_SYNC_API_KEY: ${BOT_SYNC_API_KEY:-}
+      # Telegram escalation alerts. Its own switch, not SYNC_ENABLED — this
+      # notifies humans in a group chat rather than moving data to the bot.
+      # Button taps arrive by long polling, so keep this service to ONE replica:
+      # Telegram answers 409 to concurrent getUpdates on the same token.
+      TELEGRAM_ALERTS_ENABLED: ${TELEGRAM_ALERTS_ENABLED:-0}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ALERT_CHAT_ID: ${TELEGRAM_ALERT_CHAT_ID:-}
+      TELEGRAM_ALERT_TIMEZONE: ${TELEGRAM_ALERT_TIMEZONE:-}
+      PANEL_BASE_URL: ${PANEL_BASE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

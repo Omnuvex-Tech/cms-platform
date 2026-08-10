@@ -106,8 +106,12 @@ export class ConversationsController {
   }
 
   @Patch(':id/bot')
-  setBot(@Param('id', ParseIntPipe) id: number, @Body() dto: SetBotDto) {
-    return this.conversationsService.setBot(id, dto);
+  setBot(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetBotDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.conversationsService.setBot(id, dto, user.sub);
   }
 
   @Post(':id/notes')

@@ -6,6 +6,7 @@ import {
 import { ConversationStatus, Channel, Prisma } from '@prisma/client';
 import { ConversationsRepository } from './conversations.repository';
 import { BotControlService } from './bot-control.service';
+import { TelegramAlertsService } from '../telegram/telegram-alerts.service';
 import {
   AddNoteDto,
   AssignDto,
@@ -40,6 +41,7 @@ export class ConversationsService {
   constructor(
     private readonly conversationsRepository: ConversationsRepository,
     private readonly botControlService: BotControlService,
+    private readonly telegramAlerts: TelegramAlertsService,
   ) {}
 
   private buildWhere(filters: ListFilters): Prisma.ConversationWhereInput {
@@ -133,7 +135,7 @@ export class ConversationsService {
     return this.get(id);
   }
 
-  async setBot(id: number, dto: SetBotDto) {
+  async setBot(id: number, dto: SetBotDto, userId?: number) {
     const conversation = await this.get(id);
     const data: Prisma.ConversationUpdateInput = { botActive: dto.active };
     // Resuming the bot ends the human's turn on this thread, so it also ends the
@@ -145,7 +147,11 @@ export class ConversationsService {
     }
     const updated = await this.conversationsRepository.update(id, data);
     if (dto.active) {
+      // Read the handoff id before closing it: the Telegram alert is keyed by
+      // handoff, and resolveOpenHandoff only reports how many rows it touched.
+      const open = await this.conversationsRepository.findOpenHandoffId(id);
       await this.conversationsRepository.resolveOpenHandoff(id);
+      if (open) void this.telegramAlerts.markResolved(open.id, { userId });
     }
     // Fire-and-forget: tell the bot to actually stop/resume replying on this
     // thread (a resume also clears its escalation gate). A bot outage must never
