@@ -12,7 +12,7 @@ interface BotControlSettings {
  * Channels whose bot-side `/internal/conversations/send-message` receiver can
  * actually deliver a manual operator reply.
  */
-const SEND_SUPPORTED_CHANNELS = new Set(['telegram', 'webchat']);
+const SEND_SUPPORTED_CHANNELS = new Set(['telegram', 'webchat', 'instagram']);
 
 /**
  * Pushes panel->bot conversation-control actions (pause/resume, manual send)
@@ -49,9 +49,12 @@ export class BotControlService {
   /**
    * Push a manual reply to the bot so it actually reaches the customer.
    * Supported on channels whose bot-side send-message receiver can deliver a
-   * manual reply: `telegram` (pushed via tg_send) and `webchat` (recorded for
-   * the widget to poll). Other channels are silently skipped until their
-   * bot-side receivers exist.
+   * manual reply: `telegram` (pushed via tg_send), `instagram` (pushed via the
+   * Messenger Platform to the IGSID in the thread id) and `webchat` (recorded
+   * for the widget to poll). Other channels — `whatsapp` today — are silently
+   * skipped until their bot-side receivers exist. Keep this set in sync with
+   * the channel branches in the bot's
+   * `/internal/conversations/send-message` handler.
    */
   async sendMessage(
     threadId: string | null | undefined,

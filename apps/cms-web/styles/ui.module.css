@@ -492,6 +492,15 @@
     gap: 8px;
 }
 
+/* ---- Channel badge (colours come from ChannelIcon.tsx) ---- */
+.channelBadge {
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
 /* ---- Misc ---- */
 .muted {
     color: #8a9099;

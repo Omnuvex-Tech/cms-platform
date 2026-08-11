@@ -84,8 +84,8 @@
 }
 .inboxItem {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    gap: 11px;
     width: 100%;
     text-align: left;
     padding: 13px 14px;
@@ -101,6 +101,15 @@
 }
 .inboxItemActive {
     background: rgba(1, 72, 194, 0.07);
+}
+/* Text column beside the channel badge. min-width:0 so long handles ellipsize
+   instead of stretching the row. */
+.inboxItemMain {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
 }
 .inboxItemTop {
     display: flex;
@@ -163,6 +172,12 @@
     padding: 16px 18px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     flex-shrink: 0;
+}
+.centerIdentity {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
 }
 .centerTitle {
     font-size: 15px;

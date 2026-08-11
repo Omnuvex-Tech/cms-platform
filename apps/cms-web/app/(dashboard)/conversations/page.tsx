@@ -24,6 +24,7 @@ import { useReps } from "@/lib/hooks/useReps";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Menu, MenuItem } from "@/components/ui/Menu";
 import { Transcript, TranscriptMessage } from "@/components/ui/Transcript";
+import { ChannelBadge } from "@/components/ui/ChannelIcon";
 import { Loading, EmptyState, Avatar } from "@/components/ui/States";
 import ui from "@/styles/ui.module.css";
 import styles from "@/styles/conversations.module.css";
@@ -217,22 +218,25 @@ function ConversationsInner() {
                                 className={`${styles.inboxItem} ${selectedId === c.id ? styles.inboxItemActive : ""}`}
                                 onClick={() => setSelectedId(c.id)}
                             >
-                                <div className={styles.inboxItemTop}>
-                                    <span className={styles.inboxName}>
-                                        {c.customerHandle ?? c.customerPhone ?? c.threadId}
-                                    </span>
-                                    <span className={styles.inboxTime}>
-                                        {relativeTime(c.lastMessageAt)}
-                                    </span>
-                                </div>
-                                <div className={styles.inboxItemBottom}>
-                                    <span className={styles.inboxChannel}>
-                                        {channelLabel[c.channel]}
-                                    </span>
-                                    <StatusPill meta={conversationStatus[c.status]} />
-                                    {c.unreadCount > 0 && (
-                                        <span className={styles.unread}>{c.unreadCount}</span>
-                                    )}
+                                <ChannelBadge channel={c.channel} />
+                                <div className={styles.inboxItemMain}>
+                                    <div className={styles.inboxItemTop}>
+                                        <span className={styles.inboxName}>
+                                            {c.customerHandle ?? c.customerPhone ?? c.threadId}
+                                        </span>
+                                        <span className={styles.inboxTime}>
+                                            {relativeTime(c.lastMessageAt)}
+                                        </span>
+                                    </div>
+                                    <div className={styles.inboxItemBottom}>
+                                        <span className={styles.inboxChannel}>
+                                            {channelLabel[c.channel]}
+                                        </span>
+                                        <StatusPill meta={conversationStatus[c.status]} />
+                                        {c.unreadCount > 0 && (
+                                            <span className={styles.unread}>{c.unreadCount}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </button>
                         ))
@@ -250,14 +254,19 @@ function ConversationsInner() {
                 ) : (
                     <>
                         <div className={styles.centerHead}>
-                            <div>
-                                <div className={styles.centerTitle}>
-                                    {detail.customerHandle ?? detail.customerPhone ?? detail.threadId}
-                                </div>
-                                <div className={styles.centerSub}>
-                                    {channelLabel[detail.channel]} · {detail.threadId}
-                                    {" · "}
-                                    {detail.botActive ? "Bot active" : "Bot paused"}
+                            <div className={styles.centerIdentity}>
+                                <ChannelBadge channel={detail.channel} size={34} />
+                                <div>
+                                    <div className={styles.centerTitle}>
+                                        {detail.customerHandle ??
+                                            detail.customerPhone ??
+                                            detail.threadId}
+                                    </div>
+                                    <div className={styles.centerSub}>
+                                        {channelLabel[detail.channel]} · {detail.threadId}
+                                        {" · "}
+                                        {detail.botActive ? "Bot active" : "Bot paused"}
+                                    </div>
                                 </div>
                             </div>
                             <div className={styles.centerActions}>
