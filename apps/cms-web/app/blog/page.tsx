@@ -980,17 +980,13 @@ function SettingsTab() {
             <LangTabs active={activeLang} onChange={setActiveLang} />
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Səhifə başlığı və button</h3>
-                <div className={styles.twoCol}>
-                    <div className={styles.field}>
-                        <label>Səhifə başlığı ({activeLang.toUpperCase()})</label>
-                        <input className={styles.input} value={pageTitle[activeLang] || ""}
-                            onChange={e => setPageTitle(prev => ({ ...prev, [activeLang]: e.target.value }))} placeholder="Bloglar" />
-                    </div>
-                    <div className={styles.field}>
-                        <label>Button mətni ({activeLang.toUpperCase()})</label>
-                        <input className={styles.input} value={buttonText[activeLang] || ""}
-                            onChange={e => setButtonText(prev => ({ ...prev, [activeLang]: e.target.value }))} placeholder="Portfolio" />
-                    </div>
+             <div className={styles.field}>
+                    <label>Səhifə başlığı ({activeLang.toUpperCase()})</label>
+                    <LocalizedRichEditor value={pageTitle} lang={activeLang} onChange={setPageTitle} />
+                </div>
+                <div className={styles.field}>
+                    <label>Button mətni ({activeLang.toUpperCase()})</label>
+                    <LocalizedRichEditor value={buttonText} lang={activeLang} onChange={setButtonText} />
                 </div>
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
@@ -1023,60 +1019,24 @@ function SettingsTab() {
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Search mətnləri</h3>
 
-                <div className={styles.field}>
+              <div className={styles.field}>
                     <label>Search placeholder ({activeLang.toUpperCase()})</label>
-                    <input
-                        className={styles.input}
-                        value={searchPlaceholder[activeLang] || ""}
-                        onChange={(e) =>
-                            setSearchPlaceholder((prev) => ({
-                                ...prev,
-                                [activeLang]: e.target.value,
-                            }))
-                        }
-                    />
+                    <LocalizedRichEditor value={searchPlaceholder} lang={activeLang} onChange={setSearchPlaceholder} />
                 </div>
 
                 <div className={styles.field}>
                     <label>Categories label ({activeLang.toUpperCase()})</label>
-                    <input
-                        className={styles.input}
-                        value={categoriesLabel[activeLang] || ""}
-                        onChange={(e) =>
-                            setCategoriesLabel((prev) => ({
-                                ...prev,
-                                [activeLang]: e.target.value,
-                            }))
-                        }
-                    />
+                    <LocalizedRichEditor value={categoriesLabel} lang={activeLang} onChange={setCategoriesLabel} />
                 </div>
 
                 <div className={styles.field}>
                     <label>Pick of week label ({activeLang.toUpperCase()})</label>
-                    <input
-                        className={styles.input}
-                        value={pickOfWeekLabel[activeLang] || ""}
-                        onChange={(e) =>
-                            setPickOfWeekLabel((prev) => ({
-                                ...prev,
-                                [activeLang]: e.target.value,
-                            }))
-                        }
-                    />
+                    <LocalizedRichEditor value={pickOfWeekLabel} lang={activeLang} onChange={setPickOfWeekLabel} />
                 </div>
 
                 <div className={styles.field}>
                     <label>More blogs button ({activeLang.toUpperCase()})</label>
-                    <input
-                        className={styles.input}
-                        value={moreBlogsButtonText[activeLang] || ""}
-                        onChange={(e) =>
-                            setMoreBlogsButtonText((prev) => ({
-                                ...prev,
-                                [activeLang]: e.target.value,
-                            }))
-                        }
-                    />
+                    <LocalizedRichEditor value={moreBlogsButtonText} lang={activeLang} onChange={setMoreBlogsButtonText} />
                 </div>
             </div>
         </div>

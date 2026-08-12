@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Heading from "@tiptap/extension-heading";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -63,6 +67,55 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
+function RichEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
+    content: value,
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
+
+  return (
+    <div className={styles.richEditor}>
+      <div className={styles.richToolbar}>
+        <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
+        <div className={styles.toolbarDivider} />
+        {([1, 2, 3, 4, 5, 6] as const).map(level => (
+          <button key={level} type="button"
+            onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+            className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
+            H{level}
+          </button>
+        ))}
+        <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
+          className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
+      </div>
+      <EditorContent editor={editor} className={styles.richContent} />
+    </div>
+  );
+}
+
+function LocalizedRichEditor({ value, lang, onChange }: {
+  value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
+}) {
+  return (
+    <RichEditor
+      value={value?.[lang] || ""}
+      onChange={v => onChange({ ...value, [lang]: v })}
+    />
+  );
+}
+
 function ImageUpload({ value, onChange, label }: {
   value: string; onChange: (url: string) => void; label?: string;
 }) {
@@ -103,7 +156,7 @@ export default function HomeSettingsPage() {
   const [teamBtnText, setTeamBtnText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [teamBtnLink, setTeamBtnLink] = useState("");
   const [teamBtnNewTab, setTeamBtnNewTab] = useState(false);
-const [teamText, setTeamText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
+  const [teamText, setTeamText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsTitle, setBlogsTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsBtnText, setBlogsBtnText] = useState<LocalizedString>({ az: "", en: "", ru: "" });
   const [blogsBtnLink, setBlogsBtnLink] = useState("");
@@ -121,7 +174,7 @@ const [teamText, setTeamText] = useState<LocalizedString>({ az: "", en: "", ru: 
         setTeamBtnText(data.teamBtnText ?? { az: "", en: "", ru: "" });
         setTeamBtnLink(data.teamBtnLink ?? "");
         setTeamBtnNewTab(data.teamBtnNewTab ?? false);
-setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
+        setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         setBlogsTitle(data.blogsTitle ?? { az: "", en: "", ru: "" });
         setBlogsBtnText(data.blogsBtnText ?? { az: "", en: "", ru: "" });
         setBlogsBtnLink(data.blogsBtnLink ?? "");
@@ -140,7 +193,7 @@ setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         method: "PUT",
         body: JSON.stringify({
           projectsTitle, projectsBtnText, projectsBtnLink, projectsBtnNewTab,
-         teamTitle, teamBtnText, teamBtnLink, teamBtnNewTab, teamText,
+          teamTitle, teamBtnText, teamBtnLink, teamBtnNewTab, teamText,
           blogsTitle, blogsBtnText, blogsBtnLink, blogsBtnNewTab,
         }),
       });
@@ -181,26 +234,18 @@ setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         <h3 className={styles.settingsGroupTitle}>Proyektlər Bölməsi</h3>
         <div className={styles.field}>
           <label>Başlıq ({activeLang.toUpperCase()})</label>
-          <input className={styles.input}
-            value={projectsTitle[activeLang] || ""}
-            onChange={e => setProjectsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-            placeholder="Proyektlər" />
+          <LocalizedRichEditor value={projectsTitle} lang={activeLang} onChange={setProjectsTitle} />
         </div>
-        <div className={styles.twoCol}>
-          <div className={styles.field}>
-            <label>Düymə mətni ({activeLang.toUpperCase()})</label>
-            <input className={styles.input}
-              value={projectsBtnText[activeLang] || ""}
-              onChange={e => setProjectsBtnText(prev => ({ ...prev, [activeLang]: e.target.value }))}
-              placeholder="Bütün layihələrə bax" />
-          </div>
-          <div className={styles.field}>
-            <label>Link</label>
-            <input className={styles.input}
-              value={projectsBtnLink}
-              onChange={e => setProjectsBtnLink(e.target.value)}
-              placeholder="/portfolio" />
-          </div>
+        <div className={styles.field}>
+          <label>Düymə mətni ({activeLang.toUpperCase()})</label>
+          <LocalizedRichEditor value={projectsBtnText} lang={activeLang} onChange={setProjectsBtnText} />
+        </div>
+        <div className={styles.field}>
+          <label>Link</label>
+          <input className={styles.input}
+            value={projectsBtnLink}
+            onChange={e => setProjectsBtnLink(e.target.value)}
+            placeholder="/portfolio" />
         </div>
         <div className={styles.field}>
           <label>Yeni tabda aç</label>
@@ -216,26 +261,18 @@ setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         <h3 className={styles.settingsGroupTitle}>Komanda Bölməsi</h3>
         <div className={styles.field}>
           <label>Başlıq ({activeLang.toUpperCase()})</label>
-          <input className={styles.input}
-            value={teamTitle[activeLang] || ""}
-            onChange={e => setTeamTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-            placeholder="İlham verən komanda" />
+          <LocalizedRichEditor value={teamTitle} lang={activeLang} onChange={setTeamTitle} />
         </div>
-        <div className={styles.twoCol}>
-          <div className={styles.field}>
-            <label>Düymə mətni ({activeLang.toUpperCase()})</label>
-            <input className={styles.input}
-              value={teamBtnText[activeLang] || ""}
-              onChange={e => setTeamBtnText(prev => ({ ...prev, [activeLang]: e.target.value }))}
-              placeholder="Keçid edin" />
-          </div>
-          <div className={styles.field}>
-            <label>Link</label>
-            <input className={styles.input}
-              value={teamBtnLink}
-              onChange={e => setTeamBtnLink(e.target.value)}
-              placeholder="/OurTeam" />
-          </div>
+        <div className={styles.field}>
+          <label>Düymə mətni ({activeLang.toUpperCase()})</label>
+          <LocalizedRichEditor value={teamBtnText} lang={activeLang} onChange={setTeamBtnText} />
+        </div>
+        <div className={styles.field}>
+          <label>Link</label>
+          <input className={styles.input}
+            value={teamBtnLink}
+            onChange={e => setTeamBtnLink(e.target.value)}
+            placeholder="/OurTeam" />
         </div>
         <div className={styles.field}>
           <label>Yeni tabda aç</label>
@@ -247,11 +284,7 @@ setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         </div>
         <div className={styles.field}>
           <label>Mətn ({activeLang.toUpperCase()})</label>
-          <textarea className={styles.input}
-            value={teamText[activeLang] || ""}
-            onChange={e => setTeamText(prev => ({ ...prev, [activeLang]: e.target.value }))}
-            placeholder="Komanda haqqında mətn"
-            rows={4} />
+          <LocalizedRichEditor value={teamText} lang={activeLang} onChange={setTeamText} />
         </div>
       </div>
 
@@ -259,26 +292,18 @@ setTeamText(data.teamText ?? { az: "", en: "", ru: "" });
         <h3 className={styles.settingsGroupTitle}>Bloglar Bölməsi</h3>
         <div className={styles.field}>
           <label>Başlıq ({activeLang.toUpperCase()})</label>
-          <input className={styles.input}
-            value={blogsTitle[activeLang] || ""}
-            onChange={e => setBlogsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-            placeholder="Bloglar" />
+          <LocalizedRichEditor value={blogsTitle} lang={activeLang} onChange={setBlogsTitle} />
         </div>
-        <div className={styles.twoCol}>
-          <div className={styles.field}>
-            <label>Düymə mətni ({activeLang.toUpperCase()})</label>
-            <input className={styles.input}
-              value={blogsBtnText[activeLang] || ""}
-              onChange={e => setBlogsBtnText(prev => ({ ...prev, [activeLang]: e.target.value }))}
-              placeholder="Bloqlara keçid" />
-          </div>
-          <div className={styles.field}>
-            <label>Link</label>
-            <input className={styles.input}
-              value={blogsBtnLink}
-              onChange={e => setBlogsBtnLink(e.target.value)}
-              placeholder="/Blog" />
-          </div>
+        <div className={styles.field}>
+          <label>Düymə mətni ({activeLang.toUpperCase()})</label>
+          <LocalizedRichEditor value={blogsBtnText} lang={activeLang} onChange={setBlogsBtnText} />
+        </div>
+        <div className={styles.field}>
+          <label>Link</label>
+          <input className={styles.input}
+            value={blogsBtnLink}
+            onChange={e => setBlogsBtnLink(e.target.value)}
+            placeholder="/Blog" />
         </div>
         <div className={styles.field}>
           <label>Yeni tabda aç</label>

@@ -10,6 +10,10 @@ import {
   useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Heading from "@tiptap/extension-heading";
 import styles from "@/styles/vacancy.module.css";
 
 type Lang = "az" | "en" | "ru";
@@ -55,15 +59,33 @@ interface Vacancy {
 const API = process.env.NEXT_PUBLIC_API_URL;
 function getToken() { return document.cookie.split("access_token=")[1]?.split(";")[0] ?? ""; }
 
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\/?[a-zA-Z][^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&[a-zA-Z]+;/g, " ")
+    .replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function generateSlug(title: string) {
-  return title
+  const plain = htmlToPlainText(title);
+  return plain
     .toLowerCase()
     .replace(/ə/g, "e").replace(/ğ/g, "g").replace(/ı/g, "i")
     .replace(/ö/g, "o").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ç/g, "c")
     .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-").trim();
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
-
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API}${path}`, {
     ...options,
@@ -104,58 +126,101 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
+function RichEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
+    content: value,
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  });
 
-function LocalizedTagInput({ label, items, setItems, lang, large }: {
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
+
+  return (
+    <div className={styles.richEditor}>
+      <div className={styles.richToolbar}>
+        <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
+        <div className={styles.toolbarDivider} />
+        {([1, 2, 3, 4, 5, 6] as const).map(level => (
+          <button key={level} type="button"
+            onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+            className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
+            H{level}
+          </button>
+        ))}
+        <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
+          className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
+      </div>
+      <EditorContent editor={editor} className={styles.richContent} />
+    </div>
+  );
+}
+
+function LocalizedRichEditor({ value, lang, onChange }: {
+  value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
+}) {
+  return (
+    <RichEditor
+      value={value?.[lang] || ""}
+      onChange={v => onChange({ ...value, [lang]: v })}
+    />
+  );
+}
+
+
+function LocalizedTagInput({ label, items, setItems, lang }: {
   label: string;
   items: LocalizedString[];
   setItems: (v: LocalizedString[]) => void;
   lang: Lang;
   large?: boolean;
 }) {
-  const [input, setInput] = useState("");
+  const [draft, setDraft] = useState("");
+
   const add = () => {
-    const t = input.trim();
-    if (!t) return;
-    setItems([...items, { ...EMPTY_L, [lang]: t }]);
-    setInput("");
+    const plain = draft.replace(/<[^>]*>/g, "").trim();
+    if (!plain) return;
+    setItems([...items, { ...EMPTY_L, [lang]: draft }]);
+    setDraft("");
   };
+
   const updateItem = (i: number, val: string) => {
     const arr = [...items];
     arr[i] = { ...arr[i], [lang]: val };
     setItems(arr);
   };
+
   const visibleIndexes = items
     .map((item, i) => i)
-    .filter((i) => !!items[i]?.[lang]?.trim());
+    .filter((i) => !!items[i]?.[lang]?.replace(/<[^>]*>/g, "").trim());
 
   return (
     <div className={styles.field}>
       <label>{label} ({lang.toUpperCase()})</label>
-      <div className={styles.tagInputRow}>
-        {large ? (
-          <textarea className={`${styles.input} ${styles.textarea}`} rows={2}
-            value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); add(); } }}
-            placeholder="Enter ilə əlavə et" />
-        ) : (
-          <input className={styles.input} value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-            placeholder="Enter ilə əlavə et" />
-        )}
+      <div className={styles.tagInputRow} style={{ alignItems: "flex-start" }}>
+        <div style={{ flex: 1 }}>
+          <RichEditor value={draft} onChange={setDraft} />
+        </div>
         <button className={styles.addTagBtn} type="button" onClick={add}>+</button>
       </div>
       {visibleIndexes.length > 0 && (
-        <div className={styles.tagList}>
+        <div className={styles.tagList} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
           {visibleIndexes.map((i) => (
-            <span key={i} className={styles.tagChip}>
-             <input
-  style={{ background: "transparent", border: "none", color: "inherit", width: 120, outline: "none" }}
-  value={items[i]?.[lang] ?? ""}
-  onChange={(e) => updateItem(i, e.target.value)}
-/>
-              <button type="button" onClick={() => setItems(items.filter((_, idx) => idx !== i))}>✕</button>
-            </span>
+            <div key={i} className={styles.tagChip} style={{ alignItems: "flex-start", borderRadius: 8, padding: 8 }}>
+              <div style={{ flex: 1 }}>
+                <RichEditor value={items[i]?.[lang] ?? ""} onChange={(v) => updateItem(i, v)} />
+              </div>
+              <button type="button" style={{ marginTop: 4 }}
+                onClick={() => setItems(items.filter((_, idx) => idx !== i))}>✕</button>
+            </div>
           ))}
         </div>
       )}
@@ -201,8 +266,9 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
         <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
         {String(index + 1).padStart(2, "0")}
       </td>
-      <td>
-        <div><div>{title}</div>
+    <td>
+        <div>
+          <div className={styles.titleCell} dangerouslySetInnerHTML={{ __html: title }} />
           <div style={{ fontSize: 12, color: "#94a3b8" }}>/{v.slug}</div>
         </div>
       </td>
@@ -323,12 +389,6 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
     setSchemaText(editVac?.schema?.[lang] ? JSON.stringify(editVac.schema[lang], null, 2) : "");
     setSchemaError(null);
   }, [open, editVac, lang]);
-
-
-  const handleTitleChange = (val: string) => {
-    setTitle((prev) => ({ ...prev, [lang]: val }));
-    if (lang === "az") setSlug(generateSlug(val));
-  };
 
   const validate = (): string | null => {
     if (!title.az?.trim()) return "Başlıq (AZ) boş ola bilməz";
@@ -456,19 +516,19 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
 
           {tab === "main" && (
             <>
-              <div className={styles.twoCol}>
-                <div className={styles.field}>
-                  <label>Başlıq * ({lang.toUpperCase()})</label>
-                  <input className={styles.input} value={title[lang] ?? ""}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    placeholder="Senior UI/UX Designer" />
-                </div>
-                <div className={styles.field}>
-                  <label>Slug</label>
-                  <input className={styles.input} value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="senior-ui-ux-designer" />
-                </div>
+           <div className={styles.field}>
+                <label>Başlıq * ({lang.toUpperCase()})</label>
+                <LocalizedRichEditor value={title} lang={lang}
+                  onChange={(v) => {
+                    setTitle(v);
+                    if (lang === "az") setSlug(generateSlug(v.az || ""));
+                  }} />
+              </div>
+              <div className={styles.field}>
+                <label>Slug</label>
+                <input className={styles.input} value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="senior-ui-ux-designer" />
               </div>
 
               <div className={styles.field}>
@@ -553,12 +613,10 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
 
           {tab === "detail" && (
             <>
-              <div className={styles.field}>
+        <div className={styles.field}>
                 <label>About the Role ({lang.toUpperCase()})</label>
-                <textarea className={styles.textarea} rows={5}
-                  value={aboutRole[lang] ?? ""}
-                  onChange={(e) => setAboutRole((prev) => ({ ...prev, [lang]: e.target.value }))}
-                  placeholder="Vakansiya haqqında ümumi məlumat..." />
+                <LocalizedRichEditor value={aboutRole} lang={lang}
+                  onChange={setAboutRole} />
               </div>
 
               <div className={styles.field}>
@@ -880,9 +938,8 @@ const load = async () => {
         <h2 className={styles.sectionCardTitle}>Səhifə Başlığı</h2>
         <div className={styles.field}>
           <label>Başlıq ({lang.toUpperCase()})</label>
-          <input className={styles.input} value={headerTitle[lang] ?? ""}
-            onChange={(e) => setHeaderTitle((prev) => ({ ...prev, [lang]: e.target.value }))}
-            placeholder="Vakansiyalar" />
+          <LocalizedRichEditor value={headerTitle} lang={lang}
+            onChange={setHeaderTitle} />
         </div>
         {headerError && (
           <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
