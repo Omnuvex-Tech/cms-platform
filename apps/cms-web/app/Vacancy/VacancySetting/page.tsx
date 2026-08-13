@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Heading from "@tiptap/extension-heading";
 import styles from "@/styles/vacancy.module.css";
 
 type Lang = "az" | "en" | "ru";
@@ -104,6 +108,55 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
   );
 }
 
+function RichEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
+    content: value,
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value || "");
+    }
+  }, [value]);
+
+  return (
+    <div className={styles.richEditor}>
+      <div className={styles.richToolbar}>
+        <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
+        <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
+        <div className={styles.toolbarDivider} />
+        {([1, 2, 3, 4, 5, 6] as const).map(level => (
+          <button key={level} type="button"
+            onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+            className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
+            H{level}
+          </button>
+        ))}
+        <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
+          className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
+      </div>
+      <EditorContent editor={editor} className={styles.richContent} />
+    </div>
+  );
+}
+
+function LocalizedRichEditor({ value, lang, onChange }: {
+  value: LocalizedString; lang: Lang; onChange: (v: LocalizedString) => void;
+}) {
+  return (
+    <RichEditor
+      value={value?.[lang] || ""}
+      onChange={v => onChange({ ...value, [lang]: v })}
+    />
+  );
+}
+
 export default function VacancySettingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,13 +200,7 @@ export default function VacancySettingPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const updL = (key: keyof VacancySettings, val: string) =>
-    setSettings((prev) => ({
-      ...prev,
-      [key]: { ...(prev[key] as LocalizedString), [lang]: val },
-    }));
-
-  const save = async () => {
+const save = async () => {
     setSaving(true);
     try {
       await apiFetch("/vacancy/settings", { method: "PATCH", body: JSON.stringify(settings) });
@@ -168,16 +215,17 @@ export default function VacancySettingPage() {
 
   if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
 
-  const localizedFields = (fields: { key: keyof VacancySettings; label: string; hint: string }[]) =>
+const localizedFields = (fields: { key: keyof VacancySettings; label: string; hint: string }[]) =>
     fields.map(({ key, label, hint }) => (
       <div className={styles.field} key={key}>
         <label>{label} ({lang.toUpperCase()})<span className={styles.hint}> — {hint}</span></label>
-        <input className={styles.input}
-          value={(settings[key] as LocalizedString)[lang] ?? ""}
-          onChange={(e) => updL(key, e.target.value)} />
+        <LocalizedRichEditor
+          value={settings[key] as LocalizedString}
+          lang={lang}
+          onChange={(v) => setSettings((prev) => ({ ...prev, [key]: v }))}
+        />
       </div>
     ));
-
   return (
     <div className={styles.page}>
       {toast && (

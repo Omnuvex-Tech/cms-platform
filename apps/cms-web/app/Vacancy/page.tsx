@@ -330,11 +330,12 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
   const [seoTitle, setSeoTitle] = useState<LocalizedString>({ ...EMPTY_L });
   const [seoDescription, setSeoDescription] = useState<LocalizedString>({ ...EMPTY_L });
   const [seoKeywords, setSeoKeywords] = useState<LocalizedString>({ ...EMPTY_L });
-  const [schemaText, setSchemaText] = useState("");
+const [schemaText, setSchemaText] = useState("");
   const [schemaError, setSchemaError] = useState<string | null>(null);
   const [schemaGenerating, setSchemaGenerating] = useState(false);
   const [schemaSaving, setSchemaSaving] = useState(false);
   const [schemaSaveStatus, setSchemaSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [savedSchemas, setSavedSchemas] = useState<Record<string, any>>({});
   const [responsible, setResponsible] = useState<LocalizedString[]>([]);
   const [responsibleType, setResponsibleType] = useState<BulletType>("BULLET");
   const [requirements, setRequirements] = useState<LocalizedString[]>([]);
@@ -384,11 +385,17 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
     }
   }, [open, editVac]);
 
+useEffect(() => {
+    if (!open) return;
+    setSavedSchemas(editVac?.schema ?? {});
+  }, [open, editVac]);
+
   useEffect(() => {
     if (!open) return;
-    setSchemaText(editVac?.schema?.[lang] ? JSON.stringify(editVac.schema[lang], null, 2) : "");
+    setSchemaText(savedSchemas?.[lang] ? JSON.stringify(savedSchemas[lang], null, 2) : "");
     setSchemaError(null);
-  }, [open, editVac, lang]);
+  }, [open, lang, savedSchemas]);
+
 
   const validate = (): string | null => {
     if (!title.az?.trim()) return "Başlıq (AZ) boş ola bilməz";
@@ -397,20 +404,20 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
     return null;
   };
 
-  const generateSchema = async () => {
+const generateSchema = async () => {
     if (!editVac) return;
     setSchemaGenerating(true);
     setSchemaError(null);
     try {
       const generated = await apiFetch(`/vacancy/${editVac.id}/schema/preview`);
       setSchemaText(JSON.stringify(generated[lang], null, 2));
+      setSavedSchemas((prev) => ({ ...prev, [lang]: generated[lang] }));
     } catch {
       setSchemaError("Schema yaradılarkən xəta baş verdi");
     } finally {
       setSchemaGenerating(false);
     }
   };
-
   const handleSchemaChange = (val: string) => {
     setSchemaText(val);
     setSchemaError(null);
@@ -421,19 +428,19 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
     }
   };
 
-  const saveSchema = async () => {
+const saveSchema = async () => {
     if (!editVac || schemaError) return;
     setSchemaSaving(true);
     setSchemaSaveStatus("idle");
     try {
       let parsed = null;
       if (schemaText.trim()) parsed = JSON.parse(schemaText);
-      const current = editVac.schema ?? {};
-      const updatedSchema = { ...current, [lang]: parsed };
+      const updatedSchema = { ...savedSchemas, [lang]: parsed };
       await apiFetch(`/vacancy/${editVac.id}/schema`, {
         method: "PATCH",
         body: JSON.stringify({ schema: updatedSchema }),
       });
+      setSavedSchemas(updatedSchema);
       setSchemaSaveStatus("success");
     } catch {
       setSchemaSaveStatus("error");
@@ -442,7 +449,6 @@ function VacancyModal({ open, onClose, editVac, categories, filterTags, onSaved 
       setTimeout(() => setSchemaSaveStatus("idle"), 3000);
     }
   };
-
 
   const save = async () => {
     setFormError(null);

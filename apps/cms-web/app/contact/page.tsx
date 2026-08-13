@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Heading from "@tiptap/extension-heading";
 import {
     DndContext,
     closestCenter,
@@ -120,6 +124,44 @@ function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => v
     );
 }
 
+function RichEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+    const editor = useEditor({
+        extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
+        content: value,
+        onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    });
+
+    useEffect(() => {
+        if (editor && editor.getHTML() !== value) {
+            editor.commands.setContent(value || "");
+        }
+    }, [value]);
+
+    return (
+        <div className={styles.richEditor}>
+            <div className={styles.richToolbar}>
+                <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
+                    className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                    className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
+                <div className={styles.toolbarDivider} />
+                {([1, 2, 3, 4, 5, 6] as const).map(level => (
+                    <button key={level} type="button"
+                        onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+                        className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
+                        H{level}
+                    </button>
+                ))}
+                <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
+                    className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
+            </div>
+            <EditorContent editor={editor} className={styles.richContent} />
+        </div>
+    );
+}
+
 function SocialIconUpload({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -218,15 +260,14 @@ function OptionRow({
     onDelete: (id: number) => void;
 }) {
     return (
-        <div className={styles.contentItemBlock} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className={styles.contentItemBlock} style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
             <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
-                <input className={styles.input}
+                <RichEditor
                     value={option.label?.[activeLang] || ""}
-                    placeholder="Seçim adı"
-                    onChange={e => onUpdate(option.id, activeLang, e.target.value)} />
+                    onChange={v => onUpdate(option.id, activeLang, v)} />
             </div>
             <button type="button" onClick={() => onDelete(option.id)}
-                style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, flexShrink: 0 }}>✕</button>
+                style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, flexShrink: 0, marginBottom: 8 }}>✕</button>
         </div>
     );
 }
@@ -514,14 +555,11 @@ export default function ContactPage() {
                     <h3 className={styles.drawerSectionTitle}>Ümumi</h3>
                     <div className={styles.field}>
                         <label>Başlıq ({activeLang.toUpperCase()})</label>
-                        <input className={styles.input} value={settings.title?.[activeLang] || ""} placeholder="Contact us"
-                            onChange={e => updL("title", activeLang, e.target.value)} />
+                        <RichEditor value={settings.title?.[activeLang] || ""} onChange={v => updL("title", activeLang, v)} />
                     </div>
                     <div className={styles.field}>
                         <label>Təsvir ({activeLang.toUpperCase()})</label>
-                        <textarea className={styles.input} value={settings.description?.[activeLang] || ""} rows={3}
-                            style={{ resize: "vertical" }} placeholder="Ready to start a project..."
-                            onChange={e => updL("description", activeLang, e.target.value)} />
+                        <RichEditor value={settings.description?.[activeLang] || ""} onChange={v => updL("description", activeLang, v)} />
                     </div>
                     <div className={styles.field}>
                         <label>Şəkil</label>
@@ -578,53 +616,37 @@ export default function ContactPage() {
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Əlaqə məlumatları</h3>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Email başlığı ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.emailLabel?.[activeLang] || ""} placeholder="Email Adress"
-                                onChange={e => updL("emailLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Email dəyəri ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.emailValue?.[activeLang] || ""} placeholder="info@trenders.az"
-                                onChange={e => updL("emailValue", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Email başlığı ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.emailLabel?.[activeLang] || ""} onChange={v => updL("emailLabel", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Telefon başlığı ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.phoneLabel?.[activeLang] || ""} placeholder="Phone"
-                                onChange={e => updL("phoneLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Telefon nömrəsi ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.phoneValue?.[activeLang] || ""} placeholder="+(994) 50..."
-                                onChange={e => updL("phoneValue", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Email dəyəri ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.emailValue?.[activeLang] || ""} onChange={v => updL("emailValue", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Ünvan başlığı ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.locationLabel?.[activeLang] || ""} placeholder="Location"
-                                onChange={e => updL("locationLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Ünvan dəyəri ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.locationValue?.[activeLang] || ""} placeholder="Baku, Sabail..."
-                                onChange={e => updL("locationValue", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Telefon başlığı ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.phoneLabel?.[activeLang] || ""} onChange={v => updL("phoneLabel", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Saat başlığı ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.hoursLabel?.[activeLang] || ""} placeholder="Hours"
-                                onChange={e => updL("hoursLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Saat dəyəri ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.hoursValue?.[activeLang] || ""} placeholder="Monday – Friday 9:00 AM – 6:00 PM"
-                                onChange={e => updL("hoursValue", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Telefon nömrəsi ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.phoneValue?.[activeLang] || ""} onChange={v => updL("phoneValue", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Ünvan başlığı ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.locationLabel?.[activeLang] || ""} onChange={v => updL("locationLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Ünvan dəyəri ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.locationValue?.[activeLang] || ""} onChange={v => updL("locationValue", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Saat başlığı ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.hoursLabel?.[activeLang] || ""} onChange={v => updL("hoursLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Saat dəyəri ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.hoursValue?.[activeLang] || ""} onChange={v => updL("hoursValue", activeLang, v)} />
                     </div>
                 </div>
 
@@ -637,8 +659,7 @@ export default function ContactPage() {
                     </h3>
                     <div className={styles.field}>
                         <label>"Follow Us" yazısı ({activeLang.toUpperCase()})</label>
-                        <input className={styles.input} value={settings.followUsLabel?.[activeLang] || ""} placeholder="Follow Us"
-                            onChange={e => updL("followUsLabel", activeLang, e.target.value)} />
+                        <RichEditor value={settings.followUsLabel?.[activeLang] || ""} onChange={v => updL("followUsLabel", activeLang, v)} />
                     </div>
                     {socialLinks.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir sosial link yoxdur</p>
@@ -666,86 +687,61 @@ export default function ContactPage() {
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Form Sahələri</h3>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Ad — label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formNameLabel?.[activeLang] || ""} placeholder="Name"
-                                onChange={e => updL("formNameLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Ad — placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formNamePlaceholder?.[activeLang] || ""} placeholder="Your name*"
-                                onChange={e => updL("formNamePlaceholder", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Ad — label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formNameLabel?.[activeLang] || ""} onChange={v => updL("formNameLabel", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Email — label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formEmailLabel?.[activeLang] || ""} placeholder="Email"
-                                onChange={e => updL("formEmailLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Email — placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formEmailPlaceholder?.[activeLang] || ""} placeholder="Your email*"
-                                onChange={e => updL("formEmailPlaceholder", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Ad — placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formNamePlaceholder?.[activeLang] || ""} onChange={v => updL("formNamePlaceholder", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Telefon — label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formPhoneLabel?.[activeLang] || ""} placeholder="Phone"
-                                onChange={e => updL("formPhoneLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Telefon — placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formPhonePlaceholder?.[activeLang] || ""} placeholder="Your phone*"
-                                onChange={e => updL("formPhonePlaceholder", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Email — label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formEmailLabel?.[activeLang] || ""} onChange={v => updL("formEmailLabel", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Servis — label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formServiceLabel?.[activeLang] || ""} placeholder="Service"
-                                onChange={e => updL("formServiceLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Servis — placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formServicePlaceholder?.[activeLang] || ""} placeholder="Select a service"
-                                onChange={e => updL("formServicePlaceholder", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Mesaj — label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formMessageLabel?.[activeLang] || ""} placeholder="Message"
-                                onChange={e => updL("formMessageLabel", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Email — placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formEmailPlaceholder?.[activeLang] || ""} onChange={v => updL("formEmailPlaceholder", activeLang, v)} />
                     </div>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Mesaj — placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formMessagePlaceholder?.[activeLang] || ""} placeholder="Your message"
-                                onChange={e => updL("formMessagePlaceholder", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Submit düyməsi yazısı ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formSubmitLabel?.[activeLang] || ""} placeholder="Submit Inquiry"
-                                onChange={e => updL("formSubmitLabel", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Telefon — label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formPhoneLabel?.[activeLang] || ""} onChange={v => updL("formPhoneLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Telefon — placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formPhonePlaceholder?.[activeLang] || ""} onChange={v => updL("formPhonePlaceholder", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Servis — label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formServiceLabel?.[activeLang] || ""} onChange={v => updL("formServiceLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Servis — placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formServicePlaceholder?.[activeLang] || ""} onChange={v => updL("formServicePlaceholder", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Mesaj — label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formMessageLabel?.[activeLang] || ""} onChange={v => updL("formMessageLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Mesaj — placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formMessagePlaceholder?.[activeLang] || ""} onChange={v => updL("formMessagePlaceholder", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Submit düyməsi yazısı ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formSubmitLabel?.[activeLang] || ""} onChange={v => updL("formSubmitLabel", activeLang, v)} />
                     </div>
                 </div>
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Budget Dropdown</h3>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formBudgetLabel?.[activeLang] || ""} placeholder="Budget"
-                                onChange={e => updL("formBudgetLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formBudgetPlaceholder?.[activeLang] || ""} placeholder="Estimated Budget"
-                                onChange={e => updL("formBudgetPlaceholder", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formBudgetLabel?.[activeLang] || ""} onChange={v => updL("formBudgetLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formBudgetPlaceholder?.[activeLang] || ""} onChange={v => updL("formBudgetPlaceholder", activeLang, v)} />
                     </div>
                     {budgetOptions.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir seçim yoxdur</p>
@@ -760,17 +756,13 @@ export default function ContactPage() {
 
                 <div className={styles.fullDrawerSection}>
                     <h3 className={styles.drawerSectionTitle}>Project Timeline Dropdown</h3>
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Label ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formTimelineLabel?.[activeLang] || ""} placeholder="Project Timeline"
-                                onChange={e => updL("formTimelineLabel", activeLang, e.target.value)} />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Placeholder ({activeLang.toUpperCase()})</label>
-                            <input className={styles.input} value={settings.formTimelinePlaceholder?.[activeLang] || ""} placeholder="ASAP"
-                                onChange={e => updL("formTimelinePlaceholder", activeLang, e.target.value)} />
-                        </div>
+                    <div className={styles.field}>
+                        <label>Label ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formTimelineLabel?.[activeLang] || ""} onChange={v => updL("formTimelineLabel", activeLang, v)} />
+                    </div>
+                    <div className={styles.field}>
+                        <label>Placeholder ({activeLang.toUpperCase()})</label>
+                        <RichEditor value={settings.formTimelinePlaceholder?.[activeLang] || ""} onChange={v => updL("formTimelinePlaceholder", activeLang, v)} />
                     </div>
                     {timelineOptions.length === 0 && (
                         <p style={{ fontSize: 14, color: "#888", marginBottom: 12 }}>Heç bir seçim yoxdur</p>
