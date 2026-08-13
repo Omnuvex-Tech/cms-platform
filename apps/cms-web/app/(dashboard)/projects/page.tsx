@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Plus, Building2, Pencil, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { projectStatus } from "@/lib/status";
+import { projectStatus, projectTags } from "@/lib/status";
 import { relativeTime, money, range } from "@/lib/format";
 import { AdminGuard } from "@/components/AdminGuard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { TagPills } from "@/components/projects/TagPills";
 import { Loading, EmptyState } from "@/components/ui/States";
 import ui from "@/styles/ui.module.css";
 import styles from "@/styles/projects.module.css";
@@ -24,17 +25,20 @@ interface ProjectListItem {
     totalPriceMin?: number | null;
     totalPriceMax?: number | null;
     completionYear?: number | null;
+    tags?: string[] | null;
     updatedAt: string;
 }
 
 function ProjectsList() {
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("");
+    const [tag, setTag] = useState("");
     const qc = useQueryClient();
 
     const query = new URLSearchParams();
     if (search) query.set("search", search);
     if (status) query.set("status", status);
+    if (tag) query.set("tag", tag);
     const qs = query.toString();
 
     const { data, isLoading } = useQuery({
@@ -93,6 +97,18 @@ function ProjectsList() {
                         </option>
                     ))}
                 </select>
+                <select
+                    className={ui.select}
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                >
+                    <option value="">All tags</option>
+                    {Object.keys(projectTags).map((t) => (
+                        <option key={t} value={t}>
+                            {projectTags[t]?.label}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className={ui.card}>
@@ -112,6 +128,7 @@ function ProjectsList() {
                                     <th>Name</th>
                                     <th>Location</th>
                                     <th>Status</th>
+                                    <th>Tags</th>
                                     <th>Price range</th>
                                     <th>Completion</th>
                                     <th>Updated</th>
@@ -136,6 +153,9 @@ function ProjectsList() {
                                         <td>{p.location ?? "—"}</td>
                                         <td>
                                             <StatusPill meta={projectStatus[p.status]} />
+                                        </td>
+                                        <td>
+                                            <TagPills tags={p.tags} />
                                         </td>
                                         <td>
                                             {p.totalPriceMin != null

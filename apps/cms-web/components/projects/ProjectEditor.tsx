@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { projectStatus } from "@/lib/status";
+import { projectStatus, projectTags, projectAudience } from "@/lib/status";
 import { money, range } from "@/lib/format";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Loading } from "@/components/ui/States";
@@ -52,6 +52,9 @@ interface ProjectForm {
     latitude?: number | null;
     longitude?: number | null;
     status: string;
+    tags: string[];
+    /** "" = not set here, i.e. leave whatever the bot already has. */
+    audience: string;
     aboutProject: string;
     advantages: string;
     targetAudience: string;
@@ -78,6 +81,8 @@ const EMPTY: ProjectForm = {
     slug: "",
     location: "",
     status: "draft",
+    tags: [],
+    audience: "",
     aboutProject: "",
     advantages: "",
     targetAudience: "",
@@ -100,6 +105,14 @@ const DESC_FIELDS: { key: keyof ProjectForm; label: string }[] = [
     { key: "services", label: "Services" },
 ];
 
+/** `issues` block publishing; `warnings` don't — the project publishes, it just
+ * reaches fewer customers than the admin probably intends. */
+interface Validation {
+    ready: boolean;
+    issues: string[];
+    warnings?: string[];
+}
+
 const num = (v: string): number | null => (v === "" ? null : Number(v));
 
 export function ProjectEditor({ projectId }: { projectId?: number }) {
@@ -115,8 +128,7 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
 
     const [form, setForm] = useState<ProjectForm>(EMPTY);
     const [dirty, setDirty] = useState(false);
-    const [validation, setValidation] =
-        useState<{ ready: boolean; issues: string[] } | null>(null);
+    const [validation, setValidation] = useState<Validation | null>(null);
 
     useEffect(() => {
         if (loaded) {
@@ -125,6 +137,8 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
                 ...loaded,
                 slug: loaded.slug ?? "",
                 location: loaded.location ?? "",
+                tags: loaded.tags ?? [],
+                audience: loaded.audience ?? "",
                 aboutProject: loaded.aboutProject ?? "",
                 advantages: loaded.advantages ?? "",
                 targetAudience: loaded.targetAudience ?? "",
@@ -146,7 +160,12 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
 
     const save = useMutation({
         mutationFn: (status?: string) => {
-            const payload = { ...form, ...(status ? { status } : {}) };
+            const payload = {
+                ...form,
+                // "" is the editor's "not set"; the API takes null for it.
+                audience: form.audience || null,
+                ...(status ? { status } : {}),
+            };
             return isNew
                 ? api.post<{ id: number }>("/projects", payload)
                 : api.patch<{ id: number }>(`/projects/${projectId}`, payload);
@@ -166,15 +185,15 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
         mutationFn: async () => {
             // Persist edits first, then publish.
             await save.mutateAsync(undefined);
-            return api.post<{ published: boolean; issues: string[] }>(
+            return api.post<Validation & { published: boolean }>(
                 `/projects/${projectId}/publish`
             );
         },
         onSuccess: (res) => {
             if (!res.published) {
-                setValidation({ ready: false, issues: res.issues });
+                setValidation({ ready: false, issues: res.issues, warnings: res.warnings });
             } else {
-                setValidation({ ready: true, issues: [] });
+                setValidation({ ready: true, issues: [], warnings: res.warnings });
                 setForm((f) => ({ ...f, status: "published" }));
                 qc.invalidateQueries({ queryKey: ["project", projectId] });
                 qc.invalidateQueries({ queryKey: ["projects"] });
@@ -183,10 +202,7 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
     });
 
     const checkReadiness = useMutation({
-        mutationFn: () =>
-            api.get<{ ready: boolean; issues: string[] }>(
-                `/projects/${projectId}/validate`
-            ),
+        mutationFn: () => api.get<Validation>(`/projects/${projectId}/validate`),
         onSuccess: (res) => setValidation(res),
     });
 
@@ -298,6 +314,24 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
                 </div>
             )}
 
+            {/* Separate banner: warnings don't block, so they survive alongside
+                both "ready to publish" and the blocking-issues list. */}
+            {validation && validation.warnings && validation.warnings.length > 0 && (
+                <div className={`${ui.banner} ${styles.bannerWarn}`}>
+                    <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <AlertTriangle size={16} /> Worth a look — this doesn’t block
+                            publishing:
+                        </div>
+                        <ul style={{ margin: "6px 0 0 26px" }}>
+                            {validation.warnings.map((w, idx) => (
+                                <li key={idx}>{w}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
+
             <div className={styles.split}>
                 {/* Editor */}
                 <div className={styles.editorCol}>
@@ -354,6 +388,62 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
                                 value={form.longitude}
                                 onChange={(v) => set("longitude", v)}
                             />
+                        </div>
+                    </Section>
+
+                    <Section title="Tags & targeting" defaultOpen>
+                        <div className={ui.field}>
+                            <label className={ui.label}>Tags</label>
+                            <div className={styles.tagPicker}>
+                                {Object.keys(projectTags).map((t) => {
+                                    const on = form.tags.includes(t);
+                                    return (
+                                        <button
+                                            key={t}
+                                            type="button"
+                                            className={`${styles.tagToggle} ${on ? styles.tagToggleOn : ""}`}
+                                            aria-pressed={on}
+                                            onClick={() =>
+                                                set(
+                                                    "tags",
+                                                    on
+                                                        ? form.tags.filter((x) => x !== t)
+                                                        : [...form.tags, t]
+                                                )
+                                            }
+                                        >
+                                            {projectTags[t]?.label ?? t}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className={styles.hint}>
+                                When the agent introduces the portfolio it shows one project
+                                per tag, so an untagged project can miss that intro entirely.
+                            </p>
+                        </div>
+                        <div className={ui.field}>
+                            <label className={ui.label}>Audience</label>
+                            <select
+                                className={ui.select}
+                                style={{ width: "100%" }}
+                                value={form.audience}
+                                onChange={(e) => set("audience", e.target.value)}
+                            >
+                                <option value="">Not set</option>
+                                {Object.keys(projectAudience).map((a) => (
+                                    <option key={a} value={a}>
+                                        {projectAudience[a]?.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className={styles.hint}>
+                                “Investor” hides this project from customers buying somewhere
+                                to live. “End user” still reaches investors, just ranked below
+                                the investment-angled projects. Left unset, the agent keeps
+                                whatever it already has for this project (treating it as mixed
+                                if it has none).
+                            </p>
                         </div>
                     </Section>
 
@@ -467,6 +557,20 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
                             {form.completionYear && <span>· {form.completionYear}</span>}
                             {form.readyToMoveIn && <span>· Ready to move in</span>}
                         </div>
+
+                        {(form.tags.length > 0 || form.audience) && (
+                            <div className={styles.tagList} style={{ marginBottom: 16 }}>
+                                {form.tags.map((t) => (
+                                    <StatusPill key={t} meta={projectTags[t]} dot={false} />
+                                ))}
+                                {form.audience && (
+                                    <StatusPill
+                                        meta={projectAudience[form.audience]}
+                                        dot={false}
+                                    />
+                                )}
+                            </div>
+                        )}
 
                         <div className={styles.pvStats}>
                             <div>

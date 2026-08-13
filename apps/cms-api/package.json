@@ -15,6 +15,7 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "import:bot-projects": "ts-node import-bot-projects.ts",
+    "backfill:project-tags": "ts-node backfill-project-tags.ts",
     "import:treva-info": "ts-node import-treva-info.ts"
   },
   "dependencies": {

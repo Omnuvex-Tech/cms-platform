@@ -12,9 +12,10 @@ export class ProjectsService {
     private readonly botSync: BotSyncService,
   ) {}
 
-  list(search?: string, status?: ProjectStatus) {
+  list(search?: string, status?: ProjectStatus, tag?: string) {
     const where: Prisma.ProjectWhereInput = {};
     if (status) where.status = status;
+    if (tag) where.tags = { has: tag };
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -89,9 +90,9 @@ export class ProjectsService {
   }
 
   async publish(id: number) {
-    const { ready, issues } = await this.validate(id);
+    const { ready, issues, warnings } = await this.validate(id);
     if (!ready) {
-      return { published: false, issues };
+      return { published: false, issues, warnings };
     }
     const project = await this.projectsRepository.setStatus(
       id,
@@ -103,7 +104,7 @@ export class ProjectsService {
       project as ProjectWithChildren,
       'upsert',
     );
-    return { published: true, issues: [], project, botSync };
+    return { published: true, issues: [], warnings, project, botSync };
   }
 
   async remove(id: number) {
@@ -121,10 +122,16 @@ export class ProjectsService {
     return this.botSync.syncAllPublished();
   }
 
-  /** Flags missing/inconsistent sales fields before publishing. */
+  /**
+   * Flags missing/inconsistent sales fields before publishing.
+   *
+   * `issues` block the publish; `warnings` don't — they're for a project that
+   * will work fine but reach fewer customers than the admin probably intends.
+   */
   async validate(id: number) {
     const project = await this.get(id);
     const issues: string[] = [];
+    const warnings: string[] = [];
 
     if (!project.name?.trim()) issues.push('Project name is required.');
     if (!project.location?.trim()) issues.push('Location is required.');
@@ -143,6 +150,14 @@ export class ProjectsService {
     if (project.completionYear == null && !project.readyToMoveIn)
       issues.push('Completion year is missing (and not marked ready to move in).');
 
-    return { ready: issues.length === 0, issues };
+    // Not an issue: an untagged project is still quoted, searched and matched on
+    // budget. It just never claims a category slot when the agent introduces the
+    // portfolio, which is easy to do by accident and invisible afterwards.
+    if (project.tags.length === 0)
+      warnings.push(
+        'No tags set — the agent won’t feature this project when it introduces the portfolio.',
+      );
+
+    return { ready: issues.length === 0, issues, warnings };
   }
 }

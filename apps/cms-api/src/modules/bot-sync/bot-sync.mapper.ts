@@ -65,6 +65,10 @@ interface BotProjectMetadata {
   ready_to_move_in: boolean;
   completion_year: number | null;
   handover_condition: string | null;
+  /** Teaser categories. `null` (never `[]`) when the panel has none — see
+   * projectToBotPayload. */
+  tags: string[] | null;
+  audience: string | null;
 }
 
 interface BotProjectDescription {
@@ -189,6 +193,13 @@ export function projectToBotPayload(
         ready_to_move_in: project.readyToMoveIn,
         completion_year: project.completionYear ?? null,
         handover_condition: project.handoverCondition ?? null,
+        // `tags`/`audience` are the two keys the bot treats as curated: it
+        // carries forward its existing value when we send null, and takes ours
+        // when we send anything else. So an untagged panel project must send
+        // null, NOT [] — [] would win and wipe the bot's curation, dropping the
+        // teaser back to dumping the whole catalogue.
+        tags: project.tags.length > 0 ? project.tags : null,
+        audience: project.audience ?? null,
       },
       description: {
         about_project: project.aboutProject ?? null,

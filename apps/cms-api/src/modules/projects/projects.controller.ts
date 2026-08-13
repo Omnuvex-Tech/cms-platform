@@ -23,8 +23,9 @@ export class ProjectsController {
   list(
     @Query('search') search?: string,
     @Query('status') status?: ProjectStatus,
+    @Query('tag') tag?: string,
   ) {
-    return this.projectsService.list(search, status);
+    return this.projectsService.list(search, status, tag);
   }
 
   @Get(':id')

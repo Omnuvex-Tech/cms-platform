@@ -1,15 +1,18 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectAudience, ProjectStatus } from '@prisma/client';
+import { PROJECT_TAGS } from '../project-tags';
 
 export class BedroomPricingDto {
   @IsString()
@@ -47,6 +50,16 @@ export class CreateProjectDto {
   @IsOptional() @IsNumber() latitude?: number;
   @IsOptional() @IsNumber() longitude?: number;
   @IsOptional() @IsEnum(ProjectStatus) status?: ProjectStatus;
+
+  // Rejected rather than silently stored when unknown: a tag the bot doesn't
+  // know matches no teaser category, so it would look set but do nothing.
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(PROJECT_TAGS as readonly string[], { each: true })
+  tags?: string[];
+
+  @IsOptional() @IsEnum(ProjectAudience) audience?: ProjectAudience;
 
   @IsOptional() @IsString() aboutProject?: string;
   @IsOptional() @IsString() advantages?: string;

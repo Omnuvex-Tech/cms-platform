@@ -22,6 +22,16 @@ enum ProjectStatus {
   archived
 }
 
+// Which buyer a project is really sold to. Mirrors `audience` in the bot's
+// projects_metadata.json: an `investor` project is dropped for customers buying
+// somewhere to live, an `end_user` one is merely ranked below the
+// investment-angled ones for investors (see the bot's matching.py).
+enum ProjectAudience {
+  investor
+  end_user
+  mixed
+}
+
 enum Channel {
   webchat
   whatsapp
@@ -148,6 +158,17 @@ model Project {
   latitude  Float?
   longitude Float?
   status    ProjectStatus @default(draft)
+
+  // Portfolio-teaser curation, pushed to `tags`/`audience` in the bot's
+  // projects_metadata.json. The bot shows ONE project per teaser category, so
+  // these decide which projects a customer ever sees; the vocabulary is fixed
+  // (PROJECT_TAGS in projects/project-tags.ts) because a tag outside it matches
+  // no category and silently does nothing.
+  // `audience` is nullable on purpose: null means "not curated here", which is
+  // what lets bot-sync leave the bot's own value alone (the bot itself falls
+  // back to `mixed` when it has none either).
+  tags     String[]
+  audience ProjectAudience?
 
   // Markdown-friendly description fields
   aboutProject         String? @db.Text

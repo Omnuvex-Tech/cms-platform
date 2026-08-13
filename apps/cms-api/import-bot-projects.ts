@@ -25,7 +25,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { PrismaClient, ProjectStatus } from '@prisma/client';
+import { PrismaClient, ProjectAudience, ProjectStatus } from '@prisma/client';
+import { PROJECT_TAGS } from './src/modules/projects/project-tags';
 
 const prisma = new PrismaClient();
 
@@ -69,6 +70,25 @@ interface InternationalTierRow {
   discountPct: number | null;
   interestFreeMonths: number | null;
   sortOrder: number;
+}
+
+/** The curated teaser fields, normalised to the panel's vocabulary. Unknown
+ * values are dropped (they'd fail DTO validation on the next panel edit).
+ * backfill-project-tags.ts imports the same two fields on their own, for when
+ * the rest of a project must not be overwritten. */
+function readCuration(m: Record<string, any>): {
+  tags: string[];
+  audience: ProjectAudience | null;
+} {
+  const known = new Set<string>(PROJECT_TAGS);
+  const tags = (Array.isArray(m.tags) ? m.tags : [])
+    .map((t: unknown) => String(t).trim().toLowerCase())
+    .filter((t: string) => known.has(t));
+  const audience = String(m.audience ?? '').trim().toLowerCase();
+  return {
+    tags,
+    audience: audience in ProjectAudience ? (audience as ProjectAudience) : null,
+  };
 }
 
 function slugify(name: string): string {
@@ -222,6 +242,7 @@ async function main() {
       location: m.location ?? null,
       latitude: m.latitude ?? null,
       longitude: m.longitude ?? null,
+      ...readCuration(m),
       ...description,
       pricePerM2Min: m.price_per_sqm_min ?? null,
       pricePerM2Max: m.price_per_sqm_max ?? null,

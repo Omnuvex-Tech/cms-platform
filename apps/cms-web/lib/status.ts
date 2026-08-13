@@ -84,6 +84,28 @@ export const projectStatus: Record<string, StatusMeta> = {
     archived: meta("Archived", AMBER),
 };
 
+// The teaser categories the bot understands. It shows one project per category
+// (in this order) when it introduces the portfolio, so these decide which
+// projects a customer ever sees. Fixed vocabulary — a tag outside it matches no
+// category and does nothing. Mirrors PROJECT_TAGS in the API
+// (cms-api/src/modules/projects/project-tags.ts); keep the two in step.
+export const projectTags: Record<string, StatusMeta> = {
+    "sea-front": meta("Sea-front", TEAL),
+    luxury: meta("Luxury", PURPLE),
+    branded: meta("Branded", BLUE),
+    family: meta("Family", GREEN),
+    value: meta("Value", AMBER),
+    investment: meta("Investment", BLUE),
+};
+
+// Who the project is really sold to. `investor` hides it from customers buying
+// somewhere to live; `end_user` still reaches investors, just ranked lower.
+export const projectAudience: Record<string, StatusMeta> = {
+    investor: meta("Investor", PURPLE),
+    end_user: meta("End user", TEAL),
+    mixed: meta("Mixed", GRAY),
+};
+
 export const channelLabel: Record<string, string> = {
     webchat: "Web Chat",
     whatsapp: "WhatsApp",
