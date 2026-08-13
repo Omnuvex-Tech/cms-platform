@@ -608,6 +608,32 @@ model PageMeta {
   updatedAt      DateTime @updatedAt
 }
 
+
+model PrivacyPolicySettings {
+  id          Int      @id @default(autoincrement())
+  title       Json     @default("{}")
+  description Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sections    PrivacyPolicySection[]
+
+  @@map("privacy_policy_settings")
+}
+
+model PrivacyPolicySection {
+  id          Int      @id @default(autoincrement())
+  title       Json     @default("{}")
+  description Json     @default("{}")
+  order       Int      @default(0)
+  settingsId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  settings    PrivacyPolicySettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  @@map("privacy_policy_sections")
+}
+
+
 enum BulletType {
   BULLET
   NUMBERED

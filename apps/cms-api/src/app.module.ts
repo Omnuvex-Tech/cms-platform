@@ -19,11 +19,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PageMetaModule } from './modules/page-meta/page-meta.module';
 import { HeroModule } from './modules/Home/Hero/hero.module';
 import { HomeModule } from './modules/Home/Settings/home.module';
+import { PrivacyPolicyModule } from './modules/PrivacyPolicy/privacy-policy.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, FaqModule, TestimonialsModule, VacancyModule, PortfolioModule, PartnersModule,
             ServiceModule, BlogModule, AboutModule, NavbarSettingsModule, FooterModule, ContactModule,SearchModule,
-            DashboardModule,PageMetaModule, HeroModule, HomeModule
+            DashboardModule,PageMetaModule, HeroModule, HomeModule, PrivacyPolicyModule
   ],
   controllers: [AppController],
   providers: [AppService],

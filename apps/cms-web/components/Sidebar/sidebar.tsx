@@ -21,8 +21,8 @@ import {
     LogOut,
     PanelsTopLeft,
     Search,
+    ShieldCheck, 
 } from "lucide-react";
-
 
 interface NavChild {
     label: string;
@@ -87,6 +87,11 @@ const NAV_ITEMS = [
         href: "/footer",
         icon: <PanelsTopLeft size={18} />,
     },
+    {
+    label: "Privacy Policy",
+    href: "/privacy-policy",
+    icon: <ShieldCheck size={18} />,
+},
     {
         label: "SEO",
         href: "/seo",
