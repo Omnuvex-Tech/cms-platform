@@ -26,6 +26,10 @@ interface VacancySubmission {
     createdAt: string;
 }
 
+function stripHtml(html: string) {
+    return html.replace(/<[^>]*>/g, "").trim();
+}
+
 function formatDate(iso: string) {
     return new Date(iso).toLocaleString("az-AZ", {
         day: "2-digit", month: "2-digit", year: "numeric",
@@ -80,7 +84,7 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                    {sub.vacancyTitle && (
+             {sub.vacancyTitle && stripHtml(sub.vacancyTitle) && (
                         <span style={{
                             fontSize: 12, fontWeight: 500,
                             padding: "3px 10px",
@@ -89,7 +93,7 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
                             borderRadius: 20,
                             whiteSpace: "nowrap",
                         }}>
-                            {sub.vacancyTitle}
+                            {stripHtml(sub.vacancyTitle)}
                         </span>
                     )}
                     <span style={{ fontSize: 12, color: "#bbb", whiteSpace: "nowrap" }}>
