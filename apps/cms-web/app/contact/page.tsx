@@ -261,7 +261,7 @@ function OptionRow({
 }) {
     return (
         <div className={styles.contentItemBlock} style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-            <div className={styles.field} style={{ flex: 1, marginBottom: 0 }}>
+            <div className={styles.fielddd} style={{ flex: 1, marginBottom: 0 }}>
                 <RichEditor
                     value={option.label?.[activeLang] || ""}
                     onChange={v => onUpdate(option.id, activeLang, v)} />
@@ -739,7 +739,7 @@ export default function ContactPage() {
                         <label>Label ({activeLang.toUpperCase()})</label>
                         <RichEditor value={settings.formBudgetLabel?.[activeLang] || ""} onChange={v => updL("formBudgetLabel", activeLang, v)} />
                     </div>
-                    <div className={styles.field}>
+                    <div className={styles.fieldd}>
                         <label>Placeholder ({activeLang.toUpperCase()})</label>
                         <RichEditor value={settings.formBudgetPlaceholder?.[activeLang] || ""} onChange={v => updL("formBudgetPlaceholder", activeLang, v)} />
                     </div>

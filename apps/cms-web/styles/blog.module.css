@@ -56,6 +56,7 @@
 .addSectionBtn { padding: 7px 14px; border-radius: 7px; border: 1px dashed #cbd5e1; background: #f8fafc; font-size: 13px; cursor: pointer; color: #475569; }
 .addSectionBtn:hover { background: #f1f5f9; border-color: #2563eb; color: #2563eb; }
 .field { display: flex; flex-direction: column; gap: 6px; }
+.fielddd{margin-right: 33%;}
 .field label { font-size: 13px; font-weight: 600; color: #475569; }
 .input { width: 88%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 13px; font-size: 14px; outline: none; }
 .input:focus { border-color: #2563eb; }
