@@ -1,0 +1,188 @@
+/* Pulse Layout idarəetməsi.
+   Bölmə rəngləri dinamikdir — komponent onları CSS dəyişəni kimi ötürür
+   (--sec-color / --sec-bg / --sec-border), sinif adları isə burada sabitdir. */
+
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.savingHint {
+  color: #ea580c;
+  font-size: 13px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  border-color: var(--sec-border);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.sectionDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sec-color);
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  flex: 1;
+}
+
+.sectionCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sec-color);
+  background: var(--sec-bg);
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.thumb {
+  width: 36px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.rowOrder {
+  font-size: 12px;
+  color: #94a3b8;
+  min-width: 20px;
+}
+
+.rowTitle {
+  flex: 1;
+  font-size: 13px;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moveBtn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.moveBtn:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.emptySlot {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.unassigned {
+  flex-shrink: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 16px 0 0;
+}
+
+.unassignedRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.assignRow {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.assignBtn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--sec-bg);
+  color: var(--sec-color);
+  border: 1px solid var(--sec-border);
+  cursor: pointer;
+}
+
+.emptyNote {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}

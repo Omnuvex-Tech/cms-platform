@@ -4,6 +4,14 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { LangInput } from "@/components/LangInput";
+import {
+    DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { RichEditor } from "@/components/RichEditor";
 import styles from "@/styles/blog.module.css";
 
 type Author = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
@@ -14,7 +22,14 @@ type ArticleSummary = { id: string; slug: string; title: string | { az?: string;
 type LocalizedText = string | { az?: string; en?: string; ru?: string } | null | undefined;
 type EditorLocale = "az" | "en" | "ru";
 
-type Block =
+/**
+ * Hər blokda olan ortaq sahələr.
+ *   id        — dnd-kit üçün sabit açar. JSON-da saxlanılır, treva-web onu görməzdən gəlir.
+ *   isVisible — false olduqda blok saytda render olunmur (master-dəki section məntiqi).
+ */
+type BlockCommon = { id?: string; isVisible?: boolean };
+
+type Block = BlockCommon & (
     | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; text: LocalizedText }
     | { type: "paragraph"; text: LocalizedText }
     | { type: "image"; url: string; alt: LocalizedText; caption?: LocalizedText }
@@ -22,7 +37,8 @@ type Block =
     | { type: "faq"; question: LocalizedText; answer: LocalizedText }
     | { type: "quote"; text: LocalizedText; author?: LocalizedText }
     | { type: "video"; url: string }
-    | { type: "gallery"; images: { url: string; alt: LocalizedText }[] };
+    | { type: "gallery"; images: { url: string; alt: LocalizedText }[] }
+);
 
 const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
     { type: "heading", label: "Başlıq", icon: "H" },
@@ -122,6 +138,15 @@ function setLocalizedText(value: LocalizedText, locale: EditorLocale, nextValue:
     };
 }
 
+/** dnd-kit-in sabit açara ehtiyacı var; id-si olmayan köhnə bloklara birini veririk. */
+function makeBlockId() {
+    return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function withBlockIds(input: Block[]): Block[] {
+    return (input || []).map(block => (block.id ? block : { ...block, id: makeBlockId() }));
+}
+
 function normalizeBlocks(input: Block[]): any[] {
     return (input || []).map((block) => {
         switch (block.type) {
@@ -163,113 +188,37 @@ function normalizeBlocks(input: Block[]): any[] {
     });
 }
 
-function ParagraphEditor({ block, locale, onChange }: { block: Block & { type: "paragraph" }; locale: EditorLocale; onChange: (b: Block) => void }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [showLinkPopup, setShowLinkPopup] = useState(false);
-    const [linkUrl, setLinkUrl] = useState("");
-    const [linkNewTab, setLinkNewTab] = useState(true);
-
-    useEffect(() => {
-        const current = normalizeLocalizedText(block.text)[locale] || "";
-        if (ref.current && ref.current.innerHTML !== current) ref.current.innerHTML = current;
-    }, [block.text, locale]);
-
-    const wrapSelection = (tag: string) => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) return;
-        const range = sel.getRangeAt(0);
-        const el = document.createElement(tag);
-        try { range.surroundContents(el); sel.removeAllRanges(); } catch {}
-        const active = document.activeElement as HTMLElement;
-        if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
-    };
-
-    const openLinkPopup = () => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) { alert("Əvvəlcə mətn seçin"); return; }
-        setLinkUrl("");
-        setLinkNewTab(true);
-        setShowLinkPopup(true);
-    };
-
-    const applyLink = () => {
-        setShowLinkPopup(false);
-        if (!linkUrl.trim()) return;
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) return;
-        const range = sel.getRangeAt(0);
-        const a = document.createElement("a");
-        a.href = linkUrl.trim();
-        if (linkNewTab) a.target = "_blank";
-        try { range.surroundContents(a); sel.removeAllRanges(); } catch {}
-        const active = document.activeElement as HTMLElement;
-        if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
-    };
-
-    const removeLink = () => {
-        setShowLinkPopup(false);
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) return;
-        const node = sel.anchorNode?.parentElement?.closest?.("a");
-        if (node) {
-            node.replaceWith(...node.childNodes);
-            sel.removeAllRanges();
-            const active = document.activeElement as HTMLElement;
-            if (active) onChange({ ...block, text: setLocalizedText(block.text, locale, active.innerHTML) });
-        }
-    };
-
+/**
+ * Paraqraf redaktoru.
+ *
+ * Əvvəl xam `contentEditable` + `range.surroundContents()` idi — seçim sərhədləri
+ * element sərhədini kəsəndə sükutla uğursuz olurdu və geri-al (undo) yox idi.
+ * İndi master branch-dakı kimi Tiptap işlədirik.
+ */
+function ParagraphEditor({ block, locale, onChange }: {
+    block: Block & { type: "paragraph" }; locale: EditorLocale; onChange: (b: Block) => void;
+}) {
+    const text = normalizeLocalizedText(block.text);
     return (
         <div className={styles.field}>
-            <label>
-                Paraqraf mətni
-                <button type="button" onClick={() => wrapSelection("b")} style={{
-                    marginLeft: 12, padding: "2px 10px", borderRadius: 4,
-                    border: "1px solid #cbd5e1", background: "#f1f5f9",
-                    cursor: "pointer", fontSize: 13, fontWeight: 700,
-                }} title="Seçilmiş mətni qalın et (B)">B</button>
-                <button type="button" onClick={() => wrapSelection("i")} style={{
-                    marginLeft: 4, padding: "2px 10px", borderRadius: 4,
-                    border: "1px solid #cbd5e1", background: "#f1f5f9",
-                    cursor: "pointer", fontSize: 13, fontStyle: "italic",
-                }} title="Seçilmiş mətni kursiv et (I)">I</button>
-                <button type="button" onClick={openLinkPopup} style={{
-                    marginLeft: 4, padding: "2px 10px", borderRadius: 4,
-                    border: "1px solid #cbd5e1", background: "#f1f5f9",
-                    cursor: "pointer", fontSize: 13,
-                }} title="Link əlavə et (🔗)">🔗</button>
-            </label>
-            {showLinkPopup && (
-                <div className={styles.linkPopup} style={{ marginTop: 6 }}>
-                    <input className={styles.linkInput} value={linkUrl}
-                        onChange={e => setLinkUrl(e.target.value)}
-                        placeholder="https://..." autoFocus
-                        onKeyDown={e => e.key === "Enter" && applyLink()}
-                    />
-                    <label className={styles.linkCheckbox}>
-                        <input type="checkbox" checked={linkNewTab}
-                            onChange={e => setLinkNewTab(e.target.checked)}
-                        /> Yeni səhifə
-                    </label>
-                    <button className={styles.linkApplyBtn} onClick={applyLink}>Tətbiq et</button>
-                    <button className={styles.linkRemoveBtn} onClick={removeLink}>Sil</button>
-                    <button className={styles.linkCancelBtn} onClick={() => setShowLinkPopup(false)}>Ləğv et</button>
-                </div>
-            )}
-            <div ref={ref} contentEditable suppressHydrationWarning
-                className={styles.input}
-                style={{ minHeight: 80, whiteSpace: "pre-wrap" }}
-                onBlur={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.currentTarget.innerHTML) })}
+            <label>Paraqraf mətni</label>
+            <RichEditor
+                styles={styles}
+                value={text[locale] || ""}
+                onChange={v => onChange({ ...block, text: setLocalizedText(block.text, locale, v) })}
             />
         </div>
     );
 }
 
-function BlockItem({ block, index, locale, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }: {
+function BlockItem({ block, index, locale, onChange, onRemove }: {
     block: Block; index: number; onChange: (b: Block) => void; onRemove: () => void;
-    locale: EditorLocale; onMoveUp: () => void; onMoveDown: () => void; isFirst: boolean; isLast: boolean;
+    locale: EditorLocale;
 }) {
     const [uploading, setUploading] = useState(false);
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({ id: block.id ?? `idx-${index}` });
+    const hidden = block.isVisible === false;
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -459,15 +408,27 @@ function BlockItem({ block, index, locale, onChange, onRemove, onMoveUp, onMoveD
     const blockLabel = BLOCK_TYPES.find(b => b.type === block.type);
 
     return (
-        <div className={styles.sectionBlock}>
+        <div
+            ref={setNodeRef}
+            className={styles.sectionBlock}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.5 : hidden ? 0.5 : 1,
+            }}
+        >
             <div className={styles.sectionBlockHeader}>
                 <div className={styles.sectionBlockLeft}>
+                    <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
                     <span className={styles.sectionTypeTag}>{blockLabel?.icon} {blockLabel?.label}</span>
                     <span className={styles.sectionIndex}>#{index + 1}</span>
                 </div>
                 <div className={styles.sectionBlockRight}>
-                    <button type="button" className={styles.toggleBtn} onClick={onMoveUp} disabled={isFirst} style={{ opacity: isFirst ? 0.3 : 1 }}>↑</button>
-                    <button type="button" className={styles.toggleBtn} onClick={onMoveDown} disabled={isLast} style={{ opacity: isLast ? 0.3 : 1 }}>↓</button>
+                    <button type="button"
+                        className={hidden ? styles.inactiveToggle : styles.activeToggle}
+                        onClick={() => onChange({ ...block, isVisible: hidden })}>
+                        {hidden ? "Gizli" : "Görünür"}
+                    </button>
                     <button type="button" className={styles.deleteBtn} onClick={onRemove}>Sil</button>
                 </div>
             </div>
@@ -533,7 +494,7 @@ export default function PulseArticleEditPage() {
                 setFeatured(a.featured); setHeaderPositions(Array.isArray(a.headerPositions) ? a.headerPositions : []);
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
-                setBlocks(Array.isArray(a.blocks) ? (normalizeBlocks(a.blocks as Block[]) as Block[]) : []);
+                setBlocks(Array.isArray(a.blocks) ? withBlockIds(normalizeBlocks(a.blocks as Block[]) as Block[]) : []);
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
                 setSocialLinks(a.socialLinks || {});
                 setCustomAuthorName(a.socialLinks?.name || "");
@@ -563,7 +524,7 @@ export default function PulseArticleEditPage() {
             case "video": newBlock = { type: "video", url: "" }; break;
             case "gallery": newBlock = { type: "gallery", images: [] }; break;
         }
-        setBlocks(prev => [...prev, newBlock!]);
+        setBlocks(prev => [...prev, { ...newBlock!, id: makeBlockId(), isVisible: true }]);
     };
 
     const updateBlock = useCallback((index: number, block: Block) => {
@@ -574,12 +535,16 @@ export default function PulseArticleEditPage() {
         setBlocks(prev => prev.filter((_, i) => i !== index));
     }, []);
 
-    const moveBlock = useCallback((from: number, to: number) => {
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+    const handleBlockDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
         setBlocks(prev => {
-            const next = [...prev];
-            const moved = next.splice(from, 1)[0];
-            if (moved) next.splice(to, 0, moved);
-            return next;
+            const from = prev.findIndex(b => b.id === active.id);
+            const to = prev.findIndex(b => b.id === over.id);
+            if (from < 0 || to < 0) return prev;
+            return arrayMove(prev, from, to);
         });
     }, []);
 
@@ -864,18 +829,19 @@ export default function PulseArticleEditPage() {
                         </button>
                     ))}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {blocks.map((block, i) => (
-                        <BlockItem
-                            key={`${i}-${blockLocale}`} block={block} index={i} locale={blockLocale}
-                            onChange={b => updateBlock(i, b)}
-                            onRemove={() => removeBlock(i)}
-                            onMoveUp={() => i > 0 && moveBlock(i, i - 1)}
-                            onMoveDown={() => i < blocks.length - 1 && moveBlock(i, i + 1)}
-                            isFirst={i === 0} isLast={i === blocks.length - 1}
-                        />
-                    ))}
-                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
+                    <SortableContext items={blocks.map((b, i) => b.id ?? `idx-${i}`)} strategy={verticalListSortingStrategy}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {blocks.map((block, i) => (
+                                <BlockItem
+                                    key={`${block.id ?? i}-${blockLocale}`} block={block} index={i} locale={blockLocale}
+                                    onChange={b => updateBlock(i, b)}
+                                    onRemove={() => removeBlock(i)}
+                                />
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
 
                 <div className={styles.addSectionRow} style={{ marginTop: 12 }}>
                     {BLOCK_TYPES.map(bt => (

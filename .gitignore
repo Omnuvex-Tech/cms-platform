@@ -35,3 +35,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Serve olunmayan yükləmə qovluğu — fayllar public/uploads altındadır.
+# (Nest static asset kökü: apps/cms-api/public)
+apps/cms-api/uploads/

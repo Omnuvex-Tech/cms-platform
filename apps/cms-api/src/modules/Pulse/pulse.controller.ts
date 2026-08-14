@@ -90,6 +90,19 @@ export class PulseController {
     return this.service.createArticle(dto);
   }
 
+  @Get('articles/:id/schema/preview')
+  previewArticleSchema(@Param('id') id: string) {
+    return this.service.generateArticleSchema(id);
+  }
+
+  @Patch('articles/:id/schema')
+  saveArticleSchema(
+    @Param('id') id: string,
+    @Body('schema') schema: Record<string, any> | null,
+  ) {
+    return this.service.saveArticleSchema(id, schema);
+  }
+
   @Put('articles/:id')
   updateArticle(@Param('id') id: string, @Body() dto: UpdatePulseArticleDto) {
     return this.service.updateArticle(id, dto);

@@ -1,11 +1,21 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useState } from "react";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
+import layout from "@/styles/pulseLayout.module.css";
 
 type Article = { id: string; title: string | { az?: string; en?: string; ru?: string }; slug: string; coverImage?: string; headerPositions?: string[]; headerOrder?: number };
+// color/bg/border JSX-də CSS dəyişəni kimi ötürülür (--sec-color və s.),
+// beləcə rənglər dinamik qalır, qalan bütün stil CSS module-dadır.
 type Section = { position: string; label: string; color: string; bg: string; border: string };
+
+const sectionVars = (sec: Section) => ({
+    "--sec-color": sec.color,
+    "--sec-bg": sec.bg,
+    "--sec-border": sec.border,
+}) as React.CSSProperties;
 
 function getLocalizedName(value: string | { az?: string; en?: string; ru?: string } | undefined): string {
     if (!value) return "";
@@ -105,75 +115,64 @@ export default function PulseLayoutPage() {
     if (loading) return <div className={styles.empty}>Yüklənir...</div>;
 
     return (
-        <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <div className={styles.tabHeader} style={{ flexShrink: 0 }}>
+        <div className={layout.page}>
+            <div className={`${styles.tabHeader} ${layout.header}`}>
                 <h2 className={styles.tabTitle}>Pulse Layout İdarəetməsi</h2>
-                {saving && <span style={{ color: "#ea580c", fontSize: 13 }}>Saxlanır...</span>}
+                {saving && <span className={layout.savingHint}>Saxlanır...</span>}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
-                {SECTIONS.map(sec => (
-                    <div key={sec.position} className={styles.settingsCard} style={{ borderColor: sec.border, display: "flex", flexDirection: "column", overflow: "hidden", margin: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexShrink: 0 }}>
-                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: sec.color, flexShrink: 0 }} />
-                            <h3 className={styles.settingsGroupTitle} style={{ margin: 0, flex: 1 }}>{sec.label}</h3>
-                            <span style={{
-                                fontSize: 12, fontWeight: 600, color: sec.color,
-                                background: sec.bg, padding: "2px 10px", borderRadius: 12,
-                            }}>
-                                {getArticlesForPosition(sec.position).length}
-                            </span>
+            <div className={layout.grid}>
+                {SECTIONS.map(sec => {
+                    const items = getArticlesForPosition(sec.position);
+                    return (
+                        <div key={sec.position}
+                            className={`${styles.settingsCard} ${layout.section}`}
+                            style={sectionVars(sec)}>
+                            <div className={layout.sectionHeader}>
+                                <div className={layout.sectionDot} />
+                                <h3 className={`${styles.settingsGroupTitle} ${layout.sectionTitle}`}>{sec.label}</h3>
+                                <span className={layout.sectionCount}>{items.length}</span>
+                            </div>
+                            <div className={layout.list}>
+                                {items.map((a, idx) => (
+                                    <div key={a.id} className={layout.row}>
+                                        {a.coverImage && (
+                                            <img src={toAbsUrl(a.coverImage)} alt="" className={layout.thumb} />
+                                        )}
+                                        <span className={layout.rowOrder}>#{a.headerOrder || idx + 1}</span>
+                                        <span className={layout.rowTitle}>{getLocalizedName(a.title)}</span>
+                                        <button type="button" className={layout.moveBtn}
+                                            onClick={() => moveArticle(a.id, "up")} disabled={idx === 0}>▲</button>
+                                        <button type="button" className={layout.moveBtn}
+                                            onClick={() => moveArticle(a.id, "down")} disabled={idx === items.length - 1}>▼</button>
+                                        <button type="button" className={layout.removeBtn}
+                                            onClick={() => removeArticle(a.id, sec.position)}>✕</button>
+                                    </div>
+                                ))}
+                                {items.length === 0 && (
+                                    <div className={layout.emptySlot}>Bu bölmədə məqalə yoxdur</div>
+                                )}
+                            </div>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6, overflowY: "auto", flex: 1, minHeight: 0 }}>
-                            {getArticlesForPosition(sec.position).map((a, idx) => (
-                                <div key={a.id} style={{
-                                    display: "flex", alignItems: "center", gap: 10,
-                                    padding: "8px 12px", background: "#f8fafc", borderRadius: 8,
-                                    border: "1px solid #e2e8f0", flexShrink: 0,
-                                }}>
-                                    {a.coverImage && (
-                                        <img src={toAbsUrl(a.coverImage)} alt="" style={{ width: 36, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
-                                    )}
-                                    <span style={{ fontSize: 12, color: "#94a3b8", minWidth: 20 }}>#{a.headerOrder || idx + 1}</span>
-                                    <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getLocalizedName(a.title)}</span>
-                                    <button onClick={() => moveArticle(a.id, "up")} disabled={idx === 0}
-                                        style={{ background: "none", border: "none", color: idx === 0 ? "#cbd5e1" : "#2563eb", cursor: idx === 0 ? "default" : "pointer", fontSize: 14, flexShrink: 0 }}>▲</button>
-                                    <button onClick={() => moveArticle(a.id, "down")} disabled={idx === getArticlesForPosition(sec.position).length - 1}
-                                        style={{ background: "none", border: "none", color: idx === getArticlesForPosition(sec.position).length - 1 ? "#cbd5e1" : "#2563eb", cursor: idx === getArticlesForPosition(sec.position).length - 1 ? "default" : "pointer", fontSize: 14, flexShrink: 0 }}>▼</button>
-                                    <button onClick={() => removeArticle(a.id, sec.position)}
-                                        style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, padding: "2px 6px", borderRadius: 4, flexShrink: 0 }}>✕</button>
-                                </div>
-                            ))}
-                            {getArticlesForPosition(sec.position).length === 0 && (
-                                <div style={{ padding: 16, textAlign: "center", color: "#94a3b8", fontSize: 13, border: "1px dashed #e2e8f0", borderRadius: 8, flexShrink: 0 }}>
-                                    Bu bölmədə məqalə yoxdur
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
-            <div className={styles.settingsCard} style={{ marginTop: 16, flexShrink: 0, maxHeight: "220px", overflowY: "auto", margin: "16px 0 0" }}>
+            <div className={`${styles.settingsCard} ${layout.unassigned}`}>
                 <h3 className={styles.settingsGroupTitle}>Təyin edilməmiş məqalələr</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className={layout.list}>
                     {getUnassigned().map(a => (
-                        <div key={a.id} style={{
-                            display: "flex", alignItems: "center", gap: 12,
-                            padding: "8px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0",
-                        }}>
+                        <div key={a.id} className={layout.unassignedRow}>
                             {a.coverImage && (
-                                <img src={toAbsUrl(a.coverImage)} alt="" style={{ width: 36, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                                <img src={toAbsUrl(a.coverImage)} alt="" className={layout.thumb} />
                             )}
-                            <span style={{ flex: 1, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getLocalizedName(a.title)}</span>
-                            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                            <span className={layout.rowTitle}>{getLocalizedName(a.title)}</span>
+                            <div className={layout.assignRow}>
                                 {SECTIONS.map(sec => (
-                                    <button key={sec.position} onClick={() => assignArticle(a.id, sec.position)}
-                                        style={{
-                                            padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                                            background: sec.bg, color: sec.color, border: `1px solid ${sec.border}`,
-                                            cursor: "pointer",
-                                        }}>
+                                    <button key={sec.position} type="button"
+                                        className={layout.assignBtn}
+                                        style={sectionVars(sec)}
+                                        onClick={() => assignArticle(a.id, sec.position)}>
                                         {sec.label}
                                     </button>
                                 ))}
@@ -181,9 +180,7 @@ export default function PulseLayoutPage() {
                         </div>
                     ))}
                     {getUnassigned().length === 0 && (
-                        <div style={{ padding: 16, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
-                            Bütün məqalələr təyin edilib
-                        </div>
+                        <div className={layout.emptyNote}>Bütün məqalələr təyin edilib</div>
                     )}
                 </div>
             </div>

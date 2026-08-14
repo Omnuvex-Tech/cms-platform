@@ -17,15 +17,15 @@ export default async function DashboardPage() {
     const stats = await getDashboardStats();
 
     const cards = [
-        { label: "Blog",                 value: stats?.blog ?? "-",                addHref: "/blog",                  linkLabel: "Əlavə et" },
-        { label: "Service",              value: stats?.service ?? "-",             addHref: "/service",               linkLabel: "Əlavə et" },
-        { label: "Vacancy",              value: stats?.vacancy ?? "-",             addHref: "/Vacancy",               linkLabel: "Əlavə et" },
-        { label: "Portfolio",            value: stats?.portfolio ?? "-",           addHref: "/portfolio",             linkLabel: "Əlavə et" },
-        { label: "Team",                 value: stats?.team ?? "-",               addHref: "/team",                      linkLabel: "Bax" },
+        { label: "Layihələr",            value: stats?.project ?? "-",             addHref: "/layihelerimiz",             linkLabel: "Bax" },
+        { label: "Pulse Məqalələri",     value: stats?.pulseArticle ?? "-",        addHref: "/pulse",                     linkLabel: "Əlavə et" },
+        { label: "Pulse Müəllifləri",    value: stats?.pulseAuthor ?? "-",         addHref: "/pulse/authors",             linkLabel: "Əlavə et" },
+        { label: "Vacancy",              value: stats?.vacancy ?? "-",             addHref: "/Vacancy",                   linkLabel: "Əlavə et" },
         { label: "Contact Submissions",  value: stats?.contactSubmission ?? "-",   addHref: "/contact-submissions",       linkLabel: "Bax" },
-        { label: "Callback Requests",   value: stats?.callbackRequest ?? "-",    addHref: "/callback-requests",        linkLabel: "Bax" },
-        { label: "Vacancy Submissions",  value: stats?.vacancySubmission ?? "-",   addHref: "/Vacancy/VacancySubmissions",       linkLabel: "Bax" },
-    ];
+        { label: "Callback Requests",    value: stats?.callbackRequest ?? "-",     addHref: "/callback-requests",         linkLabel: "Bax" },
+        { label: "Broker Registrations", value: stats?.brokerRegistration ?? "-",  addHref: "/broker-registrations",      linkLabel: "Bax" },
+        { label: "Vacancy Submissions",  value: stats?.vacancySubmission ?? "-",   addHref: "/Vacancy/VacancySubmissions", linkLabel: "Bax" },
+        { label: "Abunəçilər",           value: stats?.subscriber ?? "-",          addHref: "/pulse",                     linkLabel: "Bax" },    ];
 
     return (
         <div className={styles.page}>

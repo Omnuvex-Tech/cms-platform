@@ -1,8 +1,16 @@
-import { IsString, IsOptional, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
 
 export class CreateProjectDetailDto {
   @IsString()
   categorySlug: string;
+
+  // ─── v2: blok əsaslı kontent ───
+  // sections = [{ type, isVisible, ...data }]
+  @IsArray() @IsOptional() sections?: any[];
+  @IsOptional() schema?: any;
+
+  // ─── legacy v1 sahələri ───
+  // sections-a tam keçiddən sonra silinəcək. Yeni yazılarda istifadə etmə.
 
   @IsObject() @IsOptional() heroTitle?: any;
   @IsObject() @IsOptional() heroDesktopDesc?: any;

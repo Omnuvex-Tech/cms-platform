@@ -8,15 +8,10 @@ import styles from "@/styles/sidebar.module.css";
 import {
     LayoutDashboard,
     Home,
-    Settings,
     FolderOpen,
-    FileText,
-    Users,
     Briefcase,
-    Info,
     Phone,
     Menu,
-    Handshake,
     ChevronDown,
     LogOut,
     PanelsTopLeft,
@@ -42,7 +37,6 @@ const NAV_ITEMS = [
         label: "Dashboard",
         href: "/",
         icon: <LayoutDashboard size={18} />,
-        hidden: true,
     },
     {
         label: "Home",
@@ -56,10 +50,6 @@ const NAV_ITEMS = [
         ],
     },
 
-    { label: "Service", href: "/service", icon: <Settings size={18} />, hidden: true },
-    { label: "Partners", href: "/partners", icon: <Handshake size={18} />, hidden: true },
-    { label: "Portfolio", href: "/portfolio", icon: <FolderOpen size={18} />, hidden: true },
-    { label: "Blog", href: "/blog", icon: <FileText size={18} />, hidden: true },
     {
         label: "Pulse",
         icon: <Zap size={18} />,
@@ -78,7 +68,6 @@ const NAV_ITEMS = [
             { label: "Kateqoriyalar", href: "/layihelerimiz" },
         ],
     },
-    { label: "Team", href: "/team", icon: <Users size={18} />, hidden: true },
     {
         label: "Vacancy",
         icon: <Briefcase size={18} />,
@@ -89,7 +78,6 @@ const NAV_ITEMS = [
             { label: "Vacancy Submissions", href: "/Vacancy/VacancySubmissions" },
         ],
     },
-    { label: "About", href: "/about", icon: <Info size={18} />, hidden: true },
 
     {
         label: "Contact",

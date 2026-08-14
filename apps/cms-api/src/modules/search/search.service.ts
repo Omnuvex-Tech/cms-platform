@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { buildSectionsFromLegacy } from '../Layihelerimiz/project-sections';
 
 export interface SearchResult {
     title: string;
@@ -32,100 +33,120 @@ export class SearchService {
         return (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
     }
 
+    /** Pulse məqaləsinin blokları içindən axtarış üçün düz mətn çıxarır. */
+    private blocksToText(blocks: any, locale: string): string {
+        if (!Array.isArray(blocks)) return '';
+        const parts: string[] = [];
+        for (const block of blocks) {
+            if (!block || block.isVisible === false) continue;
+            switch (block.type) {
+                case 'heading':
+                case 'paragraph':
+                case 'quote':
+                    parts.push(this.stripHtml(this.t(block.text, locale)));
+                    break;
+                case 'faq':
+                    parts.push(this.stripHtml(this.t(block.question, locale)));
+                    parts.push(this.stripHtml(this.t(block.answer, locale)));
+                    break;
+                case 'list':
+                    for (const item of block.items ?? []) {
+                        parts.push(this.stripHtml(this.t(item, locale)));
+                    }
+                    break;
+            }
+        }
+        return parts.filter(Boolean).join(' ');
+    }
+
+    /** Layihə bloklarından axtarılabilən mətn yığır. */
+    private projectSectionsToText(detail: any, locale: string): string {
+        const sections = Array.isArray(detail?.sections) && detail.sections.length > 0
+            ? detail.sections
+            : buildSectionsFromLegacy(detail ?? {});
+
+        const parts: string[] = [];
+        for (const section of sections as any[]) {
+            if (!section || section.isVisible === false) continue;
+            for (const key of ['title', 'desktopDesc', 'description', 'brandName', 'mainLead', 'subText']) {
+                if (section[key]) parts.push(this.stripHtml(this.t(section[key], locale)));
+            }
+        }
+        return parts.filter(Boolean).join(' ');
+    }
+
     async search(q: string, locale: string): Promise<SearchResult[]> {
         if (!q || q.length < 2) return [];
 
         const lower = q.toLowerCase();
         const results: SearchResult[] = [];
 
-        // --- Blog ---
-        const blogs = await this.prisma.blog.findMany({
+        // --- Layihələr ---
+        const categories = await this.prisma.layihelerimizCategory.findMany({
             where: { isVisible: true },
-            select: { title: true, slug: true, badge: true, excerpt: true },
+            select: { title: true, slug: true, description: true, brand: true },
         });
-        for (const b of blogs) {
-            const title = this.stripHtml(this.t(b.title, locale));
-            const badge = this.stripHtml(this.t(b.badge, locale));
-            const excerpt = this.stripHtml(this.t(b.excerpt, locale));
-            if (
-                title.toLowerCase().includes(lower) ||
-                badge.toLowerCase().includes(lower) ||
-                excerpt.toLowerCase().includes(lower)
-            ) {
+        const details = await this.prisma.layihelerimizProjectDetail.findMany();
+        const detailBySlug = new Map(details.map(d => [d.categorySlug, d]));
+
+        for (const c of categories) {
+            const title = this.stripHtml(this.t(c.title, locale));
+            const description = this.stripHtml(this.t(c.description, locale));
+            const brand = this.stripHtml(this.t(c.brand, locale));
+            const body = this.projectSectionsToText(detailBySlug.get(c.slug), locale);
+            const haystack = `${title} ${description} ${brand} ${body}`.toLowerCase();
+
+            if (haystack.includes(lower)) {
                 results.push({
                     title,
-                    url: `/Blog/${b.slug}`,
-                    breadcrumb: `Blog · ${badge}`,
-                    excerpt: this.highlight(excerpt, q),
+                    url: `/projects/${c.slug}`,
+                    breadcrumb: 'Layihələr',
+                    excerpt: this.highlight(description || body, q),
                 });
             }
         }
 
-        // --- Portfolio ---
-        const portfolios = await this.prisma.portfolio.findMany({
-            where: { isVisible: true },
-            select: { title: true, slug: true, tags: true },
+        // --- Pulse məqalələri ---
+        const articles = await this.prisma.pulseArticle.findMany({
+            where: { published: true },
+            select: { title: true, slug: true, category: true, excerpt: true, blocks: true },
         });
-        for (const p of portfolios) {
-            const title = this.stripHtml(this.t(p.title, locale));
-            const tags = this.stripHtml((p.tags ?? []).join(' '));
-            if (title.toLowerCase().includes(lower) || tags.toLowerCase().includes(lower)) {
+        for (const a of articles) {
+            const title = this.stripHtml(this.t(a.title, locale));
+            const category = this.stripHtml(this.t(a.category, locale));
+            const excerpt = this.stripHtml(this.t(a.excerpt, locale));
+            const body = this.blocksToText(a.blocks, locale);
+            const haystack = `${title} ${category} ${excerpt} ${body}`.toLowerCase();
+
+            if (haystack.includes(lower)) {
                 results.push({
                     title,
-                    url: `/portfolio/${p.slug}`,
-                    breadcrumb: 'Portfolio',
-                    excerpt: this.highlight(tags, q),
+                    url: `/pulse/${a.slug}`,
+                    breadcrumb: category ? `Pulse · ${category}` : 'Pulse',
+                    excerpt: this.highlight(excerpt || body, q),
                 });
             }
         }
 
-        // --- Service ---
-        const services = await this.prisma.service.findMany({
-            where: { isVisible: true },
-            select: { title: true, slug: true, badge: true, description: true },
-        });
-        for (const s of services) {
-            const title = this.stripHtml(this.t(s.title, locale));
-            const badge = this.stripHtml(this.t(s.badge, locale));
-            const desc = this.stripHtml(this.t(s.description, locale));
-            if (
-                title.toLowerCase().includes(lower) ||
-                badge.toLowerCase().includes(lower) ||
-                desc.toLowerCase().includes(lower)
-            ) {
-                results.push({
-                    title,
-                    url: `/service/${s.slug}`,
-                    breadcrumb: `Xidmətlər · ${badge}`,
-                    excerpt: this.highlight(desc, q),
-                });
-            }
-        }
-
-        // --- BlogAuthor ---
-        const authors = await this.prisma.blogAuthor.findMany({
-            where: { isVisible: true },
-            select: { name: true, slug: true, role: true, bio: true },
+        // --- Pulse müəllifləri ---
+        const authors = await this.prisma.pulseAuthor.findMany({
+            select: { name: true, slug: true, title: true, description: true },
         });
         for (const a of authors) {
             const name = this.stripHtml(this.t(a.name, locale));
-            const role = this.stripHtml(this.t(a.role, locale));
-            const bio = this.stripHtml(this.t(a.bio, locale));
-            if (
-                name.toLowerCase().includes(lower) ||
-                role.toLowerCase().includes(lower) ||
-                bio.toLowerCase().includes(lower)
-            ) {
+            const role = this.stripHtml(this.t(a.title, locale));
+            const bio = this.stripHtml(this.t(a.description, locale));
+            if (`${name} ${role} ${bio}`.toLowerCase().includes(lower)) {
                 results.push({
                     title: name,
-                    url: a.slug ? `/BlogAuthor/${a.slug}` : '/blog',
-                    breadcrumb: 'Blog · Müəlliflər',
+                    url: `/authors/${a.slug}`,
+                    breadcrumb: 'Pulse · Müəlliflər',
                     excerpt: this.highlight(bio || role, q),
                 });
             }
         }
 
-        // --- Vacancy ---
+        // --- Vakansiyalar ---
         const vacancies = await this.prisma.vacancy.findMany({
             where: { isVisible: true },
             select: { title: true, slug: true, tags: true },

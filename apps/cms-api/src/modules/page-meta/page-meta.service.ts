@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdatePageMetaDto } from './dto/update-page-meta.dto';
+import { generatePageSchema } from './schema-generator';
 
 @Injectable()
 export class PageMetaService {
@@ -28,4 +29,20 @@ export class PageMetaService {
     },
   });
 }
+
+  /** JSON-LD-ni yaradır, amma yazmır — CMS-də önizləmə üçün. */
+  async generateSchema(pageKey: string) {
+    const meta = await this.prisma.pageMeta.findUnique({ where: { pageKey } });
+    const baseUrl = process.env.SITE_URL!;
+    return generatePageSchema(pageKey, meta, baseUrl);
+  }
+
+  /** Admin təsdiqlədikdən sonra JSON-LD-ni saxlayır. */
+  async saveSchema(pageKey: string, schema: Record<string, any> | null) {
+    return this.prisma.pageMeta.upsert({
+      where: { pageKey },
+      update: { schema: schema as any },
+      create: { pageKey, schema: schema as any },
+    });
+  }
 }

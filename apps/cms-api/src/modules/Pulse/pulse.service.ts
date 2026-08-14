@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PulseRepository } from './pulse.repository';
 import { CreatePulseArticleDto } from './dto/create-pulse-article.dto';
 import { UpdatePulseArticleDto } from './dto/update-pulse-article.dto';
+import { generatePulseArticleSchema } from './pulse-schema-generator';
 import { CreatePulseAuthorDto } from './dto/create-pulse-author.dto';
 import { UpdatePulseAuthorDto } from './dto/update-pulse-author.dto';
 import { CreatePulseKeywordDto } from './dto/create-pulse-keyword.dto';
@@ -151,6 +152,19 @@ export class PulseService {
       slug: dto.slug || slugify(titleText),
     });
     return sanitizeArticleEntity(article);
+  }
+
+  /** JSON-LD-ni yaradır, amma yazmır — CMS-də önizləmə üçün. */
+  async generateArticleSchema(id: string) {
+    const article = await this.findArticleById(id);
+    const baseUrl = process.env.SITE_URL!;
+    return generatePulseArticleSchema(article, baseUrl);
+  }
+
+  /** Admin təsdiqlədikdən sonra JSON-LD-ni saxlayır. */
+  async saveArticleSchema(id: string, schema: Record<string, any> | null) {
+    await this.findArticleById(id);
+    return this.repo.updateArticle(id, { schema } as any);
   }
 
   async updateArticle(id: string, dto: UpdatePulseArticleDto) {

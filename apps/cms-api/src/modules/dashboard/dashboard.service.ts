@@ -6,17 +6,38 @@ export class DashboardService {
     constructor(private readonly prisma: PrismaService) {}
 
     async getStats() {
-        const [blog, vacancy, portfolio, team, service, contactSubmission, vacancySubmission, callbackRequest] = await Promise.all([
-            this.prisma.blog.count(),
+        const [
+            project,
+            pulseArticle,
+            pulseAuthor,
+            vacancy,
+            contactSubmission,
+            vacancySubmission,
+            callbackRequest,
+            brokerRegistration,
+            subscriber,
+        ] = await Promise.all([
+            this.prisma.layihelerimizCategory.count(),
+            this.prisma.pulseArticle.count(),
+            this.prisma.pulseAuthor.count(),
             this.prisma.vacancy.count(),
-            this.prisma.portfolio.count(),
-            this.prisma.blogAuthor.count({ where: { isOurTeam: true } }),
-            this.prisma.service.count(),
             this.prisma.contactSubmission.count(),
             this.prisma.vacancySubmission.count(),
             this.prisma.callbackRequest.count(),
+            this.prisma.brokerRegistration.count(),
+            this.prisma.subscriber.count(),
         ]);
 
-        return { blog, vacancy, portfolio, team, service, contactSubmission, vacancySubmission, callbackRequest };
+        return {
+            project,
+            pulseArticle,
+            pulseAuthor,
+            vacancy,
+            contactSubmission,
+            vacancySubmission,
+            callbackRequest,
+            brokerRegistration,
+            subscriber,
+        };
     }
 }
