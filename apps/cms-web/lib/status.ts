@@ -94,15 +94,16 @@ export const projectTags: Record<string, StatusMeta> = {
     luxury: meta("Luxury", PURPLE),
     branded: meta("Branded", BLUE),
     family: meta("Family", GREEN),
-    value: meta("Value", AMBER),
+    "cost-performance": meta("Cost-performance", AMBER),
     investment: meta("Investment", BLUE),
 };
 
-// Who the project is really sold to. `investor` hides it from customers buying
-// somewhere to live; `end_user` still reaches investors, just ranked lower.
+// Who the project is really sold to. `investment` hides it from customers
+// buying somewhere to live; `accommodation` still reaches investors, just
+// ranked lower.
 export const projectAudience: Record<string, StatusMeta> = {
-    investor: meta("Investor", PURPLE),
-    end_user: meta("End user", TEAL),
+    investment: meta("Investment", PURPLE),
+    accommodation: meta("Accommodation", TEAL),
     mixed: meta("Mixed", GRAY),
 };
 

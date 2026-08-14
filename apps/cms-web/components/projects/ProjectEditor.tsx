@@ -438,9 +438,9 @@ export function ProjectEditor({ projectId }: { projectId?: number }) {
                                 ))}
                             </select>
                             <p className={styles.hint}>
-                                “Investor” hides this project from customers buying somewhere
-                                to live. “End user” still reaches investors, just ranked below
-                                the investment-angled projects. Left unset, the agent keeps
+                                “Investment” hides this project from customers buying somewhere
+                                to live. “Accommodation” still reaches investors, just ranked
+                                below the investment-angled projects. Left unset, the agent keeps
                                 whatever it already has for this project (treating it as mixed
                                 if it has none).
                             </p>

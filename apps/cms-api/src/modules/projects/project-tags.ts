@@ -16,7 +16,7 @@ export const PROJECT_TAGS = [
   'luxury',
   'branded',
   'family',
-  'value',
+  'cost-performance',
   'investment',
 ] as const;
 

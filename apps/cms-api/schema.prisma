@@ -23,12 +23,12 @@ enum ProjectStatus {
 }
 
 // Which buyer a project is really sold to. Mirrors `audience` in the bot's
-// projects_metadata.json: an `investor` project is dropped for customers buying
-// somewhere to live, an `end_user` one is merely ranked below the
+// projects_metadata.json: an `investment` project is dropped for customers
+// buying somewhere to live, an `accommodation` one is merely ranked below the
 // investment-angled ones for investors (see the bot's matching.py).
 enum ProjectAudience {
-  investor
-  end_user
+  investment
+  accommodation
   mixed
 }
 
