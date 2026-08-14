@@ -39,4 +39,15 @@ export class LayihelerimizRepository {
   delete(id: string) {
     return this.prisma.layihelerimizCategory.delete({ where: { id } });
   }
+
+  /** Verilən id sırasını order sütununa yazır (master-dəki reorder ilə eyni). */
+  reorder(ids: string[]) {
+    const updates = ids.map((id, index) =>
+      this.prisma.layihelerimizCategory.update({
+        where: { id },
+        data: { order: index },
+      }),
+    );
+    return this.prisma.$transaction(updates);
+  }
 }

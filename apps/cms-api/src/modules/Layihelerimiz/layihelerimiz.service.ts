@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { LayihelerimizRepository } from './layihelerimiz.repository';
 import { CreateLayihelerimizDto } from './dto/create-layihelerimiz.dto';
 import { UpdateLayihelerimizDto } from './dto/update-layihelerimiz.dto';
+import { ReorderLayihelerimizDto } from './dto/reorder-layihelerimiz.dto';
 
 function slugify(text: string): string {
   return text
@@ -25,16 +26,21 @@ export class LayihelerimizService {
     return this.repo.findVisible();
   }
 
-  findOne(id: string) {
-    const item = this.repo.findById(id);
+  // Qeyd: await olmadan Promise həmişə truthy-dir, ona görə 404 heç vaxt atılmırdı.
+  async findOne(id: string) {
+    const item = await this.repo.findById(id);
     if (!item) throw new NotFoundException('Kateqoriya tapılmadı');
     return item;
   }
 
-  findBySlug(slug: string) {
-    const item = this.repo.findBySlug(slug);
+  async findBySlug(slug: string) {
+    const item = await this.repo.findBySlug(slug);
     if (!item) throw new NotFoundException('Kateqoriya tapılmadı');
     return item;
+  }
+
+  reorder(dto: ReorderLayihelerimizDto) {
+    return this.repo.reorder(dto.ids);
   }
 
   async create(dto: CreateLayihelerimizDto) {

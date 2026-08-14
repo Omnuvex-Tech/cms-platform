@@ -419,3 +419,19 @@ cursor: grab;
   background: #1e3a5f;
   color: #fff;
 }
+
+/* ── Section redaktorunun daxili ayırıcıları (master blog.module.css-dən) ── */
+
+.sectionDivider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 12px 0;
+}
+
+.sectionGroupLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  display: block;
+  margin-bottom: 8px;
+}

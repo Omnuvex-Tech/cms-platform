@@ -1,0 +1,406 @@
+/* Pulse məqalə redaktoru.
+   blog.module.css əsas skeleti verir (settingsCard, field, input, tabHeader və s.);
+   bu fayl yalnız həmin səhifəyə xas hissələri saxlayır. */
+
+/* ── ümumi ── */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.rowWide {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.grow {
+  flex: 1;
+}
+
+.wrapRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── seçim düymələri (dil, açar söz, müəllif tipi, məqalə seçimi) ── */
+
+.chip,
+.chipActive {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1.5px solid;
+}
+
+.chip {
+  border-color: #e2e8f0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.chipActive {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.langChip,
+.langChipActive {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.langChip {
+  border-color: #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+.langChipActive {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.langRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ── blok sahələri ── */
+
+.imageRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.imageMetaRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.uploadLabel {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-size: 13px;
+  background: #fff;
+}
+
+.blockPreview {
+  max-width: 200px;
+  max-height: 120px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.listRow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.smallDeleteBtn {
+  padding: 4px 8px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dashedBtn {
+  padding: 6px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.orderedToggle,
+.orderedToggleActive {
+  margin-left: 12px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.orderedToggle {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.orderedToggleActive {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* ── video bloku ── */
+
+.videoWrap {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.videoFrame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ── qalereya bloku ── */
+
+.galleryGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.galleryItem {
+  position: relative;
+  width: 120px;
+}
+
+.galleryThumb {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.galleryAlt {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.galleryRemove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.galleryAddLabel {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  background: #f8fafc;
+}
+
+/* ── sosial media linkləri ── */
+
+.socialGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.socialItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 180px;
+}
+
+/* rəng komponentdən --social-color kimi gəlir */
+.socialIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--social-color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.socialInput {
+  flex: 1;
+  font-size: 12px;
+}
+
+/* ── örtük şəkli ── */
+
+.coverUpload {
+  cursor: pointer;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.coverPreview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 6px;
+}
+
+.coverHint {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* ── seçilmiş məqalələr ── */
+
+.countHint {
+  font-weight: 400;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.selectedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.selectedItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.selectedThumb {
+  width: 48px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.selectedInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.selectedTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectedCat {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.selectedRemove {
+  padding: 4px 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pickerChip,
+.pickerChipActive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  border: 1.5px solid;
+  cursor: pointer;
+}
+
+.pickerChip {
+  border-color: #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+.pickerChipActive {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.pickerChip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pickerThumb {
+  width: 28px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+/* ── blok siyahısı ── */
+
+.blockList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blockAddRow {
+  margin-top: 12px;
+}

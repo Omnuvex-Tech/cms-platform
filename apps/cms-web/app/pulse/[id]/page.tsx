@@ -13,6 +13,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { RichEditor } from "@/components/RichEditor";
 import styles from "@/styles/blog.module.css";
+import ed from "@/styles/pulseEditor.module.css";
 
 type Author = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 type Keyword = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
@@ -265,27 +266,26 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                 return (
                     <div className={styles.field}>
                         <label>Şəkil</label>
-                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                            <div style={{ flex: 1 }}>
+                        <div className={ed.imageRow}>
+                            <div className={ed.grow}>
                                 <input className={styles.input} value={block.url}
                                     onChange={e => onChange({ ...block, url: e.target.value })} placeholder="Şəkil URL və ya yükləyin" />
-                                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                                <div className={ed.imageMetaRow}>
                                     <input className={styles.input} value={normalizeLocalizedText(block.alt)[locale] || ""}
-                                        onChange={e => onChange({ ...block, alt: setLocalizedText(block.alt, locale, e.target.value) })} placeholder="Alt text" style={{ flex: 1 }} />
+                                        onChange={e => onChange({ ...block, alt: setLocalizedText(block.alt, locale, e.target.value) })} placeholder="Alt text" />
                                     <input className={styles.input} value={normalizeLocalizedText(block.caption || "")[locale] || ""}
-                                        onChange={e => onChange({ ...block, caption: setLocalizedText(block.caption, locale, e.target.value) })} placeholder="Caption (ixtiyari)" style={{ flex: 1 }} />
+                                        onChange={e => onChange({ ...block, caption: setLocalizedText(block.caption, locale, e.target.value) })} placeholder="Caption (ixtiyari)" />
                                 </div>
                             </div>
                             <div>
-                                <input type="file" accept="image/*" style={{ display: "none" }} id={`img-${index}`} onChange={handleImageUpload} />
-                                <label htmlFor={`img-${index}`} style={{
-                                    display: "inline-block", padding: "8px 16px", borderRadius: 6, border: "1px solid #e2e8f0",
-                                    cursor: "pointer", fontSize: 13, background: "#fff",
-                                }}>{uploading ? "Yüklənir..." : "Yüklə"}</label>
+                                <input type="file" accept="image/*" hidden id={`img-${index}`} onChange={handleImageUpload} />
+                                <label htmlFor={`img-${index}`} className={ed.uploadLabel}>
+                                    {uploading ? "Yüklənir..." : "Yüklə"}
+                                </label>
                             </div>
                         </div>
                         {block.url && (
-                            <img src={toAbsUrl(block.url)} alt={getPrimaryLocalizedValue(block.alt)} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 6, marginTop: 8 }} />
+                            <img src={toAbsUrl(block.url)} alt={getPrimaryLocalizedValue(block.alt)} className={ed.blockPreview} />
                         )}
                     </div>
                 );
@@ -297,23 +297,13 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                             <button
                                 type="button"
                                 onClick={() => onChange({ ...block, ordered: !block.ordered })}
-                                style={{
-                                    marginLeft: 12,
-                                    padding: "2px 10px",
-                                    borderRadius: 4,
-                                    border: "1px solid #cbd5e1",
-                                    background: block.ordered ? "#2563eb" : "#f1f5f9",
-                                    color: block.ordered ? "#fff" : "#475569",
-                                    cursor: "pointer",
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                }}
+                                className={block.ordered ? ed.orderedToggleActive : ed.orderedToggle}
                             >
                                 {block.ordered ? "1. 2. 3." : "• • •"}
                             </button>
                         </label>
                         {block.items.map((item, i) => (
-                            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+                            <div key={i} className={ed.listRow}>
                                 <input className={styles.input} value={normalizeLocalizedText(item)[locale] || ""}
                                     onChange={e => {
                                         const newItems = [...block.items];
@@ -323,16 +313,16 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                                 <button type="button" onClick={() => {
                                     const newItems = block.items.filter((_, idx) => idx !== i);
                                     onChange({ ...block, items: newItems });
-                                }} style={{ padding: "4px 8px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, cursor: "pointer" }}>Sil</button>
+                                }} className={ed.smallDeleteBtn}>Sil</button>
                             </div>
                         ))}
                         <button type="button" onClick={() => onChange({ ...block, items: [...block.items, { az: "", en: "", ru: "" }] })}
-                            style={{ padding: "6px 12px", border: "1px dashed #cbd5e1", borderRadius: 6, background: "#f8fafc", cursor: "pointer", fontSize: 13 }}>+ Element əlavə et</button>
+                            className={ed.dashedBtn}>+ Element əlavə et</button>
                     </div>
                 );
             case "faq":
                 return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className={ed.stack}>
                         <div className={styles.field}>
                             <label>Sual</label>
                             <input className={styles.input} value={normalizeLocalizedText(block.question)[locale] || ""}
@@ -347,7 +337,7 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                 );
             case "quote":
                 return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className={ed.stack}>
                         <div className={styles.field}>
                             <label>Sitat mətni</label>
                             <textarea className={styles.input} rows={2} value={normalizeLocalizedText(block.text)[locale] || ""}
@@ -367,8 +357,8 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                         <input className={styles.input} value={block.url}
                             onChange={e => onChange({ ...block, url: e.target.value })} placeholder="https://www.youtube.com/embed/..." />
                         {block.url && (
-                            <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", borderRadius: 8, marginTop: 8 }}>
-                                <iframe src={block.url} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }} allowFullScreen />
+                            <div className={ed.videoWrap}>
+                                <iframe src={block.url} className={ed.videoFrame} allowFullScreen />
                             </div>
                         )}
                     </div>
@@ -377,29 +367,28 @@ function BlockItem({ block, index, locale, onChange, onRemove }: {
                 return (
                     <div className={styles.field}>
                         <label>Qalereya şəkilləri</label>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                        <div className={ed.galleryGrid}>
                             {block.images.map((img, i) => (
-                                <div key={i} style={{ position: "relative", width: 120 }}>
-                                    <img src={toAbsUrl(img.url)} alt={getPrimaryLocalizedValue(img.alt)} style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6 }} />
+                                <div key={i} className={ed.galleryItem}>
+                                    <img src={toAbsUrl(img.url)} alt={getPrimaryLocalizedValue(img.alt)} className={ed.galleryThumb} />
                                     <input className={styles.input} value={normalizeLocalizedText(img.alt)[locale] || ""} placeholder="Alt"
                                         onChange={e => {
                                             const newImages = [...block.images];
                                             const current = newImages[i]!;
                                             newImages[i] = { url: current.url || "", alt: setLocalizedText(current.alt, locale, e.target.value) };
                                             onChange({ ...block, images: newImages });
-                                        }} style={{ fontSize: 11, marginTop: 2 }} />
+                                        }} />
                                     <button type="button" onClick={() => {
                                         const newImages = block.images.filter((_, idx) => idx !== i);
                                         onChange({ ...block, images: newImages });
-                                    }} style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 11 }}>✕</button>
+                                    }} className={ed.galleryRemove}>✕</button>
                                 </div>
                             ))}
                         </div>
-                        <input type="file" accept="image/*" style={{ display: "none" }} id={`gallery-${index}`} onChange={handleImageUpload} />
-                        <label htmlFor={`gallery-${index}`} style={{
-                            display: "inline-block", padding: "6px 14px", border: "1px dashed #cbd5e1", borderRadius: 6,
-                            cursor: "pointer", fontSize: 13, background: "#f8fafc",
-                        }}>{uploading ? "Yüklənir..." : "+ Şəkil əlavə et"}</label>
+                        <input type="file" accept="image/*" hidden id={`gallery-${index}`} onChange={handleImageUpload} />
+                        <label htmlFor={`gallery-${index}`} className={ed.galleryAddLabel}>
+                            {uploading ? "Yüklənir..." : "+ Şəkil əlavə et"}
+                        </label>
                     </div>
                 );
         }
@@ -598,7 +587,7 @@ export default function PulseArticleEditPage() {
         <div>
             <div className={styles.tabHeader}>
                 <h2 className={styles.tabTitle}>{isNew ? "Yeni Məqalə" : "Məqaləni Düzəlt"}</h2>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className={ed.row}>
                     <button className={styles.cancelBtn} onClick={() => router.push("/pulse")}>Ləğv et</button>
                     <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
                 </div>
@@ -650,23 +639,15 @@ export default function PulseArticleEditPage() {
                     </div>
                     <div className={styles.field}>
                         <label>Müəllif</label>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                        <div className={ed.langRow}>
                             <button type="button" onClick={() => setAuthorType("existing")}
-                                style={{
-                                    padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer",
-                                    border: "1.5px solid", fontWeight: authorType === "existing" ? 600 : 400,
-                                    borderColor: authorType === "existing" ? "#2563eb" : "#e2e8f0",
-                                    background: authorType === "existing" ? "#2563eb" : "transparent",
-                                    color: authorType === "existing" ? "#fff" : "#64748b",
-                                }}>Mövcud müəllif</button>
+                                className={authorType === "existing" ? ed.chipActive : ed.chip}>
+                                Mövcud müəllif
+                            </button>
                             <button type="button" onClick={() => setAuthorType("custom")}
-                                style={{
-                                    padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer",
-                                    border: "1.5px solid", fontWeight: authorType === "custom" ? 600 : 400,
-                                    borderColor: authorType === "custom" ? "#2563eb" : "#e2e8f0",
-                                    background: authorType === "custom" ? "#2563eb" : "transparent",
-                                    color: authorType === "custom" ? "#fff" : "#64748b",
-                                }}>Xüsusi + Sosial media</button>
+                                className={authorType === "custom" ? ed.chipActive : ed.chip}>
+                                Xüsusi + Sosial media
+                            </button>
                         </div>
                         {authorType === "existing" ? (
                             <select className={styles.input} value={authorId} onChange={e => setAuthorId(e.target.value)}>
@@ -674,27 +655,25 @@ export default function PulseArticleEditPage() {
                                 {authors.map(a => <option key={a.id} value={a.id}>{getLocalizedName(a.name)}</option>)}
                             </select>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div className={ed.stack}>
                                 <input className={styles.input} value={customAuthorName}
                                     onChange={e => setCustomAuthorName(e.target.value)} placeholder="Müəllif adı" />
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                                <div className={ed.socialGrid}>
                                     {[
                                         { key: "facebook", icon: "f", color: "#1877F2", label: "Facebook" },
                                         { key: "instagram", icon: "📷", color: "#E4405F", label: "Instagram" },
                                         { key: "tiktok", icon: "♪", color: "#000000", label: "TikTok" },
                                         { key: "website", icon: "🌐", color: "#4A90D9", label: "Vebsayt" },
                                     ].map(platform => (
-                                        <div key={platform.key} style={{ display: "flex", alignItems: "center", gap: 4, flex: "1 1 180px" }}>
-                                            <span title={platform.label} style={{
-                                                width: 28, height: 28, borderRadius: "50%",
-                                                background: platform.color, color: "#fff",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                fontSize: 12, fontWeight: 700, flexShrink: 0,
-                                            }}>{platform.icon}</span>
+                                        <div key={platform.key} className={ed.socialItem}>
+                                            <span title={platform.label} className={ed.socialIcon}
+                                                style={{ "--social-color": platform.color } as React.CSSProperties}>
+                                                {platform.icon}
+                                            </span>
                                             <input className={styles.input}
                                                 value={socialLinks[platform.key] || ""}
                                                 onChange={e => setSocialLinks(prev => ({ ...prev, [platform.key]: e.target.value }))}
-                                                placeholder={`${platform.label} URL`} style={{ flex: 1, fontSize: 12 }} />
+                                                placeholder={`${platform.label} URL`} />
                                         </div>
                                     ))}
                                 </div>
@@ -724,17 +703,19 @@ export default function PulseArticleEditPage() {
 
                 <div className={styles.field}>
                     <label>Örtük şəkli</label>
-                    <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleCoverUpload} />
-                    <div onClick={() => fileRef.current?.click()} style={{ cursor: "pointer", border: "1px dashed #cbd5e1", borderRadius: 8, padding: 16, textAlign: "center", background: "#f8fafc" }}>
-                        {coverImage ? <img src={toAbsUrl(coverImage)} alt="" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 6 }} /> : <span style={{ color: "#94a3b8", fontSize: 14 }}>Şəkil yüklə</span>}
+                    <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleCoverUpload} />
+                    <div className={ed.coverUpload} onClick={() => fileRef.current?.click()}>
+                        {coverImage
+                            ? <img src={toAbsUrl(coverImage)} alt="" className={ed.coverPreview} />
+                            : <span className={ed.coverHint}>Şəkil yüklə</span>}
                     </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <div className={ed.rowWide}>
+                    <label className={ed.checkLabel}>
                         <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} /> Dərc olunub
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <label className={ed.checkLabel}>
                         <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} /> Seçilmiş
                     </label>
                 </div>
@@ -742,17 +723,11 @@ export default function PulseArticleEditPage() {
 
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Açar sözlər</h3>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div className={ed.wrapRow}>
                     {keywords.map(k => (
                         <button key={k.id} type="button"
                             onClick={() => toggleKeyword(k.id)}
-                            style={{
-                                padding: "4px 12px", borderRadius: 6, fontSize: 13, cursor: "pointer",
-                                border: "1.5px solid",
-                                borderColor: selectedKeywords.includes(k.id) ? "#2563eb" : "#e2e8f0",
-                                background: selectedKeywords.includes(k.id) ? "#2563eb" : "transparent",
-                                color: selectedKeywords.includes(k.id) ? "#fff" : "#64748b",
-                            }}>
+                            className={selectedKeywords.includes(k.id) ? ed.chipActive : ed.chip}>
                             {getLocalizedName(k.name)}
                         </button>
                     ))}
@@ -760,44 +735,37 @@ export default function PulseArticleEditPage() {
             </div>
 
             <div className={styles.settingsCard}>
-                <h3 className={styles.settingsGroupTitle}>Seçilmiş məqalələr <span style={{ fontWeight: 400, fontSize: 13, color: "#94a3b8" }}>({selectedArticleIds.length}/4)</span></h3>
+                <h3 className={styles.settingsGroupTitle}>Seçilmiş məqalələr <span className={ed.countHint}>({selectedArticleIds.length}/4)</span></h3>
                 {selectedArticleIds.length > 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    <div className={ed.selectedList}>
                         {selectedArticleIds.map(aid => {
                             const art = allArticles.find(a => a.id === aid);
                             if (!art) return null;
                             const artTitle = getLocalizedName(art.title);
                             const artCat = getLocalizedName(art.category);
                             return (
-                                <div key={aid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", border: "1.5px solid #2563eb", borderRadius: 8, background: "#eff6ff" }}>
-                                    {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 4 }} />}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 13, fontWeight: 500, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{artTitle}</div>
-                                        {artCat && <div style={{ fontSize: 11, color: "#64748b" }}>{artCat}</div>}
+                                <div key={aid} className={ed.selectedItem}>
+                                    {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" className={ed.selectedThumb} />}
+                                    <div className={ed.selectedInfo}>
+                                        <div className={ed.selectedTitle}>{artTitle}</div>
+                                        {artCat && <div className={ed.selectedCat}>{artCat}</div>}
                                     </div>
                                     <button type="button" onClick={() => toggleSelectedArticle(aid)}
-                                        style={{ padding: "4px 10px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12, flexShrink: 0 }}>Sil</button>
+                                        className={ed.selectedRemove}>Sil</button>
                                 </div>
                             );
                         })}
                     </div>
                 )}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div className={ed.wrapRow}>
                     {availableArticles.map(art => {
                         const isSelected = selectedArticleIds.includes(art.id);
                         const artTitle = getLocalizedName(art.title);
                         return (
                             <button key={art.id} type="button" disabled={!isSelected && selectedArticleIds.length >= 4}
                                 onClick={() => toggleSelectedArticle(art.id)}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 6, fontSize: 13, cursor: isSelected || selectedArticleIds.length < 4 ? "pointer" : "not-allowed",
-                                    border: "1.5px solid",
-                                    borderColor: isSelected ? "#2563eb" : "#e2e8f0",
-                                    background: isSelected ? "#2563eb" : "#fff",
-                                    color: isSelected ? "#fff" : "#475569",
-                                    opacity: !isSelected && selectedArticleIds.length >= 4 ? 0.5 : 1,
-                                }}>
-                                {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3 }} />}
+                                className={isSelected ? ed.pickerChipActive : ed.pickerChip}>
+                                {art.coverImage && <img src={toAbsUrl(art.coverImage)} alt="" className={ed.pickerThumb} />}
                                 {artTitle.length > 40 ? artTitle.slice(0, 40) + "..." : artTitle}
                             </button>
                         );
@@ -807,23 +775,13 @@ export default function PulseArticleEditPage() {
 
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Məzmun blokları</h3>
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <div className={ed.langRow}>
                     {EDITOR_LANGS.map((lang) => (
                         <button
                             key={lang.key}
                             type="button"
                             onClick={() => setBlockLocale(lang.key)}
-                            style={{
-                                padding: "6px 14px",
-                                borderRadius: 999,
-                                border: "1.5px solid",
-                                borderColor: blockLocale === lang.key ? "#2563eb" : "#e2e8f0",
-                                background: blockLocale === lang.key ? "#2563eb" : "#fff",
-                                color: blockLocale === lang.key ? "#fff" : "#475569",
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                            }}
+                            className={blockLocale === lang.key ? ed.langChipActive : ed.langChip}
                         >
                             {lang.label}
                         </button>
@@ -831,7 +789,7 @@ export default function PulseArticleEditPage() {
                 </div>
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
                     <SortableContext items={blocks.map((b, i) => b.id ?? `idx-${i}`)} strategy={verticalListSortingStrategy}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div className={ed.blockList}>
                             {blocks.map((block, i) => (
                                 <BlockItem
                                     key={`${block.id ?? i}-${blockLocale}`} block={block} index={i} locale={blockLocale}
@@ -843,7 +801,7 @@ export default function PulseArticleEditPage() {
                     </SortableContext>
                 </DndContext>
 
-                <div className={styles.addSectionRow} style={{ marginTop: 12 }}>
+                <div className={`${styles.addSectionRow} ${ed.blockAddRow}`}>
                     {BLOCK_TYPES.map(bt => (
                         <button key={bt.type} type="button" className={styles.addSectionBtn} onClick={() => addBlock(bt.type)}>
                             {bt.icon} {bt.label}

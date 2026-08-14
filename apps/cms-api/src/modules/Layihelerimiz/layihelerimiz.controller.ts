@@ -6,6 +6,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { LayihelerimizService } from './layihelerimiz.service';
 import { CreateLayihelerimizDto } from './dto/create-layihelerimiz.dto';
 import { UpdateLayihelerimizDto } from './dto/update-layihelerimiz.dto';
+import { ReorderLayihelerimizDto } from './dto/reorder-layihelerimiz.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -67,6 +68,12 @@ export class LayihelerimizController {
   @Post('categories')
   create(@Body() dto: CreateLayihelerimizDto) {
     return this.service.create(dto);
+  }
+
+  // :id-dən ƏVVƏL olmalıdır — hər ikisi iki seqmentlidir, Nest sıraya baxır.
+  @Patch('categories/reorder')
+  reorder(@Body() dto: ReorderLayihelerimizDto) {
+    return this.service.reorder(dto);
   }
 
   @Patch('categories/:id')

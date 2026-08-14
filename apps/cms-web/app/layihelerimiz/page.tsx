@@ -1,799 +1,644 @@
 "use client";
 
+/**
+ * Layihə kateqoriyalarının siyahısı.
+ *
+ * Quruluş master branch-dakı service/portfolio siyahı səhifələri ilə eynidir:
+ * dnd-kit ilə sıralanan cədvəl + Düzəlt / Gizlət / Sil düymələri + modal forma.
+ * Bütün stil CSS module-dan gəlir.
+ */
+
 import { useEffect, useState, useRef } from "react";
-import { LangInput, getLocalized } from "@/components/LangInput";
+import {
+    DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+    LangTabs, toLocalized, type Lang, type LocalizedString,
+} from "@/components/RichEditor";
+import styles from "@/styles/layihelerimiz.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-type LocalizedValue = Record<string, string> | string | null | undefined;
-
-function toObj(val: LocalizedValue): { az: string; en: string; ru: string } {
-  if (!val) return { az: "", en: "", ru: "" };
-  if (typeof val === "string") return { az: val, en: val, ru: val };
-  return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
-}
-
-async function prepareImageFile(file: File): Promise<File> {
-  if (!file.type.startsWith("image/")) return file;
-
-  const maxDimension = 1920;
-  const quality = 0.85;
-
-  let bitmap: ImageBitmap | null = null;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    return file;
-  }
-
-  try {
-    const { width, height } = bitmap;
-    if (!width || !height) return file;
-
-    const scale = Math.min(1, maxDimension / Math.max(width, height));
-    if (scale === 1 && file.type === "image/webp" && file.size <= 1_500_000)
-      return file;
-
-    const targetWidth = Math.max(1, Math.round(width * scale));
-    const targetHeight = Math.max(1, Math.round(height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-
-    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/webp", quality);
-    });
-    if (!blob) return file;
-
-    if (blob.size >= file.size) return file;
-
-    const safeBaseName =
-      (file.name || "image")
-        .replace(/\.[^.]+$/, "")
-        .replace(/[^\w\-]+/g, "_")
-        .slice(0, 60) || "image";
-
-    return new File([blob], `${safeBaseName}.webp`, { type: blob.type });
-  } finally {
-    bitmap.close();
-  }
-}
-
-interface LayihelerimizCategory {
-  id: string;
-  title?: LocalizedValue;
-  slug: string;
-  image: string | null;
-  brandImage: string | null;
-  description: LocalizedValue;
-  brand: LocalizedValue;
-  brandTextColor: string | null;
-  order: number;
-  isVisible: boolean;
-  banks: string | null;
-  infrastructure: string | null;
-  salesDepartment: string | null;
-  createdAt?: string;
-}
+/* ────────────────────────────── köməkçilər ────────────────────────────── */
 
 function getToken() {
-  return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
+    return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
 }
 
 async function cmsApiFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-      ...options?.headers,
-    },
-  });
-  if (!res.ok) {
-    let message = "Xəta baş verdi";
-    try {
-      const err = await res.json();
-      message = err?.message || err?.error || JSON.stringify(err);
-    } catch {
-      message = await res.text().catch(() => `HTTP ${res.status}`);
+    const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+            ...options?.headers,
+        },
+    });
+    if (!res.ok) {
+        let message = "Xəta baş verdi";
+        try {
+            const err = await res.json();
+            message = err?.message || err?.error || JSON.stringify(err);
+        } catch {
+            message = await res.text().catch(() => `HTTP ${res.status}`);
+        }
+        throw new Error(`[${res.status}] ${path}: ${message}`);
     }
-    throw new Error(`[${res.status}] ${path}: ${message}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+}
+
+/** Böyük şəkilləri yükləməzdən əvvəl webp-ə sıxır. */
+async function prepareImageFile(file: File): Promise<File> {
+    if (!file.type.startsWith("image/")) return file;
+
+    const maxDimension = 1920;
+    const quality = 0.85;
+
+    let bitmap: ImageBitmap | null = null;
+    try {
+        bitmap = await createImageBitmap(file);
+    } catch {
+        return file;
+    }
+
+    try {
+        const { width, height } = bitmap;
+        if (!width || !height) return file;
+
+        const scale = Math.min(1, maxDimension / Math.max(width, height));
+        if (scale === 1 && file.type === "image/webp" && file.size <= 1_500_000) return file;
+
+        const targetWidth = Math.max(1, Math.round(width * scale));
+        const targetHeight = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return file;
+
+        ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, "image/webp", quality);
+        });
+        if (!blob) return file;
+        if (blob.size >= file.size) return file;
+
+        const safeBaseName =
+            (file.name || "image")
+                .replace(/\.[^.]+$/, "")
+                .replace(/[^\w\-]+/g, "_")
+                .slice(0, 60) || "image";
+
+        return new File([blob], `${safeBaseName}.webp`, { type: blob.type });
+    } finally {
+        bitmap.close();
+    }
 }
 
 async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch(`${API}/layihelerimiz/upload`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${getToken()}` },
-    body: formData,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    const trimmed = text.trim();
-    if (res.status === 413) {
-      throw new Error(
-        `Fayl çox böyük (HTTP 413). Server/proxy limitini artırın (nginx client_max_body_size). ${
-          trimmed ? `Cavab: ${trimmed.slice(0, 200)}` : ""
-        }`.trim(),
-      );
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API}/layihelerimiz/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: formData,
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        const trimmed = text.trim();
+        if (res.status === 413) {
+            throw new Error(
+                `Fayl çox böyük (HTTP 413). Server/proxy limitini artırın (nginx client_max_body_size). ${
+                    trimmed ? `Cavab: ${trimmed.slice(0, 200)}` : ""
+                }`.trim(),
+            );
+        }
+        let message = `HTTP ${res.status}`;
+        try {
+            const json = trimmed ? JSON.parse(trimmed) : null;
+            message = json?.message || json?.error || (typeof json === "string" ? json : message);
+        } catch {
+            if (trimmed) message = trimmed.slice(0, 200);
+        }
+        throw new Error(`Fayl yükləmə uğursuz: ${message}`);
     }
-    let message = `HTTP ${res.status}`;
-    try {
-      const json = trimmed ? JSON.parse(trimmed) : null;
-      message =
-        json?.message ||
-        json?.error ||
-        (typeof json === "string" ? json : message);
-    } catch {
-      if (trimmed) message = trimmed.slice(0, 200);
-    }
-    throw new Error(`Fayl yükləmə uğursuz: ${message}`);
-  }
-  return (await res.json()).url;
+    return (await res.json()).url;
 }
 
 function toAbsUrl(path: string) {
-  if (!path) return "";
-  if (path.startsWith("http") || path.startsWith("blob:")) return path;
-  return `${API}${path}`;
+    if (!path) return "";
+    if (path.startsWith("http") || path.startsWith("blob:")) return path;
+    return `${API}${path}`;
+}
+
+const lv = toLocalized;
+
+/* ────────────────────────────────── tiplər ────────────────────────────── */
+
+interface LayihelerimizCategory {
+    id: string;
+    title?: unknown;
+    slug: string;
+    image: string | null;
+    brandImage: string | null;
+    description: unknown;
+    brand: unknown;
+    brandTextColor: string | null;
+    order: number;
+    isVisible: boolean;
+    banks: string | null;
+    infrastructure: string | null;
+    salesDepartment: string | null;
+    createdAt?: string;
 }
 
 interface FormState {
-  title: Record<string, string>;
-  slug: string;
-  image: string;
-  imageFile: File | null;
-  imagePreview: string;
-  brandImage: string;
-  brandImageFile: File | null;
-  brandImagePreview: string;
-  description: Record<string, string>;
-  brand: Record<string, string>;
-  brandTextColor: string;
-  order: number;
-  isVisible: boolean;
-  banks: string;
-  infrastructure: string;
-  salesDepartment: string;
+    title: LocalizedString;
+    slug: string;
+    image: string;
+    imageFile: File | null;
+    imagePreview: string;
+    brandImage: string;
+    brandImageFile: File | null;
+    brandImagePreview: string;
+    description: LocalizedString;
+    brand: LocalizedString;
+    brandTextColor: string;
+    order: number;
+    isVisible: boolean;
+    banks: string;
+    infrastructure: string;
+    salesDepartment: string;
 }
 
 const emptyForm: FormState = {
-  title: { az: "", en: "", ru: "" },
-  slug: "",
-  image: "",
-  imageFile: null,
-  imagePreview: "",
-  brandImage: "",
-  brandImageFile: null,
-  brandImagePreview: "",
-  description: { az: "", en: "", ru: "" },
-  brand: { az: "", en: "", ru: "" },
-  brandTextColor: "white",
-  order: 0,
-  isVisible: true,
-  banks: "",
-  infrastructure: "",
-  salesDepartment: "",
+    title: { az: "", en: "", ru: "" },
+    slug: "",
+    image: "",
+    imageFile: null,
+    imagePreview: "",
+    brandImage: "",
+    brandImageFile: null,
+    brandImagePreview: "",
+    description: { az: "", en: "", ru: "" },
+    brand: { az: "", en: "", ru: "" },
+    brandTextColor: "white",
+    order: 0,
+    isVisible: true,
+    banks: "",
+    infrastructure: "",
+    salesDepartment: "",
 };
 
-export default function LayihelerimizPage() {
-  const [items, setItems] = useState<LayihelerimizCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<LayihelerimizCategory | null>(null);
-  const [isNew, setIsNew] = useState(false);
-  const [saving, setSaving] = useState(false);
+/* ─────────────────────────── sıralanan cədvəl sətri ───────────────────── */
 
-  const [form, setForm] = useState(emptyForm);
-  const [imageUploading, setImageUploading] = useState(false);
-  const [brandImageUploading, setBrandImageUploading] = useState(false);
+function SortableRow({ item, onEdit, onToggle, onDelete }: {
+    item: LayihelerimizCategory;
+    onEdit: (item: LayihelerimizCategory) => void;
+    onToggle: (item: LayihelerimizCategory) => void;
+    onDelete: (item: LayihelerimizCategory) => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({ id: item.id });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const brandFileInputRef = useRef<HTMLInputElement>(null);
+    const title = lv(item.title).az || item.slug;
+    const brand = lv(item.brand).az;
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data: LayihelerimizCategory[] = await cmsApiFetch("/layihelerimiz/categories");
-      data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setItems(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const openNew = () => {
-    setEditingItem(null);
-    setIsNew(true);
-    setForm({ ...emptyForm });
-    setModalOpen(true);
-  };
-
-  const openEdit = (item: LayihelerimizCategory) => {
-    setEditingItem(item);
-    setIsNew(false);
-    setForm({
-      title: toObj(item.title),
-      slug: item.slug,
-      image: item.image || "",
-      imageFile: null,
-      imagePreview: item.image ? toAbsUrl(item.image) : "",
-      brandImage: item.brandImage || "",
-      brandImageFile: null,
-      brandImagePreview: item.brandImage ? toAbsUrl(item.brandImage) : "",
-      description: toObj(item.description),
-      brand: toObj(item.brand),
-      brandTextColor: item.brandTextColor || "white",
-      order: item.order ?? 0,
-      isVisible: item.isVisible ?? true,
-      banks: item.banks || "",
-      infrastructure: item.infrastructure || "",
-      salesDepartment: item.salesDepartment || "",
-    });
-    setModalOpen(true);
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/webp", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      alert("Yalnız WebP, JPEG və PNG formatları qəbul edilir");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-    void (async () => {
-      const prepared = await prepareImageFile(file);
-      setForm((f) => ({
-        ...f,
-        imageFile: prepared,
-        imagePreview: URL.createObjectURL(prepared),
-      }));
-    })();
-  };
-
-  const handleBrandImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/webp", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-      alert("Yalnız WebP, JPEG və PNG formatları qəbul edilir");
-      if (brandFileInputRef.current) brandFileInputRef.current.value = "";
-      return;
-    }
-    void (async () => {
-      const prepared = await prepareImageFile(file);
-      setForm((f) => ({
-        ...f,
-        brandImageFile: prepared,
-        brandImagePreview: URL.createObjectURL(prepared),
-      }));
-    })();
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      let imageUrl = form.image;
-      if (form.imageFile) {
-        setImageUploading(true);
-        imageUrl = await uploadFile(form.imageFile);
-        setImageUploading(false);
-      }
-
-      let brandImageUrl = form.brandImage;
-      if (form.brandImageFile) {
-        setBrandImageUploading(true);
-        brandImageUrl = await uploadFile(form.brandImageFile);
-        setBrandImageUploading(false);
-      }
-
-      const payload: Record<string, unknown> = {
-        title: (form.title.az || form.title.en || form.title.ru) ? form.title : null,
-        image: imageUrl || null,
-        brandImage: brandImageUrl || null,
-        description: (form.description.az || form.description.en || form.description.ru) ? form.description : null,
-        brand: (form.brand.az || form.brand.en || form.brand.ru) ? form.brand : null,
-        brandTextColor: form.brandTextColor,
-        order: form.order,
-        isVisible: form.isVisible,
-        banks: form.banks || null,
-        infrastructure: form.infrastructure || null,
-        salesDepartment: form.salesDepartment || null,
-      };
-
-      if (isNew) {
-        if (form.slug) payload.slug = form.slug;
-        await cmsApiFetch("/layihelerimiz/categories", {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
-      } else if (editingItem) {
-        if (form.slug) payload.slug = form.slug;
-        await cmsApiFetch(`/layihelerimiz/categories/${editingItem.id}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
-      }
-
-      setModalOpen(false);
-      load();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      alert("Xəta: " + msg);
-    } finally {
-      setSaving(false);
-      setImageUploading(false);
-      setBrandImageUploading(false);
-    }
-  };
-
-  const handleDelete = async (item: LayihelerimizCategory) => {
-    const name = getLocalized(item.title, "az") || item.slug;
-    const confirmed = window.confirm(`"${name}" silinsin?`);
-    if (!confirmed) return;
-    try {
-      const token = getToken();
-      const res = await fetch(`${API}/layihelerimiz/categories/${item.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.message || err?.error || `HTTP ${res.status}`);
-      }
-      load();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      window.alert("Xəta: " + msg);
-    }
-  };
-
-  return (
-    <div style={{ padding: 32 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Layihelerimiz</h1>
-          <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-            Layiheleri buradan idarə edin. Kateqoriyalar müstəqildir.
-          </p>
-        </div>
-        <button
-          onClick={openNew}
-          style={{
-            padding: "10px 20px",
-            background: "#1e3a5f",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: 600,
-            fontSize: 14,
-          }}
-        >
-          + Yeni Layihə
-        </button>
-      </div>
-
-      {loading ? (
-        <p>Yüklənir...</p>
-      ) : items.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60, color: "#9ca3af" }}>
-          <p style={{ fontSize: 16 }}>Hələ heç bir kateqoriya yoxdur</p>
-          <p style={{ fontSize: 13, marginTop: 8 }}>Yuxarıdakı "Yeni Kateqoriya" düyməsinə klikləyin</p>
-        </div>
-      ) : (
-        <div style={{ display: "grid", gap: 12 }}>
-          {items.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                padding: 16,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-              }}
-            >
-              {item.image ? (
-                <img
-                  src={toAbsUrl(item.image)}
-                  alt={getLocalized(item.title, "az") || ""}
-                  style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 8 }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 80,
-                    height: 60,
-                    background: "#f3f4f6",
-                    borderRadius: 8,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    color: "#9ca3af",
-                  }}
-                >
-                  Şəkil yoxdur
+    return (
+        <tr ref={setNodeRef}
+            style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
+            <td className={styles.num}>
+                <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
+            </td>
+            <td>
+                <div className={styles.serviceInfo}>
+                    {item.image
+                        ? <img src={toAbsUrl(item.image)} alt="" className={styles.coverThumb} />
+                        : <div className={styles.imagePlaceholder}>Şəkil yoxdur</div>}
+                    <div>
+                        <div className={styles.serviceTitle}>{title}</div>
+                        <div className={styles.serviceSlug}>/{item.slug}</div>
+                    </div>
                 </div>
-              )}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>
-                  {getLocalized(item.title, "az") || item.slug}
-                </div>
-                <div style={{ fontSize: 13, color: "#6b7280" }}>
-                  /{item.slug}
-                  {item.brand && (
-                    <> · {getLocalized(item.brand, "az")}</>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span
-                  style={{
-                    padding: "2px 8px",
-                    borderRadius: 4,
-                    fontSize: 12,
-                    background: item.isVisible ? "#dcfce7" : "#fee2e2",
-                    color: item.isVisible ? "#166534" : "#991b1b",
-                  }}
-                >
-                  {item.isVisible ? "Görünür" : "Gizli"}
+            </td>
+            <td>{brand && <span className={styles.badge}>{brand}</span>}</td>
+            <td>
+                <span className={`${styles.statusBadge} ${item.isVisible ? styles.badgeVisible : styles.badgeHidden}`}>
+                    {item.isVisible ? "Görünür" : "Gizli"}
                 </span>
-                <button
-                  onClick={() => openEdit(item)}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#1e3a5f",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 500,
-                  }}
-                >
-                  Redaktə
-                </button>
-                <a
-                  href={`/layihelerimiz/${item.slug}`}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#059669",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    textDecoration: "none",
-                  }}
-                >
-                  Layihə Detalları
-                </a>
-                <button
-                  onClick={() => handleDelete(item)}
-                  style={{
-                    padding: "6px 12px",
-                    background: "#dc2626",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 500,
-                  }}
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* MODAL */}
-      {modalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 32,
-              width: 560,
-              maxHeight: "85vh",
-              overflow: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>
-              {isNew ? "Yeni Kateqoriya" : "Kateqoriyanı Redaktə Et"}
-            </h2>
-
-            {/* Title (multilingual) */}
-            <LangInput label="Başlıq (Az/En/Ru)" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} />
-
-            {/* Slug */}
-            <label style={labelStyle}>Slug</label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-              placeholder="avtomatik yaranacaq"
-              style={inputStyle}
-            />
-
-            {/* Image */}
-            <label style={labelStyle}>Şəkil</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/webp,image/jpeg,image/png"
-              style={{ display: "none" }}
-              onChange={handleImageSelect}
-            />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: "2px dashed #d1d5db",
-                borderRadius: 8,
-                padding: 16,
-                textAlign: "center",
-                cursor: "pointer",
-                marginBottom: 16,
-                background: "#f9fafb",
-              }}
-            >
-              {form.imagePreview ? (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img
-                    src={form.imagePreview}
-                    alt="Preview"
-                    style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8 }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setForm((f) => ({ ...f, image: "", imageFile: null, imagePreview: "" }));
-                      if (fileInputRef.current) fileInputRef.current.value = "";
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      background: "#dc2626",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 12,
-                    }}
-                  >
-                    ✕
-                  </button>
+            </td>
+            <td>
+                <div className={styles.actions}>
+                    <button type="button" className={styles.editBtn} onClick={() => onEdit(item)}>Düzəlt</button>
+                    <a className={styles.editBtn} href={`/layihelerimiz/${item.slug}`}>Bloklar</a>
+                    <button type="button"
+                        className={`${styles.visBtn} ${item.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
+                        onClick={() => onToggle(item)}>
+                        {item.isVisible ? "Gizlət" : "Göstər"}
+                    </button>
+                    <button type="button" className={styles.deleteBtn} onClick={() => onDelete(item)}>Sil</button>
                 </div>
-              ) : (
-                <div style={{ color: "#9ca3af" }}>
-                  <p>Şəkil yükləmək üçün klikləyin</p>
-                  <small>WebP, JPEG, PNG (max 50MB)</small>
-                </div>
-              )}
-            </div>
-
-            {/* Brand Image */}
-            <label style={labelStyle}>Brand Şəkli</label>
-            <input
-              ref={brandFileInputRef}
-              type="file"
-              accept="image/webp,image/jpeg,image/png"
-              style={{ display: "none" }}
-              onChange={handleBrandImageSelect}
-            />
-            <div
-              onClick={() => brandFileInputRef.current?.click()}
-              style={{
-                border: "2px dashed #d1d5db",
-                borderRadius: 8,
-                padding: 16,
-                textAlign: "center",
-                cursor: "pointer",
-                marginBottom: 16,
-                background: "#f9fafb",
-              }}
-            >
-              {form.brandImagePreview ? (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img
-                    src={form.brandImagePreview}
-                    alt="Brand Preview"
-                    style={{ maxWidth: "100%", maxHeight: 120, borderRadius: 8 }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setForm((f) => ({ ...f, brandImage: "", brandImageFile: null, brandImagePreview: "" }));
-                      if (brandFileInputRef.current) brandFileInputRef.current.value = "";
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      background: "#dc2626",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                      fontSize: 12,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div style={{ color: "#9ca3af" }}>
-                  <p>Brend loqosu yüklə</p>
-                  <small>WebP, JPEG, PNG (max 50MB)</small>
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <LangInput label="Təsvir" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} type="textarea" placeholder="Qısa təsvir" />
-
-            {/* Brand */}
-            <LangInput label="Brand" value={form.brand} onChange={(v) => setForm((f) => ({ ...f, brand: v }))} placeholder="Reportage." />
-
-            {/* Brand Text Color */}
-            <label style={labelStyle}>Brend Mətn Rəngi</label>
-            <select
-              value={form.brandTextColor}
-              onChange={(e) => setForm((f) => ({ ...f, brandTextColor: e.target.value }))}
-              style={inputStyle}
-            >
-              <option value="white">Ağ (White)</option>
-              <option value="black">Qara (Black)</option>
-            </select>
-
-            {/* Order */}
-            <label style={labelStyle}>Sıra (Order)</label>
-            <input
-              type="number"
-              value={form.order}
-              onChange={(e) => setForm((f) => ({ ...f, order: Number(e.target.value) }))}
-              placeholder="0"
-              style={inputStyle}
-            />
-
-            {/* Is Visible */}
-            <label style={labelStyle}>Görünür</label>
-            <select
-              value={form.isVisible ? "true" : "false"}
-              onChange={(e) => setForm((f) => ({ ...f, isVisible: e.target.value === "true" }))}
-              style={inputStyle}
-            >
-              <option value="true">Bəli</option>
-              <option value="false">Xeyr</option>
-            </select>
-
-            {/* Banks */}
-            <label style={labelStyle}>Banks</label>
-            <input
-              type="text"
-              value={form.banks}
-              onChange={(e) => setForm((f) => ({ ...f, banks: e.target.value }))}
-              placeholder="e.g. Kapital Bank, Pasha Bank"
-              style={inputStyle}
-            />
-
-            {/* Infrastructure */}
-            <label style={labelStyle}>Infrastructure</label>
-            <input
-              type="text"
-              value={form.infrastructure}
-              onChange={(e) => setForm((f) => ({ ...f, infrastructure: e.target.value }))}
-              placeholder="e.g. Swimming pool, Gym, Parking"
-              style={inputStyle}
-            />
-
-            {/* Sales Department */}
-            <label style={labelStyle}>Sales Department</label>
-            <input
-              type="text"
-              value={form.salesDepartment}
-              onChange={(e) => setForm((f) => ({ ...f, salesDepartment: e.target.value }))}
-              placeholder="e.g. +994 50 123 45 67"
-              style={inputStyle}
-            />
-
-            {/* Buttons */}
-            <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-              <button
-                onClick={handleSave}
-                disabled={saving || imageUploading || brandImageUploading}
-                style={{
-                  flex: 1,
-                  padding: "10px 20px",
-                  background: "#1e3a5f",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  opacity: saving || imageUploading || brandImageUploading ? 0.6 : 1,
-                }}
-              >
-                {saving ? "Saxlanılır..." : imageUploading ? "Şəkil yüklənir..." : brandImageUploading ? "Brand şəkli yüklənir..." : "Saxla"}
-              </button>
-              <button
-                onClick={() => setModalOpen(false)}
-                style={{
-                  padding: "10px 20px",
-                  background: "#f3f4f6",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontSize: 14,
-                }}
-              >
-                Ləğv
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+            </td>
+        </tr>
+    );
 }
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 600,
-  color: "#374151",
-  marginBottom: 4,
-  marginTop: 12,
-};
+/* ────────────────────────────────── səhifə ────────────────────────────── */
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  border: "1px solid #d1d5db",
-  borderRadius: 8,
-  fontSize: 14,
-  outline: "none",
-  boxSizing: "border-box",
-};
+export default function LayihelerimizPage() {
+    const [items, setItems] = useState<LayihelerimizCategory[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [reordering, setReordering] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<LayihelerimizCategory | null>(null);
+    const [isNew, setIsNew] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [activeLang, setActiveLang] = useState<Lang>("az");
+
+    const [form, setForm] = useState(emptyForm);
+    const [imageUploading, setImageUploading] = useState(false);
+    const [brandImageUploading, setBrandImageUploading] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const brandFileInputRef = useRef<HTMLInputElement>(null);
+
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            const data: LayihelerimizCategory[] = await cmsApiFetch("/layihelerimiz/categories");
+            data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            setItems(data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const from = items.findIndex(i => i.id === active.id);
+        const to = items.findIndex(i => i.id === over.id);
+        if (from < 0 || to < 0) return;
+
+        // Optimistik yeniləmə: siyahı dərhal sürüşür, server arxada yazır.
+        const next = arrayMove(items, from, to);
+        setItems(next);
+        setReordering(true);
+        try {
+            await cmsApiFetch("/layihelerimiz/categories/reorder", {
+                method: "PATCH",
+                body: JSON.stringify({ ids: next.map(i => i.id) }),
+            });
+        } catch (e: unknown) {
+            alert("Sıra saxlanmadı: " + (e instanceof Error ? e.message : String(e)));
+            load();
+        } finally {
+            setReordering(false);
+        }
+    };
+
+    const openNew = () => {
+        setEditingItem(null);
+        setIsNew(true);
+        setForm({ ...emptyForm });
+        setModalOpen(true);
+    };
+
+    const openEdit = (item: LayihelerimizCategory) => {
+        setEditingItem(item);
+        setIsNew(false);
+        setForm({
+            title: lv(item.title),
+            slug: item.slug,
+            image: item.image || "",
+            imageFile: null,
+            imagePreview: item.image ? toAbsUrl(item.image) : "",
+            brandImage: item.brandImage || "",
+            brandImageFile: null,
+            brandImagePreview: item.brandImage ? toAbsUrl(item.brandImage) : "",
+            description: lv(item.description),
+            brand: lv(item.brand),
+            brandTextColor: item.brandTextColor || "white",
+            order: item.order ?? 0,
+            isVisible: item.isVisible ?? true,
+            banks: item.banks || "",
+            infrastructure: item.infrastructure || "",
+            salesDepartment: item.salesDepartment || "",
+        });
+        setModalOpen(true);
+    };
+
+    const pickImage = (
+        e: React.ChangeEvent<HTMLInputElement>,
+        kind: "image" | "brandImage",
+        inputRef: React.RefObject<HTMLInputElement | null>,
+    ) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!["image/webp", "image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+            alert("Yalnız WebP, JPEG və PNG formatları qəbul edilir");
+            if (inputRef.current) inputRef.current.value = "";
+            return;
+        }
+        void (async () => {
+            const prepared = await prepareImageFile(file);
+            setForm(f => kind === "image"
+                ? { ...f, imageFile: prepared, imagePreview: URL.createObjectURL(prepared) }
+                : { ...f, brandImageFile: prepared, brandImagePreview: URL.createObjectURL(prepared) });
+        })();
+    };
+
+    const clearImage = (kind: "image" | "brandImage") => {
+        setForm(f => kind === "image"
+            ? { ...f, image: "", imageFile: null, imagePreview: "" }
+            : { ...f, brandImage: "", brandImageFile: null, brandImagePreview: "" });
+        const ref = kind === "image" ? fileInputRef : brandFileInputRef;
+        if (ref.current) ref.current.value = "";
+    };
+
+    const toggleVisibility = async (item: LayihelerimizCategory) => {
+        try {
+            await cmsApiFetch(`/layihelerimiz/categories/${item.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ isVisible: !item.isVisible }),
+            });
+            load();
+        } catch (e: unknown) {
+            alert("Xəta: " + (e instanceof Error ? e.message : String(e)));
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            let imageUrl = form.image;
+            if (form.imageFile) {
+                setImageUploading(true);
+                imageUrl = await uploadFile(form.imageFile);
+                setImageUploading(false);
+            }
+
+            let brandImageUrl = form.brandImage;
+            if (form.brandImageFile) {
+                setBrandImageUploading(true);
+                brandImageUrl = await uploadFile(form.brandImageFile);
+                setBrandImageUploading(false);
+            }
+
+            const filled = (v: LocalizedString) => (v.az || v.en || v.ru) ? v : null;
+
+            const payload: Record<string, unknown> = {
+                title: filled(form.title),
+                image: imageUrl || null,
+                brandImage: brandImageUrl || null,
+                description: filled(form.description),
+                brand: filled(form.brand),
+                brandTextColor: form.brandTextColor,
+                order: form.order,
+                isVisible: form.isVisible,
+                banks: form.banks || null,
+                infrastructure: form.infrastructure || null,
+                salesDepartment: form.salesDepartment || null,
+            };
+            if (form.slug) payload.slug = form.slug;
+
+            if (isNew) {
+                await cmsApiFetch("/layihelerimiz/categories", {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                });
+            } else if (editingItem) {
+                await cmsApiFetch(`/layihelerimiz/categories/${editingItem.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify(payload),
+                });
+            }
+
+            setModalOpen(false);
+            load();
+        } catch (e: unknown) {
+            alert("Xəta: " + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setSaving(false);
+            setImageUploading(false);
+            setBrandImageUploading(false);
+        }
+    };
+
+    const handleDelete = async (item: LayihelerimizCategory) => {
+        const name = lv(item.title).az || item.slug;
+        if (!window.confirm(`"${name}" silinsin?`)) return;
+        try {
+            await cmsApiFetch(`/layihelerimiz/categories/${item.id}`, { method: "DELETE" });
+            load();
+        } catch (e: unknown) {
+            alert("Xəta: " + (e instanceof Error ? e.message : String(e)));
+        }
+    };
+
+    const saveLabel = saving
+        ? "Saxlanılır..."
+        : imageUploading
+            ? "Şəkil yüklənir..."
+            : brandImageUploading
+                ? "Brend şəkli yüklənir..."
+                : "Saxla";
+
+    const uploadArea = (kind: "image" | "brandImage") => {
+        const isCover = kind === "image";
+        const preview = isCover ? form.imagePreview : form.brandImagePreview;
+        const ref = isCover ? fileInputRef : brandFileInputRef;
+        return (
+            <>
+                <input ref={ref} type="file" accept="image/webp,image/jpeg,image/png" hidden
+                    onChange={e => pickImage(e, kind, ref)} />
+                <div className={styles.singleUploadArea} onClick={() => ref.current?.click()}>
+                    {preview ? (
+                        <div className={styles.singleUploadPreviewWrap}>
+                            <img src={preview} alt="" className={styles.singleUploadPreview} />
+                            <button type="button" className={styles.imageRemoveBtn}
+                                onClick={e => { e.stopPropagation(); clearImage(kind); }}>✕</button>
+                        </div>
+                    ) : (
+                        <div className={styles.imagePlaceholder}>
+                            {isCover ? "Şəkil yükləmək üçün klikləyin" : "Brend loqosu yüklə"}
+                            <br />
+                            <small>WebP, JPEG, PNG</small>
+                        </div>
+                    )}
+                </div>
+            </>
+        );
+    };
+
+    return (
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Layihələrimiz</h1>
+                    <p className={styles.subtitle}>
+                        Layihələri buradan idarə edin. Sıranı sürükləyərək dəyişə bilərsiniz.
+                        {reordering && <span className={styles.reorderingText}> Sıra saxlanılır...</span>}
+                    </p>
+                </div>
+                <div className={styles.headerRight}>
+                    <button type="button" className={styles.saveBtn} onClick={openNew}>+ Yeni Layihə</button>
+                </div>
+            </div>
+
+            {loading ? (
+                <p className={styles.empty}>Yüklənir...</p>
+            ) : items.length === 0 ? (
+                <div className={styles.empty}>
+                    <p>Hələ heç bir layihə yoxdur</p>
+                    <p>Yuxarıdakı &quot;Yeni Layihə&quot; düyməsinə klikləyin</p>
+                </div>
+            ) : (
+                <div className={styles.tableWrap}>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th />
+                                        <th>Layihə</th>
+                                        <th>Brend</th>
+                                        <th>Status</th>
+                                        <th>Əməliyyatlar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {items.map(item => (
+                                        <SortableRow key={item.id} item={item}
+                                            onEdit={openEdit}
+                                            onToggle={toggleVisibility}
+                                            onDelete={handleDelete} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </SortableContext>
+                    </DndContext>
+                </div>
+            )}
+
+            {modalOpen && (
+                <div className={styles.overlay} onClick={() => setModalOpen(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h2>{isNew ? "Yeni Layihə" : "Layihəni Düzəlt"}</h2>
+                            <LangTabs styles={styles} active={activeLang} onChange={setActiveLang} />
+                        </div>
+
+                        <div className={styles.modalBody}>
+                            <div className={styles.field}>
+                                <label>Başlıq ({activeLang.toUpperCase()})</label>
+                                <input className={styles.input} value={form.title[activeLang] ?? ""}
+                                    onChange={e => setForm(f => ({ ...f, title: { ...f.title, [activeLang]: e.target.value } }))} />
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Slug</label>
+                                <input className={styles.input} value={form.slug} placeholder="avtomatik yaranacaq"
+                                    onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} />
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Şəkil</label>
+                                {uploadArea("image")}
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Brend şəkli</label>
+                                {uploadArea("brandImage")}
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Təsvir ({activeLang.toUpperCase()})</label>
+                                <textarea className={styles.textarea} rows={3}
+                                    value={form.description[activeLang] ?? ""}
+                                    placeholder="Qısa təsvir"
+                                    onChange={e => setForm(f => ({ ...f, description: { ...f.description, [activeLang]: e.target.value } }))} />
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Brend ({activeLang.toUpperCase()})</label>
+                                <input className={styles.input} value={form.brand[activeLang] ?? ""}
+                                    placeholder="Reportage."
+                                    onChange={e => setForm(f => ({ ...f, brand: { ...f.brand, [activeLang]: e.target.value } }))} />
+                            </div>
+
+                            <div className={styles.twoCol}>
+                                <div className={styles.field}>
+                                    <label>Brend mətn rəngi</label>
+                                    <select className={styles.input} value={form.brandTextColor}
+                                        onChange={e => setForm(f => ({ ...f, brandTextColor: e.target.value }))}>
+                                        <option value="white">Ağ</option>
+                                        <option value="black">Qara</option>
+                                    </select>
+                                </div>
+                                <div className={styles.field}>
+                                    <label>Sıra</label>
+                                    <input className={styles.input} type="number" value={form.order}
+                                        onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))} />
+                                </div>
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Görünürlük</label>
+                                <button type="button"
+                                    className={form.isVisible ? styles.activeToggle : styles.inactiveToggle}
+                                    onClick={() => setForm(f => ({ ...f, isVisible: !f.isVisible }))}>
+                                    {form.isVisible ? "Görünür" : "Gizli"}
+                                </button>
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Banklar</label>
+                                <input className={styles.input} value={form.banks}
+                                    placeholder="Kapital Bank, Pasha Bank"
+                                    onChange={e => setForm(f => ({ ...f, banks: e.target.value }))} />
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>İnfrastruktur</label>
+                                <input className={styles.input} value={form.infrastructure}
+                                    placeholder="Hovuz, İdman zalı, Parkinq"
+                                    onChange={e => setForm(f => ({ ...f, infrastructure: e.target.value }))} />
+                            </div>
+
+                            <div className={styles.field}>
+                                <label>Satış şöbəsi</label>
+                                <input className={styles.input} value={form.salesDepartment}
+                                    placeholder="+994 50 123 45 67"
+                                    onChange={e => setForm(f => ({ ...f, salesDepartment: e.target.value }))} />
+                            </div>
+                        </div>
+
+                        <div className={styles.modalFooter}>
+                            <button type="button" className={styles.cancelBtn} onClick={() => setModalOpen(false)}>Ləğv et</button>
+                            <button type="button" className={styles.saveBtn}
+                                disabled={saving || imageUploading || brandImageUploading}
+                                onClick={handleSave}>
+                                {saveLabel}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
