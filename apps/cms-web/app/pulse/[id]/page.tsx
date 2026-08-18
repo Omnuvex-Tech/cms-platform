@@ -130,6 +130,19 @@ function asHtml(value: string): string {
 const DIRECT_VIDEO = /\.(mp4|webm|ogg|mov)(\?|#|$)/i;
 
 /**
+ * Fayllar API host-unda dayanır, bazada isə nisbi yolla saxlanılır. Blok
+ * sahələrini göstərəndə bunu `toAbsUrl` həll edirdi; sərbəst HTML-in içində isə
+ * onu çağıran yoxdur — nisbi yol qalsa, brauzer faylı saytın öz domenində axtarır
+ * və tapmır (slayd sayı düz, şəkil boş).
+ */
+function absolutizeMedia(html: string): string {
+    return html.replace(
+        /(src|href)="(\/uploads\/[^"]*)"/g,
+        (_match, attribute: string, path: string) => `${attribute}="${toAbsUrl(path)}"`,
+    );
+}
+
+/**
  * Köhnə blok siyahısını bir HTML sənədinə yığır.
  *
  * Məqalə mətni artıq tək sahədir, amma bazadakı köhnə məqalələr hələ də bloklarla
@@ -149,14 +162,14 @@ function blocksToHtml(input: any[], locale: EditorLocale): string {
                 }
 
                 case "paragraph":
-                    return asHtml(localized(legacyText(block)));
+                    return absolutizeMedia(asHtml(localized(legacyText(block))));
 
                 case "image": {
                     if (!block.url) return "";
                     const alt = escapeHtml(localized(block.alt));
                     const caption = localized(block.caption);
                     return (
-                        `<img src="${escapeHtml(block.url)}" alt="${alt}">` +
+                        `<img src="${escapeHtml(toAbsUrl(block.url))}" alt="${alt}">` +
                         (caption ? `<p><em>${escapeHtml(caption)}</em></p>` : "")
                     );
                 }
@@ -198,7 +211,7 @@ function blocksToHtml(input: any[], locale: EditorLocale): string {
                 // keçid kimi qalır ki, itməsin və admin onu yenidən əlavə etsin.
                 case "video": {
                     if (!block.url) return "";
-                    const url = escapeHtml(block.url);
+                    const url = escapeHtml(toAbsUrl(block.url));
                     return DIRECT_VIDEO.test(block.url)
                         ? `<video src="${url}" controls preload="metadata"></video>`
                         : `<p><a href="${url}">${url}</a></p>`;
@@ -209,7 +222,7 @@ function blocksToHtml(input: any[], locale: EditorLocale): string {
                         .filter((image: any) => image?.url)
                         .map(
                             (image: any) =>
-                                `<img src="${escapeHtml(image.url)}" alt="${escapeHtml(localized(image.alt))}">`,
+                                `<img src="${escapeHtml(toAbsUrl(image.url))}" alt="${escapeHtml(localized(image.alt))}">`,
                         )
                         .join("");
                     return images ? `<div class="treva-slider" data-slider="true">${images}</div>` : "";
