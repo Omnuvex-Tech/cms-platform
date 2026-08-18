@@ -806,7 +806,10 @@ export function RichTextEditor({
                        height would only ever let the box grow, which is what
                        made the writing area impossible to shrink. */
                     resize: vertical;
-                    overflow: auto;
+                    /* Yalnız şaquli: üfüqi sürüşmə zolağı yazı sahəsində
+                       görünməməlidir, geniş məzmun onsuz da öz içində sürüşür. */
+                    overflow-x: hidden;
+                    overflow-y: auto;
                     min-height: 120px;
                     outline: none;
                     font-size: 14px;
@@ -885,6 +888,23 @@ export function RichTextEditor({
                    do the sliding; only the controls below need React. */
                 .treva-rte__slider { position: relative; }
                 .treva-rte__slider-frame { position: relative; max-width: 100%; }
+                /* Hündürlük verilibsə, track onu tam doldurur. */
+                .treva-rte__slider-frame .treva-slider { height: 100%; }
+                .treva-rte__slider-handle-bottom {
+                    position: absolute;
+                    left: 50%;
+                    bottom: -4px;
+                    transform: translateX(-50%);
+                    z-index: 2;
+                    width: 48px;
+                    height: 8px;
+                    border-radius: 999px;
+                    background: #4E525D;
+                    border: 2px solid #FFFFFF;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                    cursor: ns-resize;
+                    touch-action: none;
+                }
                 .treva-slider {
                     display: flex;
                     width: 100%;
@@ -899,6 +919,10 @@ export function RichTextEditor({
                     flex: 0 0 92%;
                     width: 92%;
                     scroll-snap-align: center;
+                    /* Track-ə hündürlük verilməyibsə height:100% avtomatik
+                       hesablanır, yəni şəkil öz nisbətini saxlayır. */
+                    height: 100%;
+                    object-fit: cover;
                 }
                 /* A lone picture has nothing to peek at, so it fills the track. */
                 .treva-slider img:only-child { flex-basis: 100%; width: 100%; }

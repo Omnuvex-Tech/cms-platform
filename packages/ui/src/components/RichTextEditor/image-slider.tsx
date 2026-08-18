@@ -43,9 +43,18 @@ function SliderView({ node, updateAttributes, deleteNode, selected, editor, exte
     const isEditable = editor.isEditable;
     const options = extension.options as ImageSliderOptions;
 
-    const { targetRef, dragWidth, renderedWidth, startResize } = useResizableWidth({
+    const {
+        targetRef,
+        dragWidth,
+        dragHeight,
+        renderedWidth,
+        renderedHeight,
+        startResize,
+        startResizeHeight,
+    } = useResizableWidth({
         width: node.attrs.width as number | null,
-        onCommit: (committed) => updateAttributes({ width: committed }),
+        height: node.attrs.height as number | null,
+        onCommit: (size) => updateAttributes(size),
     });
 
     const scrollTo = (next: number) => {
@@ -88,12 +97,17 @@ function SliderView({ node, updateAttributes, deleteNode, selected, editor, exte
         }
     };
 
+    const readout = dragWidth !== null ? `${dragWidth}px` : dragHeight !== null ? `${dragHeight}px` : null;
+
     return (
         <NodeViewWrapper as="div" className="treva-rte__slider" data-selected={selected ? "true" : undefined}>
             <div
                 ref={targetRef as React.RefObject<HTMLDivElement>}
                 className="treva-rte__slider-frame"
-                style={renderedWidth ? { width: renderedWidth } : undefined}
+                style={{
+                    ...(renderedWidth ? { width: renderedWidth } : {}),
+                    ...(renderedHeight ? { height: renderedHeight } : {}),
+                }}
             >
                 <div className="treva-slider" ref={trackRef}>
                     {images.map((image, position) => (
@@ -127,9 +141,7 @@ function SliderView({ node, updateAttributes, deleteNode, selected, editor, exte
                         </button>
 
                         <span className="treva-rte__slider-count">
-                            {dragWidth !== null
-                                ? `${dragWidth}px`
-                                : `${Math.min(index + 1, images.length)} / ${images.length}`}
+                            {readout ?? `${Math.min(index + 1, images.length)} / ${images.length}`}
                         </span>
 
                         <div className="treva-rte__slider-tools">
@@ -173,6 +185,15 @@ function SliderView({ node, updateAttributes, deleteNode, selected, editor, exte
                                 className={`treva-rte__slider-handle absolute ${corner.className}`}
                             />
                         ))}
+
+                        {/* A tall photo makes a tall strip, so the bottom edge
+                            sets the height and the pictures crop to fit it. */}
+                        <span
+                            role="presentation"
+                            title="Drag to set the height"
+                            onPointerDown={startResizeHeight}
+                            className="treva-rte__slider-handle-bottom"
+                        />
                     </>
                 ) : null}
             </div>
@@ -212,19 +233,26 @@ export const ImageSlider = Node.create<ImageSliderOptions>({
     },
 
     addAttributes() {
+        const parseSize = (element: HTMLElement, property: "width" | "height") => {
+            const value = element.style[property];
+            return value ? Number.parseInt(value, 10) || null : null;
+        };
+
         return {
             images: {
                 default: [] as SliderImage[],
-                // Both of these are written out by renderHTML below, so neither
-                // may also be emitted as an attribute of its own.
+                // These are written out by renderHTML below, so none of them may
+                // also be emitted as an attribute of its own.
                 renderHTML: () => ({}),
             },
             width: {
                 default: null,
-                parseHTML: (element) => {
-                    const styleWidth = (element as HTMLElement).style.width;
-                    return styleWidth ? Number.parseInt(styleWidth, 10) || null : null;
-                },
+                parseHTML: (element) => parseSize(element as HTMLElement, "width"),
+                renderHTML: () => ({}),
+            },
+            height: {
+                default: null,
+                parseHTML: (element) => parseSize(element as HTMLElement, "height"),
                 renderHTML: () => ({}),
             },
         };
@@ -246,13 +274,17 @@ export const ImageSlider = Node.create<ImageSliderOptions>({
 
     renderHTML({ node }) {
         const width = node.attrs.width as number | null;
+        const height = node.attrs.height as number | null;
+        const style = [width ? `width:${width}px` : "", height ? `height:${height}px` : ""]
+            .filter(Boolean)
+            .join(";");
 
         return [
             "div",
             {
                 class: "treva-slider",
                 "data-slider": "true",
-                ...(width ? { style: `width:${width}px` } : {}),
+                ...(style ? { style } : {}),
             },
             ...readImages(node).map((image) => ["img", { src: image.src, alt: image.alt ?? "" }]),
         ];

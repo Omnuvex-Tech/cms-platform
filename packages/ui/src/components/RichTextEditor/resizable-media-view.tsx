@@ -29,7 +29,7 @@ export function ResizableMediaView({
 
     const { targetRef, dragWidth, renderedWidth, startResize } = useResizableWidth({
         width,
-        onCommit: (committed) => updateAttributes({ width: committed }),
+        onCommit: ({ width: committed }) => updateAttributes({ width: committed }),
     });
 
     const isVideo = node.type.name === "video";
