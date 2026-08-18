@@ -1,3 +1,11 @@
+/* Tailwind's utilities only — the shared RichTextEditor is written with them.
+   Preflight is deliberately left out: this panel is styled with CSS modules and
+   a global reset here would restyle every existing page. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@source "../../../packages/ui/src";
+
 * {
     margin: 0;
     padding: 0;

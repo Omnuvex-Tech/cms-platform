@@ -22,8 +22,12 @@ export async function apiFetch(path: string, options?: RequestInit) {
 }
 
 export async function uploadFile(file: File): Promise<string> {
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE) throw new Error("Fayl ölçüsü 10 MB-dan çox olmamalıdır");
+    // Video daha ağır olur, ona görə serverdəki kimi burada da ayrı hədd var.
+    const isVideo = file.type.startsWith("video/");
+    const maxSize = (isVideo ? 100 : 10) * 1024 * 1024;
+    if (file.size > maxSize) {
+        throw new Error(`${isVideo ? "Video" : "Fayl"} ölçüsü ${maxSize / (1024 * 1024)} MB-dan çox olmamalıdır`);
+    }
     const formData = new FormData();
     formData.append("file", file);
     let res: Response;
@@ -35,7 +39,7 @@ export async function uploadFile(file: File): Promise<string> {
         throw new Error("Şəbəkə xətası — serverə qoşulmaq mümkün olmadı");
     }
     if (res.status === 401) throw new Error("İcazə yoxdur — yenidən daxil olun");
-    if (res.status === 413) throw new Error("Fayl çox böyükdür (maksimum 10 MB)");
+    if (res.status === 413) throw new Error(`Fayl çox böyükdür (maksimum ${maxSize / (1024 * 1024)} MB)`);
     if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(`Yükləmə uğursuz (${res.status}): ${text || "Bilinməyən xəta"}`);

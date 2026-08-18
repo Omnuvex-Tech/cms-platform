@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, Query, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
+
+const IMAGE_TYPES = ['image/webp', 'image/gif', 'image/svg+xml', 'image/jpeg', 'image/png', 'image/jpg'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+// A clip that counts as small for video is still many times what a picture may
+// weigh, so the two carry separate ceilings.
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 
 @Controller('pulse')
 export class PulseController {
@@ -36,14 +45,26 @@ export class PulseController {
       },
     }),
     fileFilter: (req, file, cb) => {
-      if (!['image/webp', 'image/gif', 'image/svg+xml', 'image/jpeg', 'image/png', 'image/jpg'].includes(file.mimetype)) {
-        return cb(new Error('Yalnız WebP, GIF, SVG, JPEG və PNG formatları'), false);
+      if (![...IMAGE_TYPES, ...VIDEO_TYPES].includes(file.mimetype)) {
+        return cb(new Error('Yalnız WebP, GIF, SVG, JPEG, PNG şəkilləri və MP4, WebM, OGG, MOV videoları'), false);
       }
       cb(null, true);
     },
-    limits: { fileSize: 10 * 1024 * 1024 },
+    // Multer applies one ceiling to the whole request, so it takes the larger of
+    // the two and the handler holds pictures to the tighter limit.
+    limits: { fileSize: MAX_VIDEO_SIZE },
   }))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
+    const isVideo = file.mimetype.startsWith('video/');
+    const limit = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+
+    if (file.size > limit) {
+      fs.unlinkSync(file.path);
+      throw new BadRequestException(
+        `${isVideo ? 'Video' : 'Fayl'} ölçüsü ${Math.round(limit / (1024 * 1024))} MB-dan çox olmamalıdır`,
+      );
+    }
+
     return { url: `/uploads/pulse/${file.filename}` };
   }
 

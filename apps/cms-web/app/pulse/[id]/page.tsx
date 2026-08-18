@@ -11,7 +11,7 @@ import {
     SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { RichEditor } from "@/components/RichEditor";
+import { RichTextEditor } from "@repo/ui";
 import styles from "@/styles/blog.module.css";
 import ed from "@/styles/pulseEditor.module.css";
 
@@ -190,11 +190,19 @@ function normalizeBlocks(input: Block[]): any[] {
 }
 
 /**
+ * Yüklənən fayl API host-unda qalır, saxlanılan HTML isə sayta olduğu kimi
+ * verilir — ona görə blok sahələrindəki nisbi yol yox, tam ünvan yazılır.
+ */
+const uploadArticleMedia = async (file: File) => toAbsUrl(await uploadFile(file));
+
+/**
  * Paraqraf redaktoru.
  *
  * Əvvəl xam `contentEditable` + `range.surroundContents()` idi — seçim sərhədləri
  * element sərhədini kəsəndə sükutla uğursuz olurdu və geri-al (undo) yox idi.
- * İndi master branch-dakı kimi Tiptap işlədirik.
+ * İndi treva-platform-dakı ortaq `RichTextEditor` işlədilir: şəkil, video, slider,
+ * sitat və hizalama da onun içindədir. Saxlanılan format dəyişmir — hər dil üçün
+ * yenə HTML sətri, yəni köhnə məqalələr olduğu kimi açılır.
  */
 function ParagraphEditor({ block, locale, onChange }: {
     block: Block & { type: "paragraph" }; locale: EditorLocale; onChange: (b: Block) => void;
@@ -203,10 +211,13 @@ function ParagraphEditor({ block, locale, onChange }: {
     return (
         <div className={styles.field}>
             <label>Paraqraf mətni</label>
-            <RichEditor
-                styles={styles}
+            <RichTextEditor
                 value={text[locale] || ""}
                 onChange={v => onChange({ ...block, text: setLocalizedText(block.text, locale, v) })}
+                placeholder="Mətni buraya yazın…"
+                minHeight={260}
+                onUploadImage={uploadArticleMedia}
+                onUploadVideo={uploadArticleMedia}
             />
         </div>
     );
