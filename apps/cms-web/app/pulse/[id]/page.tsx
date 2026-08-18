@@ -1,16 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { LangInput } from "@/components/LangInput";
-import {
-    DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-    SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { RichTextEditor } from "@repo/ui";
 import styles from "@/styles/blog.module.css";
 import ed from "@/styles/pulseEditor.module.css";
@@ -22,35 +15,6 @@ type ArticleSummary = { id: string; slug: string; title: string | { az?: string;
 
 type LocalizedText = string | { az?: string; en?: string; ru?: string } | null | undefined;
 type EditorLocale = "az" | "en" | "ru";
-
-/**
- * Hər blokda olan ortaq sahələr.
- *   id        — dnd-kit üçün sabit açar. JSON-da saxlanılır, treva-web onu görməzdən gəlir.
- *   isVisible — false olduqda blok saytda render olunmur (master-dəki section məntiqi).
- */
-type BlockCommon = { id?: string; isVisible?: boolean };
-
-type Block = BlockCommon & (
-    | { type: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; text: LocalizedText }
-    | { type: "paragraph"; text: LocalizedText }
-    | { type: "image"; url: string; alt: LocalizedText; caption?: LocalizedText }
-    | { type: "list"; ordered: boolean; items: LocalizedText[] }
-    | { type: "faq"; question: LocalizedText; answer: LocalizedText }
-    | { type: "quote"; text: LocalizedText; author?: LocalizedText }
-    | { type: "video"; url: string }
-    | { type: "gallery"; images: { url: string; alt: LocalizedText }[] }
-);
-
-const BLOCK_TYPES: { type: Block["type"]; label: string; icon: string }[] = [
-    { type: "heading", label: "Başlıq", icon: "H" },
-    { type: "paragraph", label: "Paraqraf", icon: "P" },
-    { type: "image", label: "Şəkil", icon: "🖼" },
-    { type: "list", label: "Siyahı", icon: "•" },
-    { type: "faq", label: "FAQ", icon: "?" },
-    { type: "quote", label: "Sitat", icon: "❝" },
-    { type: "video", label: "Video", icon: "▶" },
-    { type: "gallery", label: "Qalereya", icon: "⊞" },
-];
 
 const EDITOR_LANGS: { key: EditorLocale; label: string }[] = [
     { key: "az", label: "AZ" },
@@ -140,313 +104,130 @@ function setLocalizedText(value: LocalizedText, locale: EditorLocale, nextValue:
 }
 
 /** dnd-kit-in sabit açara ehtiyacı var; id-si olmayan köhnə bloklara birini veririk. */
-function makeBlockId() {
-    return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function withBlockIds(input: Block[]): Block[] {
-    return (input || []).map(block => (block.id ? block : { ...block, id: makeBlockId() }));
-}
-
 /**
  * Ən köhnə məqalələrdə mətn `text` yox, düz sətir olan `content` sahəsində
- * qalıb. Redaktor yalnız `text`-ə baxdığı üçün belə bloklar boş açılırdı və
- * saxlayanda mətn görünməz qalırdı — geri qayıdış onları xilas edir.
+ * qalıb — redaktor yalnız `text`-ə baxsaydı belə bloklar boş açılardı.
  */
 function legacyText(block: any): LocalizedText {
     return block.text ?? (typeof block.content === "string" ? block.content : undefined);
 }
 
-function normalizeBlocks(input: Block[]): any[] {
-    return (input || []).map((block) => {
-        switch (block.type) {
-            case "heading":
-                return { ...block, text: normalizeLocalizedText(legacyText(block)) };
-            case "paragraph":
-                return { ...block, text: normalizeLocalizedText(legacyText(block)) };
-            case "image":
-                return {
-                    ...block,
-                    alt: normalizeLocalizedText(block.alt),
-                    ...(block.caption !== undefined ? { caption: normalizeLocalizedText(block.caption) } : {}),
-                };
-            case "list":
-                return { ...block, items: (block.items || []).map((item) => normalizeLocalizedText(item)) };
-            case "faq":
-                return {
-                    ...block,
-                    question: normalizeLocalizedText(block.question),
-                    answer: normalizeLocalizedText(block.answer),
-                };
-            case "quote":
-                return {
-                    ...block,
-                    text: normalizeLocalizedText(legacyText(block)),
-                    ...(block.author !== undefined ? { author: normalizeLocalizedText(block.author) } : {}),
-                };
-            case "video":
-                return block;
-            case "gallery":
-                return {
-                    ...block,
-                    images: (block.images || []).map((img) => ({
-                        url: img.url,
-                        alt: normalizeLocalizedText(img.alt),
-                    })),
-                };
-        }
-    });
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+/** Düz sətir gələndə onu paraqrafa bükür, HTML gələndə olduğu kimi buraxır. */
+function asHtml(value: string): string {
+    const text = (value || "").trim();
+    if (!text) return "";
+    return /^</.test(text) ? text : `<p>${escapeHtml(text)}</p>`;
+}
+
+const DIRECT_VIDEO = /\.(mp4|webm|ogg|mov)(\?|#|$)/i;
+
+/**
+ * Köhnə blok siyahısını bir HTML sənədinə yığır.
+ *
+ * Məqalə mətni artıq tək sahədir, amma bazadakı köhnə məqalələr hələ də bloklarla
+ * saxlanılır. Açılışda hər blok öz HTML qarşılığına çevrilir ki, heç bir mətn
+ * gözdən itməsin; blok siyahısı bazada yalnız məqalə yenidən saxlananda əvəzlənir.
+ */
+function blocksToHtml(input: any[], locale: EditorLocale): string {
+    return (input || [])
+        .map((block) => {
+            const localized = (value: LocalizedText) => normalizeLocalizedText(value)[locale] || "";
+
+            switch (block?.type) {
+                case "heading": {
+                    const level = Math.min(Math.max(Number(block.level) || 2, 1), 6);
+                    const text = localized(legacyText(block));
+                    return text ? `<h${level}>${escapeHtml(text)}</h${level}>` : "";
+                }
+
+                case "paragraph":
+                    return asHtml(localized(legacyText(block)));
+
+                case "image": {
+                    if (!block.url) return "";
+                    const alt = escapeHtml(localized(block.alt));
+                    const caption = localized(block.caption);
+                    return (
+                        `<img src="${escapeHtml(block.url)}" alt="${alt}">` +
+                        (caption ? `<p><em>${escapeHtml(caption)}</em></p>` : "")
+                    );
+                }
+
+                case "list": {
+                    const tag = block.ordered ? "ol" : "ul";
+                    const items = (block.items || [])
+                        .map((item: LocalizedText) => localized(item))
+                        .filter(Boolean)
+                        .map((item: string) => `<li><p>${escapeHtml(item)}</p></li>`)
+                        .join("");
+                    return items ? `<${tag}>${items}</${tag}>` : "";
+                }
+
+                // Sayt FAQ blokunu da başlıq + paraqraf kimi göstərirdi.
+                case "faq": {
+                    const question = localized(block.question);
+                    const answer = localized(block.answer);
+                    if (!question && !answer) return "";
+                    return (
+                        (question ? `<h2>${escapeHtml(question)}</h2>` : "") +
+                        (answer ? `<p>${escapeHtml(answer)}</p>` : "")
+                    );
+                }
+
+                case "quote": {
+                    const text = localized(block.text);
+                    const author = localized(block.author);
+                    if (!text && !author) return "";
+                    return (
+                        "<blockquote>" +
+                        (text ? `<p>${escapeHtml(text)}</p>` : "") +
+                        (author ? `<p>— ${escapeHtml(author)}</p>` : "") +
+                        "</blockquote>"
+                    );
+                }
+
+                // Yüklənmiş fayl oynadıla bilər; YouTube kimi embed ünvanı isə
+                // keçid kimi qalır ki, itməsin və admin onu yenidən əlavə etsin.
+                case "video": {
+                    if (!block.url) return "";
+                    const url = escapeHtml(block.url);
+                    return DIRECT_VIDEO.test(block.url)
+                        ? `<video src="${url}" controls preload="metadata"></video>`
+                        : `<p><a href="${url}">${url}</a></p>`;
+                }
+
+                case "gallery": {
+                    const images = (block.images || [])
+                        .filter((image: any) => image?.url)
+                        .map(
+                            (image: any) =>
+                                `<img src="${escapeHtml(image.url)}" alt="${escapeHtml(localized(image.alt))}">`,
+                        )
+                        .join("");
+                    return images ? `<div class="treva-slider" data-slider="true">${images}</div>` : "";
+                }
+
+                default:
+                    return "";
+            }
+        })
+        .filter(Boolean)
+        .join("");
 }
 
 /**
  * Yüklənən fayl API host-unda qalır, saxlanılan HTML isə sayta olduğu kimi
- * verilir — ona görə blok sahələrindəki nisbi yol yox, tam ünvan yazılır.
+ * verilir — ona görə nisbi yol yox, tam ünvan yazılır.
  */
 const uploadArticleMedia = async (file: File) => toAbsUrl(await uploadFile(file));
-
-/**
- * Paraqraf redaktoru.
- *
- * Əvvəl xam `contentEditable` + `range.surroundContents()` idi — seçim sərhədləri
- * element sərhədini kəsəndə sükutla uğursuz olurdu və geri-al (undo) yox idi.
- * İndi treva-platform-dakı ortaq `RichTextEditor` işlədilir: şəkil, video, slider,
- * sitat və hizalama da onun içindədir. Saxlanılan format dəyişmir — hər dil üçün
- * yenə HTML sətri, yəni köhnə məqalələr olduğu kimi açılır.
- */
-function ParagraphEditor({ block, locale, onChange }: {
-    block: Block & { type: "paragraph" }; locale: EditorLocale; onChange: (b: Block) => void;
-}) {
-    const text = normalizeLocalizedText(block.text);
-    return (
-        <div className={styles.field}>
-            <label>Paraqraf mətni</label>
-            <RichTextEditor
-                value={text[locale] || ""}
-                onChange={v => onChange({ ...block, text: setLocalizedText(block.text, locale, v) })}
-                placeholder="Mətni buraya yazın…"
-                minHeight={260}
-                onUploadImage={uploadArticleMedia}
-                onUploadVideo={uploadArticleMedia}
-            />
-        </div>
-    );
-}
-
-function BlockItem({ block, index, locale, onChange, onRemove }: {
-    block: Block; index: number; onChange: (b: Block) => void; onRemove: () => void;
-    locale: EditorLocale;
-}) {
-    const [uploading, setUploading] = useState(false);
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-        useSortable({ id: block.id ?? `idx-${index}` });
-    const hidden = block.isVisible === false;
-
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setUploading(true);
-        try {
-            const url = await uploadFile(file);
-            if (block.type === "image") onChange({ ...block, url });
-            else if (block.type === "gallery") {
-                const newImages = [...block.images, { url, alt: { az: "", en: "", ru: "" } }];
-                onChange({ ...block, images: newImages });
-            }
-        } catch (err: any) { alert(err.message); }
-        finally { setUploading(false); }
-    };
-
-    const renderFields = () => {
-        switch (block.type) {
-            case "heading":
-                return (
-                    <div className={styles.twoCol}>
-                        <div className={styles.field}>
-                            <label>Başlıq mətni</label>
-                            <input className={styles.input} value={normalizeLocalizedText(block.text)[locale] || ""}
-                                onChange={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.target.value) })} placeholder="Başlıq" />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Səviyyə</label>
-                            <select className={styles.input} value={block.level}
-                                 onChange={e => onChange({ ...block, level: Number(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}>
-                                <option value={1}>H1</option>
-                                <option value={2}>H2</option>
-                                <option value={3}>H3</option>
-                                <option value={4}>H4</option>
-                                <option value={5}>H5</option>
-                                <option value={6}>H6</option>
-                            </select>
-                        </div>
-                    </div>
-                );
-            case "paragraph":
-                return <ParagraphEditor block={block} locale={locale} onChange={onChange} />;
-            case "image":
-                return (
-                    <div className={styles.field}>
-                        <label>Şəkil</label>
-                        <div className={ed.imageRow}>
-                            <div className={ed.grow}>
-                                <input className={styles.input} value={block.url}
-                                    onChange={e => onChange({ ...block, url: e.target.value })} placeholder="Şəkil URL və ya yükləyin" />
-                                <div className={ed.imageMetaRow}>
-                                    <input className={styles.input} value={normalizeLocalizedText(block.alt)[locale] || ""}
-                                        onChange={e => onChange({ ...block, alt: setLocalizedText(block.alt, locale, e.target.value) })} placeholder="Alt text" />
-                                    <input className={styles.input} value={normalizeLocalizedText(block.caption || "")[locale] || ""}
-                                        onChange={e => onChange({ ...block, caption: setLocalizedText(block.caption, locale, e.target.value) })} placeholder="Caption (ixtiyari)" />
-                                </div>
-                            </div>
-                            <div>
-                                <input type="file" accept="image/*" hidden id={`img-${index}`} onChange={handleImageUpload} />
-                                <label htmlFor={`img-${index}`} className={ed.uploadLabel}>
-                                    {uploading ? "Yüklənir..." : "Yüklə"}
-                                </label>
-                            </div>
-                        </div>
-                        {block.url && (
-                            <img src={toAbsUrl(block.url)} alt={getPrimaryLocalizedValue(block.alt)} className={ed.blockPreview} />
-                        )}
-                    </div>
-                );
-            case "list":
-                return (
-                    <div className={styles.field}>
-                        <label>
-                            Siyahı elementləri
-                            <button
-                                type="button"
-                                onClick={() => onChange({ ...block, ordered: !block.ordered })}
-                                className={block.ordered ? ed.orderedToggleActive : ed.orderedToggle}
-                            >
-                                {block.ordered ? "1. 2. 3." : "• • •"}
-                            </button>
-                        </label>
-                        {block.items.map((item, i) => (
-                            <div key={i} className={ed.listRow}>
-                                <input className={styles.input} value={normalizeLocalizedText(item)[locale] || ""}
-                                    onChange={e => {
-                                        const newItems = [...block.items];
-                                        newItems[i] = setLocalizedText(item, locale, e.target.value);
-                                        onChange({ ...block, items: newItems });
-                                    }} placeholder={`Element ${i + 1}`} />
-                                <button type="button" onClick={() => {
-                                    const newItems = block.items.filter((_, idx) => idx !== i);
-                                    onChange({ ...block, items: newItems });
-                                }} className={ed.smallDeleteBtn}>Sil</button>
-                            </div>
-                        ))}
-                        <button type="button" onClick={() => onChange({ ...block, items: [...block.items, { az: "", en: "", ru: "" }] })}
-                            className={ed.dashedBtn}>+ Element əlavə et</button>
-                    </div>
-                );
-            case "faq":
-                return (
-                    <div className={ed.stack}>
-                        <div className={styles.field}>
-                            <label>Sual</label>
-                            <input className={styles.input} value={normalizeLocalizedText(block.question)[locale] || ""}
-                                onChange={e => onChange({ ...block, question: setLocalizedText(block.question, locale, e.target.value) })} placeholder="Sualı yazın" />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Cavab</label>
-                            <textarea className={styles.input} rows={3} value={normalizeLocalizedText(block.answer)[locale] || ""}
-                                onChange={e => onChange({ ...block, answer: setLocalizedText(block.answer, locale, e.target.value) })} placeholder="Cavabı yazın" />
-                        </div>
-                    </div>
-                );
-            case "quote":
-                return (
-                    <div className={ed.stack}>
-                        <div className={styles.field}>
-                            <label>Sitat mətni</label>
-                            <textarea className={styles.input} rows={2} value={normalizeLocalizedText(block.text)[locale] || ""}
-                                onChange={e => onChange({ ...block, text: setLocalizedText(block.text, locale, e.target.value) })} placeholder="Sitatı yazın" />
-                        </div>
-                        <div className={styles.field}>
-                            <label>Müəllif (ixtiyari)</label>
-                            <input className={styles.input} value={normalizeLocalizedText(block.author || "")[locale] || ""}
-                                onChange={e => onChange({ ...block, author: setLocalizedText(block.author, locale, e.target.value) })} placeholder="Müəllif adı" />
-                        </div>
-                    </div>
-                );
-            case "video":
-                return (
-                    <div className={styles.field}>
-                        <label>Video embed URL (YouTube, Vimeo)</label>
-                        <input className={styles.input} value={block.url}
-                            onChange={e => onChange({ ...block, url: e.target.value })} placeholder="https://www.youtube.com/embed/..." />
-                        {block.url && (
-                            <div className={ed.videoWrap}>
-                                <iframe src={block.url} className={ed.videoFrame} allowFullScreen />
-                            </div>
-                        )}
-                    </div>
-                );
-            case "gallery":
-                return (
-                    <div className={styles.field}>
-                        <label>Qalereya şəkilləri</label>
-                        <div className={ed.galleryGrid}>
-                            {block.images.map((img, i) => (
-                                <div key={i} className={ed.galleryItem}>
-                                    <img src={toAbsUrl(img.url)} alt={getPrimaryLocalizedValue(img.alt)} className={ed.galleryThumb} />
-                                    <input className={styles.input} value={normalizeLocalizedText(img.alt)[locale] || ""} placeholder="Alt"
-                                        onChange={e => {
-                                            const newImages = [...block.images];
-                                            const current = newImages[i]!;
-                                            newImages[i] = { url: current.url || "", alt: setLocalizedText(current.alt, locale, e.target.value) };
-                                            onChange({ ...block, images: newImages });
-                                        }} />
-                                    <button type="button" onClick={() => {
-                                        const newImages = block.images.filter((_, idx) => idx !== i);
-                                        onChange({ ...block, images: newImages });
-                                    }} className={ed.galleryRemove}>✕</button>
-                                </div>
-                            ))}
-                        </div>
-                        <input type="file" accept="image/*" hidden id={`gallery-${index}`} onChange={handleImageUpload} />
-                        <label htmlFor={`gallery-${index}`} className={ed.galleryAddLabel}>
-                            {uploading ? "Yüklənir..." : "+ Şəkil əlavə et"}
-                        </label>
-                    </div>
-                );
-        }
-    };
-
-    const blockLabel = BLOCK_TYPES.find(b => b.type === block.type);
-
-    return (
-        <div
-            ref={setNodeRef}
-            className={styles.sectionBlock}
-            style={{
-                transform: CSS.Transform.toString(transform),
-                transition,
-                opacity: isDragging ? 0.5 : hidden ? 0.5 : 1,
-            }}
-        >
-            <div className={styles.sectionBlockHeader}>
-                <div className={styles.sectionBlockLeft}>
-                    <span className={styles.dragHandle} {...attributes} {...listeners}>⠿</span>
-                    <span className={styles.sectionTypeTag}>{blockLabel?.icon} {blockLabel?.label}</span>
-                    <span className={styles.sectionIndex}>#{index + 1}</span>
-                </div>
-                <div className={styles.sectionBlockRight}>
-                    <button type="button"
-                        className={hidden ? styles.inactiveToggle : styles.activeToggle}
-                        onClick={() => onChange({ ...block, isVisible: hidden })}>
-                        {hidden ? "Gizli" : "Görünür"}
-                    </button>
-                    <button type="button" className={styles.deleteBtn} onClick={onRemove}>Sil</button>
-                </div>
-            </div>
-            <div className={styles.sectionFields}>
-                {renderFields()}
-            </div>
-        </div>
-    );
-}
 
 export default function PulseArticleEditPage() {
     const { id } = useParams();
@@ -465,8 +246,8 @@ export default function PulseArticleEditPage() {
     const [headerPositions, setHeaderPositions] = useState<string[]>([]);
     const [headerOrder, setHeaderOrder] = useState<number>(0);
     const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-    const [blocks, setBlocks] = useState<Block[]>([]);
-    const [blockLocale, setBlockLocale] = useState<EditorLocale>("az");
+    const [content, setContent] = useState<LocalizedValue>({ az: "", en: "", ru: "" });
+    const [contentLocale, setContentLocale] = useState<EditorLocale>("az");
     const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
     const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
     const [authorType, setAuthorType] = useState<"existing" | "custom">("existing");
@@ -503,7 +284,15 @@ export default function PulseArticleEditPage() {
                 setFeatured(a.featured); setHeaderPositions(Array.isArray(a.headerPositions) ? a.headerPositions : []);
                 setHeaderOrder(a.headerOrder || 0);
                 setSelectedKeywords(a.keywords?.map((k: any) => k.id) || []);
-                setBlocks(Array.isArray(a.blocks) ? withBlockIds(normalizeBlocks(a.blocks as Block[]) as Block[]) : []);
+                setContent(
+                    Array.isArray(a.blocks)
+                        ? {
+                            az: blocksToHtml(a.blocks, "az"),
+                            en: blocksToHtml(a.blocks, "en"),
+                            ru: blocksToHtml(a.blocks, "ru"),
+                        }
+                        : { az: "", en: "", ru: "" },
+                );
                 setSelectedArticleIds(a.selectedArticles?.map((s: any) => s.id) || []);
                 setSocialLinks(a.socialLinks || {});
                 setCustomAuthorName(a.socialLinks?.name || "");
@@ -521,42 +310,6 @@ export default function PulseArticleEditPage() {
         if (fileRef.current) fileRef.current.value = "";
     };
 
-    const addBlock = (type: Block["type"]) => {
-        let newBlock: Block;
-        switch (type) {
-            case "heading": newBlock = { type: "heading", level: 2, text: { az: "", en: "", ru: "" } }; break;
-            case "paragraph": newBlock = { type: "paragraph", text: { az: "", en: "", ru: "" } }; break;
-            case "image": newBlock = { type: "image", url: "", alt: { az: "", en: "", ru: "" } }; break;
-            case "list": newBlock = { type: "list", ordered: false, items: [{ az: "", en: "", ru: "" }] }; break;
-            case "faq": newBlock = { type: "faq", question: { az: "", en: "", ru: "" }, answer: { az: "", en: "", ru: "" } }; break;
-            case "quote": newBlock = { type: "quote", text: { az: "", en: "", ru: "" }, author: { az: "", en: "", ru: "" } }; break;
-            case "video": newBlock = { type: "video", url: "" }; break;
-            case "gallery": newBlock = { type: "gallery", images: [] }; break;
-        }
-        setBlocks(prev => [...prev, { ...newBlock!, id: makeBlockId(), isVisible: true }]);
-    };
-
-    const updateBlock = useCallback((index: number, block: Block) => {
-        setBlocks(prev => { const next = [...prev]; next[index] = block; return next; });
-    }, []);
-
-    const removeBlock = useCallback((index: number) => {
-        setBlocks(prev => prev.filter((_, i) => i !== index));
-    }, []);
-
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-    const handleBlockDragEnd = useCallback((event: DragEndEvent) => {
-        const { active, over } = event;
-        if (!over || active.id === over.id) return;
-        setBlocks(prev => {
-            const from = prev.findIndex(b => b.id === active.id);
-            const to = prev.findIndex(b => b.id === over.id);
-            if (from < 0 || to < 0) return prev;
-            return arrayMove(prev, from, to);
-        });
-    }, []);
-
     const save = async () => {
         if (!hasLocalizedValue(title) || !slug.trim() || !hasLocalizedValue(category)) return;
         setSaving(true);
@@ -572,7 +325,9 @@ export default function PulseArticleEditPage() {
                 published, featured,
                 headerPositions,
                 headerOrder: headerOrder || null,
-                blocks: normalizeBlocks(blocks),
+                // Baza sxemi dəyişmir: mətn yenə `blocks` sütununda, yenə paraqraf
+                // bloku kimi gedir — sayt onu olduğu kimi render edir.
+                blocks: [{ id: "content", type: "paragraph", isVisible: true, text: content }],
                 socialLinks: authorType === "custom" ? {
                     ...socialLinks,
                     ...(customAuthorName ? { name: customAuthorName } : {}),
@@ -794,40 +549,28 @@ export default function PulseArticleEditPage() {
             </div>
 
             <div className={styles.settingsCard}>
-                <h3 className={styles.settingsGroupTitle}>Məzmun blokları</h3>
+                <h3 className={styles.settingsGroupTitle}>Məqalə mətni</h3>
                 <div className={ed.langRow}>
                     {EDITOR_LANGS.map((lang) => (
                         <button
                             key={lang.key}
                             type="button"
-                            onClick={() => setBlockLocale(lang.key)}
-                            className={blockLocale === lang.key ? ed.langChipActive : ed.langChip}
+                            onClick={() => setContentLocale(lang.key)}
+                            className={contentLocale === lang.key ? ed.langChipActive : ed.langChip}
                         >
                             {lang.label}
                         </button>
                     ))}
                 </div>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
-                    <SortableContext items={blocks.map((b, i) => b.id ?? `idx-${i}`)} strategy={verticalListSortingStrategy}>
-                        <div className={ed.blockList}>
-                            {blocks.map((block, i) => (
-                                <BlockItem
-                                    key={`${block.id ?? i}-${blockLocale}`} block={block} index={i} locale={blockLocale}
-                                    onChange={b => updateBlock(i, b)}
-                                    onRemove={() => removeBlock(i)}
-                                />
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
 
-                <div className={`${styles.addSectionRow} ${ed.blockAddRow}`}>
-                    {BLOCK_TYPES.map(bt => (
-                        <button key={bt.type} type="button" className={styles.addSectionBtn} onClick={() => addBlock(bt.type)}>
-                            {bt.icon} {bt.label}
-                        </button>
-                    ))}
-                </div>
+                <RichTextEditor
+                    value={content[contentLocale] || ""}
+                    onChange={(html) => setContent(prev => ({ ...prev, [contentLocale]: html }))}
+                    placeholder="Məqalə mətnini buraya yazın…"
+                    minHeight={420}
+                    onUploadImage={uploadArticleMedia}
+                    onUploadVideo={uploadArticleMedia}
+                />
             </div>
         </div>
     );
