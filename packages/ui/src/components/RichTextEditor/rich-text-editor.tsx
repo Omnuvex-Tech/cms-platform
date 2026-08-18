@@ -48,7 +48,10 @@ export interface RichTextEditorProps {
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
-    /** Minimum height of the writing area in pixels. */
+    /**
+     * Height the writing area opens at, in pixels. It is a starting point, not a
+     * floor: the author can drag the bottom edge to any height from 120px up.
+     */
     minHeight?: number;
     className?: string;
     /**
@@ -497,7 +500,7 @@ export function RichTextEditor({
         editorProps: {
             attributes: {
                 class: "treva-rte__content",
-                style: `min-height:${minHeight}px`,
+                style: `height:${minHeight}px`,
             },
             // Dropping runs through this too, so an image moved inside the editor
             // would lose the width its author set. `view.dragging` is only filled in
@@ -799,6 +802,12 @@ export function RichTextEditor({
                     /* Extra left padding is the gutter the drag handle sits in,
                        so it is never clipped by the container's rounded edge. */
                     padding: 16px 16px 16px 44px;
+                    /* The browser's own corner grip. A min-height instead of a
+                       height would only ever let the box grow, which is what
+                       made the writing area impossible to shrink. */
+                    resize: vertical;
+                    overflow: auto;
+                    min-height: 120px;
                     outline: none;
                     font-size: 14px;
                     line-height: 22px;
