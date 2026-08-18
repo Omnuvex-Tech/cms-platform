@@ -580,7 +580,7 @@ export default function PulseArticleEditPage() {
                     value={content[contentLocale] || ""}
                     onChange={(html) => setContent(prev => ({ ...prev, [contentLocale]: html }))}
                     placeholder="Məqalə mətnini buraya yazın…"
-                    minHeight={320}
+                    minHeight={240}
                     onUploadImage={uploadArticleMedia}
                     onUploadVideo={uploadArticleMedia}
                 />
