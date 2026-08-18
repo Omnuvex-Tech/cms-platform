@@ -148,13 +148,22 @@ function withBlockIds(input: Block[]): Block[] {
     return (input || []).map(block => (block.id ? block : { ...block, id: makeBlockId() }));
 }
 
+/**
+ * Ən köhnə məqalələrdə mətn `text` yox, düz sətir olan `content` sahəsində
+ * qalıb. Redaktor yalnız `text`-ə baxdığı üçün belə bloklar boş açılırdı və
+ * saxlayanda mətn görünməz qalırdı — geri qayıdış onları xilas edir.
+ */
+function legacyText(block: any): LocalizedText {
+    return block.text ?? (typeof block.content === "string" ? block.content : undefined);
+}
+
 function normalizeBlocks(input: Block[]): any[] {
     return (input || []).map((block) => {
         switch (block.type) {
             case "heading":
-                return { ...block, text: normalizeLocalizedText(block.text) };
+                return { ...block, text: normalizeLocalizedText(legacyText(block)) };
             case "paragraph":
-                return { ...block, text: normalizeLocalizedText(block.text) };
+                return { ...block, text: normalizeLocalizedText(legacyText(block)) };
             case "image":
                 return {
                     ...block,
@@ -172,7 +181,7 @@ function normalizeBlocks(input: Block[]): any[] {
             case "quote":
                 return {
                     ...block,
-                    text: normalizeLocalizedText(block.text),
+                    text: normalizeLocalizedText(legacyText(block)),
                     ...(block.author !== undefined ? { author: normalizeLocalizedText(block.author) } : {}),
                 };
             case "video":
