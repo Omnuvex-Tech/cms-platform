@@ -279,17 +279,13 @@ function HeroSection({ data, onChange, lang }: { data: AboutData; onChange: (d: 
           onChange={e => updL("heroImageAlt", e.target.value)} />
       </div>
 
-      <div className={styles.twoCol}>
-        <div className={styles.field}>
-          <label>Badge ({lang.toUpperCase()})</label>
-          <input className={styles.input} value={data.heroBadge[lang] ?? ""}
-            placeholder="Haqqımızda" onChange={e => updL("heroBadge", e.target.value)} />
-        </div>
-        <div className={styles.field}>
-          <label>Başlıq ({lang.toUpperCase()})</label>
-          <input className={styles.input} value={data.heroTitle[lang] ?? ""}
-            placeholder="SİZİN RƏQƏMSAL KOMANDANIZ" onChange={e => updL("heroTitle", e.target.value)} />
-        </div>
+         <div className={styles.field}>
+        <label>Badge ({lang.toUpperCase()})</label>
+        <RichEditor value={data.heroBadge[lang] ?? ""} onChange={v => updL("heroBadge", v)} />
+      </div>
+      <div className={styles.field}>
+        <label>Başlıq ({lang.toUpperCase()})</label>
+        <RichEditor value={data.heroTitle[lang] ?? ""} onChange={v => updL("heroTitle", v)} />
       </div>
 
       <div className={styles.sectionDivider} />
@@ -327,12 +323,10 @@ function HeroSection({ data, onChange, lang }: { data: AboutData; onChange: (d: 
             <button type="button" className={styles.removeBtn} onClick={() => removeStat(i)}>✕</button>
           </div>
           <div className={styles.twoCol}>
-            <div className={styles.field}>
+                      <div className={styles.field}>
               <label>Label ({lang.toUpperCase()})</label>
-              <input className={styles.input}
-                value={stat.label?.[lang] ?? ""}
-                placeholder="TƏƏSSÜRATlAR"
-                onChange={e => updateStat(i, "label", { ...stat.label, [lang]: e.target.value })} />
+              <RichEditor value={stat.label?.[lang] ?? ""}
+                onChange={v => updateStat(i, "label", { ...stat.label, [lang]: v })} />
             </div>
             <div className={styles.field}>
               <label>Dəyər</label>
@@ -380,10 +374,10 @@ function StorySection({ data, onChange, lang }: { data: AboutData; onChange: (d:
             <span className={styles.contentItemLabel}>Blok #{i + 1}</span>
             <button type="button" className={styles.removeBtn} onClick={() => removeBlock(i)}>✕</button>
           </div>
-          <div className={styles.field}>
+                 <div className={styles.field}>
             <label>Başlıq ({lang.toUpperCase()})</label>
-            <input className={styles.input} value={block.title[lang] ?? ""}
-              onChange={e => updateBlock(i, "title", { ...block.title, [lang]: e.target.value })} />
+            <RichEditor value={block.title[lang] ?? ""}
+              onChange={v => updateBlock(i, "title", { ...block.title, [lang]: v })} />
           </div>
           <label className={styles.sectionGroupLabel}>Paraqraflar ({lang.toUpperCase()})</label>
           {block.paragraphs.map((p, j) => (
@@ -427,21 +421,16 @@ function TeamSection({ data, onChange, lang }: { data: AboutData; onChange: (d: 
       <h3 className={styles.drawerSectionTitle}>Team Bölməsi (Sol Yazı)</h3>
       <div className={styles.field}>
         <label>Başlıq ({lang.toUpperCase()})</label>
-        <input className={styles.input} value={data.teamTitle[lang] ?? ""}
-          placeholder="İLHAM VERƏN KOMANDA" onChange={e => updL("teamTitle", e.target.value)} />
+        <RichEditor value={data.teamTitle[lang] ?? ""} onChange={v => updL("teamTitle", v)} />
       </div>
       <div className={styles.field}>
         <label>Təsvir ({lang.toUpperCase()})</label>
-        <textarea className={styles.input} value={data.teamDescription[lang] ?? ""}
-          placeholder="Biz tipik bir marketinq şirkəti deyilik..."
-          rows={4} style={{ resize: "vertical", minHeight: 100 }}
-          onChange={e => updL("teamDescription", e.target.value)} />
+        <RichEditor value={data.teamDescription[lang] ?? ""} onChange={v => updL("teamDescription", v)} />
       </div>
       <div className={styles.twoCol}>
         <div className={styles.field}>
           <label>Button mətni ({lang.toUpperCase()})</label>
-          <input className={styles.input} value={data.teamCtaLabel[lang] ?? ""}
-            placeholder="Keçid edin →" onChange={e => updL("teamCtaLabel", e.target.value)} />
+          <RichEditor value={data.teamCtaLabel[lang] ?? ""} onChange={v => updL("teamCtaLabel", v)} />
         </div>
         <div className={styles.field}>
           <label>Button linki</label>

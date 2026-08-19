@@ -251,3 +251,14 @@
 .toggleFixed.inactiveToggle {
   width: 33%;
 }
+
+
+.authorNameCell * ,
+.authorRoleCell * {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  display: inline;
+}

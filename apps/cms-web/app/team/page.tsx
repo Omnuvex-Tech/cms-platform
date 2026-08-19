@@ -438,8 +438,8 @@ function SortableAuthorRow({ a, onEdit, onDelete, onToggleVisibility, onToggleOu
           <img src={toAbsUrl(a.avatar)} alt="" className={styles.authorAvatar} />
         )}
       </td>
-      <td style={{ whiteSpace: "pre-line" }}>{nameAz}</td>
-      <td>{roleAz || "—"}</td>
+      <td className={styles.authorNameCell} dangerouslySetInnerHTML={{ __html: nameAz }} />
+      <td className={styles.authorRoleCell}>{roleAz ? <div dangerouslySetInnerHTML={{ __html: roleAz }} /> : "—"}</td>
       <td>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button type="button"
@@ -783,46 +783,29 @@ export default function BlogAuthorsPage() {
                     placeholder="Almaz Abdullayeva şəkli" />
                 </div>
               </div>
-              <div className={styles.twoCol}>
-                <div className={styles.field}>
-                  <label>Ad Soyad * ({activeLang.toUpperCase()}) <small style={{ color: "#94a3b8" }}>Shift+Enter = yeni sətir</small></label>
-                  <textarea
-                    className={styles.input}
-                    rows={2}
-                    value={name[activeLang] || ""}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setName(prev => ({ ...prev, [activeLang]: val }));
-                      if (activeLang === "az") setSlug(generateSlug(val));
-                    }}
-                    placeholder={"Rena\nCeferova"}
-                    style={{ resize: "vertical", minHeight: 44, fontFamily: "inherit" }}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label>Slug</label>
-                  <input className={styles.input} value={slug}
-                    onChange={e => setSlug(e.target.value)}
-                    placeholder="almaz-abdullayeva" />
-                </div>
+                     <div className={styles.field}>
+                <label>Ad Soyad * ({activeLang.toUpperCase()})</label>
+                <RichEditor
+                  value={name[activeLang] || ""}
+                  onChange={val => {
+                    setName(prev => ({ ...prev, [activeLang]: val }));
+                    if (activeLang === "az") setSlug(generateSlug(val.replace(/<[^>]*>/g, " ")));
+                  }}
+                />
+              </div>
+              <div className={styles.field}>
+                <label>Slug</label>
+                <input className={styles.input} value={slug}
+                  onChange={e => setSlug(e.target.value)}
+                  placeholder="almaz-abdullayeva" />
               </div>
               <div className={styles.field}>
                 <label>Vəzifə ({activeLang.toUpperCase()})</label>
-                <input className={styles.input} value={role[activeLang] || ""}
-                  onChange={e => setRole(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                  placeholder="Baş İcarçı Direktor" />
+                <LocalizedRichEditor value={role} lang={activeLang} onChange={setRole} />
               </div>
               <div className={styles.field}>
                 <label>Bio ({activeLang.toUpperCase()})</label>
-                <textarea className={styles.input} value={bio[activeLang] || ""}
-                  onChange={e => setBio(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                  rows={4} placeholder="Author haqqında qısa məlumat..."
-                  style={{ resize: "vertical", minHeight: 100 }} />
+                <LocalizedRichEditor value={bio} lang={activeLang} onChange={setBio} />
               </div>
               <div className={styles.twoCol}>
                 <div className={styles.field}>
@@ -838,21 +821,22 @@ export default function BlogAuthorsPage() {
                     placeholder="/uploads/blog/linkedin.svg" />
                 </div>
               </div>
-              <div className={styles.field}>
+                           <div className={styles.field}>
                 <label>Skills başlığı ({activeLang.toUpperCase()})</label>
-                <input className={styles.input} value={skillsTitle[activeLang] || ""}
-                  onChange={e => setSkillsTitle(prev => ({ ...prev, [activeLang]: e.target.value }))}
-                  placeholder="SKILLS" />
+                <LocalizedRichEditor value={skillsTitle} lang={activeLang} onChange={setSkillsTitle} />
               </div>
-              <div className={styles.field}>
+                      <div className={styles.field}>
                 <label>Skills ({activeLang.toUpperCase()})</label>
                 {skills.map((skill, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-                    <input className={styles.input} value={skill[activeLang] || ""}
-                      onChange={e => updateSkill(i, activeLang, e.target.value)}
-                      placeholder="Management" />
+                  <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <RichEditor
+                        value={skill[activeLang] || ""}
+                        onChange={val => updateSkill(i, activeLang, val)}
+                      />
+                    </div>
                     <button type="button" onClick={() => removeSkill(i)}
-                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>
+                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16, marginTop: 8 }}>
                       ✕
                     </button>
                   </div>

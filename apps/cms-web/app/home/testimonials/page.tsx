@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Heading from "@tiptap/extension-heading";
 import {
     DndContext,
     closestCenter,
@@ -17,6 +21,44 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/testimonials.module.css";
+
+function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    const editor = useEditor({
+        extensions: [StarterKit, Underline, Heading.configure({ levels: [1, 2, 3, 4, 5, 6] })],
+        content: value,
+        onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    });
+
+    useEffect(() => {
+        if (editor && editor.getHTML() !== value) {
+            editor.commands.setContent(value || "");
+        }
+    }, [value]);
+
+    return (
+        <div className={styles.richEditor}>
+            <div className={styles.richToolbar}>
+                <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()}
+                    className={editor?.isActive("bold") ? styles.toolbarBtnActive : styles.toolbarBtn}><b>B</b></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    className={editor?.isActive("italic") ? styles.toolbarBtnActive : styles.toolbarBtn}><i>I</i></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                    className={editor?.isActive("underline") ? styles.toolbarBtnActive : styles.toolbarBtn}><u>U</u></button>
+                <div className={styles.toolbarDivider} />
+                {([1, 2, 3, 4, 5, 6] as const).map(level => (
+                    <button key={level} type="button"
+                        onClick={() => editor?.chain().focus().toggleHeading({ level }).run()}
+                        className={editor?.isActive("heading", { level }) ? styles.toolbarBtnActive : styles.toolbarBtn}>
+                        H{level}
+                    </button>
+                ))}
+                <button type="button" onClick={() => editor?.chain().focus().setParagraph().run()}
+                    className={editor?.isActive("paragraph") ? styles.toolbarBtnActive : styles.toolbarBtn}>P</button>
+            </div>
+            <EditorContent editor={editor} className={styles.richContent} />
+        </div>
+    );
+}
 
 type LocalizedString = Record<string, string>;
 
@@ -90,10 +132,14 @@ function SortableRow({
         background: isDragging ? "#f0f7ff" : undefined,
     };
 
-    const quoteAz = t.quote?.az || "";
-    const nameAz = t.name?.az || "";
-    const roleAz = t.role?.az || "";
-    const companyAz = t.company?.az || "";
+    function stripHtml(html: string) {
+        return html.replace(/<[^>]*>/g, "");
+    }
+
+    const quoteAz = stripHtml(t.quote?.az || "");
+    const nameAz = stripHtml(t.name?.az || "");
+    const roleAz = stripHtml(t.role?.az || "");
+    const companyAz = stripHtml(t.company?.az || "");
 
     return (
         <tr ref={setNodeRef} style={style}>
@@ -406,21 +452,16 @@ export default function TestimonialsPage() {
                 <div className={styles.sectionFields}>
                     <div className={styles.field}>
                         <label>Başlıq ({sectionActiveLang.toUpperCase()})</label>
-                        <input
-                            className={styles.input}
+                        <RichEditor
                             value={sectionTitle[sectionActiveLang] || ""}
-                            onChange={(e) => updateLocalizedField(setSectionTitle, sectionActiveLang, e.target.value)}
-                            placeholder="Müştəri Rəyləri"
+                            onChange={(v) => updateLocalizedField(setSectionTitle, sectionActiveLang, v)}
                         />
                     </div>
                     <div className={styles.field}>
                         <label>Təsvir ({sectionActiveLang.toUpperCase()})</label>
-                        <textarea
-                            className={styles.textarea}
+                        <RichEditor
                             value={sectionDesc[sectionActiveLang] || ""}
-                            onChange={(e) => updateLocalizedField(setSectionDesc, sectionActiveLang, e.target.value)}
-                            placeholder="Bölmə təsviri..."
-                            rows={3}
+                            onChange={(v) => updateLocalizedField(setSectionDesc, sectionActiveLang, v)}
                         />
                     </div>
                 </div>
@@ -486,44 +527,33 @@ export default function TestimonialsPage() {
 
                             <div className={styles.field}>
                                 <label>Şirkət ({modalActiveLang.toUpperCase()})</label>
-                                <input
-                                    className={styles.input}
+                                <RichEditor
                                     value={company[modalActiveLang] || ""}
-                                    onChange={(e) => updateLocalizedField(setCompany, modalActiveLang, e.target.value)}
-                                    placeholder="MAZDA"
+                                    onChange={(v) => updateLocalizedField(setCompany, modalActiveLang, v)}
                                 />
                             </div>
 
                             <div className={styles.field}>
                                 <label>Sitat ({modalActiveLang.toUpperCase()})</label>
-                                <textarea
-                                    className={styles.textarea}
+                                <RichEditor
                                     value={quote[modalActiveLang] || ""}
-                                    onChange={(e) => updateLocalizedField(setQuote, modalActiveLang, e.target.value)}
-                                    placeholder="Rəy mətni..."
-                                    rows={3}
+                                    onChange={(v) => updateLocalizedField(setQuote, modalActiveLang, v)}
                                 />
                             </div>
 
-                            <div className={styles.twoCol}>
-                                <div className={styles.field}>
-                                    <label>Ad Soyad ({modalActiveLang.toUpperCase()})</label>
-                                    <input
-                                        className={styles.input}
-                                        value={name[modalActiveLang] || ""}
-                                        onChange={(e) => updateLocalizedField(setName, modalActiveLang, e.target.value)}
-                                        placeholder="Aşur Cəbiyev"
-                                    />
-                                </div>
-                                <div className={styles.field}>
-                                    <label>Vəzifə ({modalActiveLang.toUpperCase()})</label>
-                                    <input
-                                        className={styles.input}
-                                        value={role[modalActiveLang] || ""}
-                                        onChange={(e) => updateLocalizedField(setRole, modalActiveLang, e.target.value)}
-                                        placeholder="CEO @ Company"
-                                    />
-                                </div>
+                            <div className={styles.field}>
+                                <label>Ad Soyad ({modalActiveLang.toUpperCase()})</label>
+                                <RichEditor
+                                    value={name[modalActiveLang] || ""}
+                                    onChange={(v) => updateLocalizedField(setName, modalActiveLang, v)}
+                                />
+                            </div>
+                            <div className={styles.field}>
+                                <label>Vəzifə ({modalActiveLang.toUpperCase()})</label>
+                                <RichEditor
+                                    value={role[modalActiveLang] || ""}
+                                    onChange={(v) => updateLocalizedField(setRole, modalActiveLang, v)}
+                                />
                             </div>
 
                             <div className={styles.field}>
