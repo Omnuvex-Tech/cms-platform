@@ -166,10 +166,11 @@ export function Sidebar() {
                                     />
                                 </button>
                                 {/* Always rendered — the open/closed height is animated in CSS,
-                                    and `inert` keeps a collapsed group out of the tab order. */}
+                                    and `inert` keeps a collapsed group out of the tab order.
+                                    React 19 tanıyır: boolean ötürülür, boş sətir yox. */}
                                 <div
                                     className={`${styles.dropdown} ${openItems.includes(item.label) ? styles.dropdownOpen : ""}`}
-                                    {...(openItems.includes(item.label) ? {} : { inert: "" as never })}
+                                    inert={!openItems.includes(item.label)}
                                 >
                                     <div className={styles.dropdownInner}>
                                         <div className={styles.dropdownList}>

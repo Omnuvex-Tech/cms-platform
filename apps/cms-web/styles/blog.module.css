@@ -2255,3 +2255,164 @@ textarea.langControl {
     color: var(--text);
 }
 
+
+/* ---------- Tarix seçicisi ----------
+   Native `<input type="date">`-in təqvim pəncərəsini brauzer çəkir və CSS-ə
+   tabe deyil (Chrome-un öz mavi qutusu). Bu, öz təqvimimizdir. */
+
+.dateRoot {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.dateTrigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    height: 36px;
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    font-family: inherit;
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+
+.dateTrigger:hover { border-color: var(--n-300); }
+
+.dateTrigger:focus-visible,
+.dateTriggerOpen {
+    border-color: var(--brand-600);
+    box-shadow: var(--ring);
+    outline: none;
+}
+
+.dateTrigger:disabled {
+    background: var(--n-50);
+    color: var(--text-faint);
+    cursor: not-allowed;
+}
+
+.dateValue { color: var(--text); font-variant-numeric: tabular-nums; }
+.datePlaceholder { color: var(--text-faint); }
+.dateIcon { flex-shrink: 0; color: var(--text-faint); }
+.dateTriggerOpen .dateIcon { color: var(--brand-600); }
+
+.dateMenu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 60;
+    width: 268px;
+    padding: var(--sp-3);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-3);
+}
+
+.dateHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+}
+
+.dateTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.dateNav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+.dateNav:hover { background: var(--n-100); color: var(--text); }
+
+.dateWeekRow,
+.dateGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.dateWeekday {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-faint);
+    user-select: none;
+}
+
+.dateCell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    border-radius: var(--r-sm);
+    font-size: 12.5px;
+    color: var(--text);
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+.dateCell:hover { background: var(--n-100); }
+
+/* Qonşu ayların günləri sönükdür — şəbəkə tam qalır, amma diqqət çəkmir. */
+.dateCellOutside { color: var(--n-300); }
+
+/* Bugün: yalnız kənar xətt, dolğu yox — seçili gün ilə qarışmasın. */
+.dateCellToday {
+    box-shadow: inset 0 0 0 1px var(--brand-300);
+    color: var(--brand-700);
+    font-weight: 600;
+}
+
+.dateCellSelected {
+    background: var(--brand-600);
+    color: var(--text-invert);
+    font-weight: 600;
+}
+
+.dateCellSelected:hover { background: var(--brand-700); }
+
+.dateFoot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--border);
+}
+
+.dateFootBtn {
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--brand-600);
+    cursor: pointer;
+    transition: background var(--dur-1) var(--ease);
+}
+
+.dateFootBtn:hover { background: var(--brand-50); }
