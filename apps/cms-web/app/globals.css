@@ -6,38 +6,262 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 @source "../../../packages/ui/src";
 
+/* ==========================================================================
+   Design tokens
+   Single source of truth for colour, spacing, radius, elevation and motion.
+   Everything below this block — and every CSS module — reads from here, so a
+   brand change is a one-line change.
+   ========================================================================== */
+:root {
+    /* Brand — the panel's blue. One ramp, derived from the existing #0148C2. */
+    --brand-50:  #eff4fd;
+    --brand-100: #dbe6fb;
+    --brand-200: #bcd0f7;
+    --brand-300: #8db1f0;
+    --brand-400: #5688e6;
+    --brand-500: #2f66d8;
+    --brand-600: #0148c2;
+    --brand-700: #013da5;
+    --brand-800: #063588;
+    --brand-900: #0a2f6f;
+
+    /* Neutrals — slightly cool, so the blue never looks out of place. */
+    --n-0:   #ffffff;
+    --n-25:  #fbfcfd;
+    --n-50:  #f5f6f8;
+    --n-100: #eef0f4;
+    --n-150: #e6e9ef;
+    --n-200: #dde1e8;
+    --n-300: #c4cad5;
+    --n-400: #9aa2b1;
+    --n-500: #737c8c;
+    --n-600: #58606e;
+    --n-700: #414855;
+    --n-800: #2b313b;
+    --n-900: #14181f;
+
+    /* Status — muted, so a table full of badges stays calm. */
+    --ok-bg:    #e7f6ec;   --ok-fg:    #17683a;   --ok-br:   #b8e2c6;
+    --warn-bg:  #fdf3e2;   --warn-fg:  #8a5300;   --warn-br: #f3ddb4;
+    --dang-bg:  #fdecec;   --dang-fg:  #b3261e;   --dang-br: #f5c9c6;
+    --info-bg:  var(--brand-50); --info-fg: var(--brand-700); --info-br: var(--brand-200);
+
+    /* Semantic surfaces */
+    --canvas:        var(--n-50);
+    --surface:       var(--n-0);
+    --surface-sunk:  var(--n-25);
+    --surface-alt:   var(--n-100);
+    --border:        var(--n-150);
+    --border-strong: var(--n-200);
+
+    /* Text */
+    --text:        var(--n-900);
+    --text-muted:  var(--n-600);
+    --text-subtle: var(--n-500);
+    --text-faint:  var(--n-400);
+    --text-invert: var(--n-0);
+
+    /* Spacing — 4px base. */
+    --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+    --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
+    --sp-12: 48px; --sp-16: 64px;
+
+    /* Radius — restrained. Fluent-scale, not pill-shaped. */
+    --r-xs: 3px;  --r-sm: 4px;  --r-md: 6px;
+    --r-lg: 8px;  --r-xl: 12px; --r-full: 999px;
+
+    /* Elevation — four steps, all near-neutral. No coloured glows. */
+    --sh-1: 0 1px 2px rgba(20, 24, 31, 0.06);
+    --sh-2: 0 1px 2px rgba(20, 24, 31, 0.05), 0 2px 6px rgba(20, 24, 31, 0.05);
+    --sh-3: 0 2px 4px rgba(20, 24, 31, 0.05), 0 8px 20px rgba(20, 24, 31, 0.08);
+    --sh-4: 0 8px 16px rgba(20, 24, 31, 0.08), 0 24px 48px rgba(20, 24, 31, 0.12);
+
+    /* Focus — one ring, used everywhere, always visible. */
+    --ring: 0 0 0 3px var(--brand-100);
+    --ring-strong: 0 0 0 3px var(--brand-200);
+
+    /* Motion — short and flat; nothing bounces. */
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --dur-1: 120ms;
+    --dur-2: 180ms;
+    --dur-3: 240ms;
+
+    /* Layout */
+    --sidebar-w: 264px;
+    --topbar-h: 60px;
+
+    /* Type */
+    --font: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
-    font-family: 'Poppins', sans-serif;
-    background: #f5f7fa;
-    color: #1a1a1a;
+    font-family: var(--font);
+    background: var(--canvas);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Base layer — shared behaviour the modules should not each re-declare.
+   Kept to element selectors so Tailwind utilities always win.
+   -------------------------------------------------------------------------- */
+a[href],
+button:not(:disabled),
+summary,
+label[for],
+select:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="file"]:not(:disabled) {
+    cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+    cursor: not-allowed;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+/* Tailwind's Preflight is deliberately off (see the top of this file), so a
+   <button> that does not set its own border keeps the browser's default
+   `2px outset` frame. That is why the shared RichTextEditor toolbar rendered
+   every icon inside a grey box. Components that want a border still declare
+   one — a class always beats this element selector. */
+button {
+    background-color: transparent;
+    border: 0;
+}
+
+/* One focus treatment for the whole panel. Pointer clicks stay quiet,
+   keyboard navigation is always obvious. */
+:focus-visible {
+    outline: 2px solid var(--brand-600);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+::selection {
+    background: var(--brand-100);
+    color: var(--brand-800);
+}
+
+::placeholder {
+    color: var(--text-faint);
+}
+
+/* Slim scrollbars — the panel has a lot of scrollable panes. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--n-300) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--n-300);
+    border-radius: var(--r-full);
+    border: 3px solid transparent;
+    background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--n-400);
+    background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 @font-face {
     font-family: 'Poppins';
     src: url('/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
     font-weight: 400;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'Poppins';
     src: url('/fonts/Poppins/Poppins-Medium.ttf') format('truetype');
     font-weight: 500;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'Poppins';
     src: url('/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
     font-weight: 600;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'Poppins';
     src: url('/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
     font-weight: 700;
+    font-display: swap;
+}
+
+/* The shared RichTextEditor is written with Tailwind utilities, but this panel
+   loads Tailwind without preflight, so its <button> elements keep the browser's
+   default border and background and every toolbar icon renders inside a box.
+   The reset below restores what preflight would have done, scoped to the editor
+   and placed in the base layer so the editor's own utilities still win. */
+@layer base {
+    .rte-scope :where(button) {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+        color: inherit;
+        font: inherit;
+        line-height: inherit;
+    }
 }

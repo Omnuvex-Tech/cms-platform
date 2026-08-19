@@ -1,8 +1,12 @@
+/* Sidebar — fixed navigation rail.
+   Active state is carried by a 3px left indicator rather than a filled pill,
+   so a long menu reads as one column instead of a stack of blue blocks. */
+
 .sidebar {
-    width: 260px;
+    width: var(--sidebar-w);
     height: 100vh;
-    background: #fff;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -11,139 +15,270 @@
     z-index: 100;
 }
 
+/* ---------- Brand ---------- */
+
 .logoWrap {
-    padding: 28px 24px 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    height: var(--topbar-h);
+    padding: 0 var(--sp-5);
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
 
 .logo {
-    height: 32px;
+    height: 26px;
+    width: auto;
 }
+
+/* ---------- Nav ---------- */
 
 .nav {
     flex: 1;
     min-height: 0;
-    padding: 16px 12px;
+    padding: var(--sp-3) var(--sp-3) var(--sp-4);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     overflow-y: auto;
-    scrollbar-width: none;     
-    -ms-overflow-style: none; 
+    overscroll-behavior: contain;
 }
 
-.nav::-webkit-scrollbar {
-    display: none;     
+/* Optional group heading, e.g. "Məzmun". Uppercase, quiet, never clickable. */
+.navGroupLabel {
+    padding: var(--sp-4) var(--sp-3) var(--sp-2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    user-select: none;
 }
+
+.navGroupLabel:first-child {
+    padding-top: var(--sp-2);
+}
+
 .navItem {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-family: 'Poppins';
+    gap: var(--sp-3);
+    height: 38px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-md);
+    font-family: var(--font);
     font-weight: 500;
-    font-size: 14px;
-    color: rgba(60, 60, 60, 1);
+    font-size: 13.5px;
+    color: var(--text-muted);
     text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease;
     border: none;
     background: transparent;
     cursor: pointer;
     width: 100%;
     text-align: left;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+/* The indicator. Scales from the centre so it wipes in rather than blinking. */
+.navItem::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    width: 3px;
+    height: 18px;
+    margin-top: -9px;
+    border-radius: 0 var(--r-full) var(--r-full) 0;
+    background: var(--brand-600);
+    transform: scaleY(0);
+    transition: transform var(--dur-2) var(--ease);
 }
 
 .navItem:hover {
-    background: rgba(1, 72, 194, 0.06);
-    color: rgba(1, 72, 194, 1);
+    background: var(--n-100);
+    color: var(--text);
+}
+
+.navItem:active {
+    background: var(--n-150);
 }
 
 .navItemActive {
-    background: rgba(1, 72, 194, 0.08);
-    color: rgba(1, 72, 194, 1);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-weight: 600;
+}
+
+.navItemActive::before {
+    transform: scaleY(1);
+}
+
+.navItemActive:hover {
+    background: var(--brand-50);
+    color: var(--brand-700);
+}
+
+/* A collapsed parent whose child is the current page: tinted text, no fill,
+   so the child underneath stays the one obvious "you are here". */
+.navItemOpen {
+    color: var(--text);
 }
 
 .navItemDropdown {
     justify-content: flex-start;
 }
 
-.navItemOpen {
-    color: rgba(1, 72, 194, 1);
+.navIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: currentColor;
+    opacity: 0.85;
 }
 
-.navIcon {
-    font-size: 16px;
-    width: 20px;
-    flex-shrink: 0;
+.navItemActive .navIcon {
+    opacity: 1;
 }
 
 .navLabel {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .chevron {
-    transition: transform 0.2s ease;
     flex-shrink: 0;
+    color: var(--text-faint);
+    transition: transform var(--dur-2) var(--ease);
 }
 
 .chevronOpen {
     transform: rotate(180deg);
 }
 
+/* ---------- Submenu ----------
+   Height animates via grid-template-rows so it works without a fixed height. */
+
 .dropdown {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows var(--dur-3) var(--ease),
+        opacity var(--dur-2) var(--ease);
+}
+
+.dropdownOpen {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.dropdownInner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* The guide line ties the children to their parent. Fades at both ends so it
+   never collides with the rows above and below. */
+.dropdownList {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 1px;
-    padding: 4px 0 4px 44px;
+    margin: var(--sp-1) 0 var(--sp-2) 22px;
+    padding-left: var(--sp-3);
+}
+
+.dropdownList::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 1px;
+    background: var(--border-strong);
 }
 
 .dropdownItem {
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-family: 'Poppins';
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-md);
+    font-family: var(--font);
     font-weight: 400;
     font-size: 13px;
-    color: rgba(80, 80, 80, 1);
+    color: var(--text-muted);
     text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 
 .dropdownItem:hover {
-    background: rgba(1, 72, 194, 0.05);
-    color: rgba(1, 72, 194, 1);
+    background: var(--n-100);
+    color: var(--text);
 }
 
+/* Active child: the guide line thickens next to it instead of adding a
+   second indicator style. */
 .dropdownItemActive {
-    background: rgba(1, 72, 194, 0.08);
-    color: rgba(1, 72, 194, 1);
-    font-weight: 500;
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-weight: 600;
 }
+
+.dropdownItemActive::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--sp-3) * -1);
+    top: 7px;
+    bottom: 7px;
+    width: 2px;
+    border-radius: var(--r-full);
+    background: var(--brand-600);
+}
+
+.dropdownItemActive:hover {
+    background: var(--brand-50);
+    color: var(--brand-700);
+}
+
+/* ---------- Footer ---------- */
 
 .logoutWrap {
-    padding: 16px 12px 24px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: var(--sp-3);
+    border-top: 1px solid var(--border);
     flex-shrink: 0;
 }
 
 .logoutBtn {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-family: 'Poppins';
+    gap: var(--sp-3);
+    height: 38px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-md);
+    font-family: var(--font);
     font-weight: 500;
-    font-size: 14px;
-    color: rgba(200, 50, 50, 1);
+    font-size: 13.5px;
+    color: var(--text-muted);
     border: none;
     background: transparent;
     cursor: pointer;
     width: 100%;
-    transition: background 0.15s ease;
+    text-align: left;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 
+/* Destructive colour appears on intent, not at rest — a red row sitting in the
+   menu all day reads as an error state. */
 .logoutBtn:hover {
-    background: rgba(200, 50, 50, 0.06);
+    background: var(--dang-bg);
+    color: var(--dang-fg);
 }

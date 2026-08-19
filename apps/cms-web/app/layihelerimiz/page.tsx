@@ -19,6 +19,8 @@ import { CSS } from "@dnd-kit/utilities";
 import {
     LangTabs, toLocalized, type Lang, type LocalizedString,
 } from "@/components/RichEditor";
+import { Thumb } from "@/components/Thumb";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import styles from "@/styles/layihelerimiz.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -219,9 +221,11 @@ function SortableRow({ item, onEdit, onToggle, onDelete }: {
             </td>
             <td>
                 <div className={styles.serviceInfo}>
-                    {item.image
-                        ? <img src={toAbsUrl(item.image)} alt="" className={styles.coverThumb} />
-                        : <div className={styles.imagePlaceholder}>Şəkil yoxdur</div>}
+                    <Thumb
+                        src={item.image ? toAbsUrl(item.image) : null}
+                        className={styles.coverThumb}
+                        fallbackClassName={styles.thumbFallback}
+                    />
                     <div>
                         <div className={styles.serviceTitle}>{title}</div>
                         <div className={styles.serviceSlug}>/{item.slug}</div>
@@ -265,6 +269,8 @@ export default function LayihelerimizPage() {
     const [form, setForm] = useState(emptyForm);
     const [imageUploading, setImageUploading] = useState(false);
     const [brandImageUploading, setBrandImageUploading] = useState(false);
+    const [confirmTarget, setConfirmTarget] = useState<LayihelerimizCategory | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const brandFileInputRef = useRef<HTMLInputElement>(null);
@@ -439,14 +445,18 @@ export default function LayihelerimizPage() {
         }
     };
 
-    const handleDelete = async (item: LayihelerimizCategory) => {
-        const name = lv(item.title).az || item.slug;
-        if (!window.confirm(`"${name}" silinsin?`)) return;
+    const handleDelete = async () => {
+        const item = confirmTarget;
+        if (!item) return;
+        setDeleting(true);
         try {
             await cmsApiFetch(`/layihelerimiz/categories/${item.id}`, { method: "DELETE" });
+            setConfirmTarget(null);
             load();
         } catch (e: unknown) {
             alert("Xəta: " + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -526,7 +536,7 @@ export default function LayihelerimizPage() {
                                         <SortableRow key={item.id} item={item}
                                             onEdit={openEdit}
                                             onToggle={toggleVisibility}
-                                            onDelete={handleDelete} />
+                                            onDelete={setConfirmTarget} />
                                     ))}
                                 </tbody>
                             </table>
@@ -584,11 +594,26 @@ export default function LayihelerimizPage() {
                             <div className={styles.twoCol}>
                                 <div className={styles.field}>
                                     <label>Brend mətn rəngi</label>
-                                    <select className={styles.input} value={form.brandTextColor}
-                                        onChange={e => setForm(f => ({ ...f, brandTextColor: e.target.value }))}>
-                                        <option value="white">Ağ</option>
-                                        <option value="black">Qara</option>
-                                    </select>
+                                    {/* İki seçim üçün dropdown əvəzinə segmented control:
+                                        hər iki variant və onların real rəngi eyni anda görünür. */}
+                                    <div className={styles.swatchGroup} role="radiogroup" aria-label="Brend mətn rəngi">
+                                        {([
+                                            { value: "white", label: "Ağ", dot: styles.swatchWhite },
+                                            { value: "black", label: "Qara", dot: styles.swatchBlack },
+                                        ] as const).map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={form.brandTextColor === opt.value}
+                                                className={`${styles.swatchOption} ${form.brandTextColor === opt.value ? styles.swatchOptionActive : ""}`}
+                                                onClick={() => setForm(f => ({ ...f, brandTextColor: opt.value }))}
+                                            >
+                                                <span className={`${styles.swatchDot} ${opt.dot}`} />
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className={styles.field}>
                                     <label>Sıra</label>
@@ -639,6 +664,15 @@ export default function LayihelerimizPage() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={confirmTarget !== null}
+                message="Bu layihə silinəcək:"
+                subject={confirmTarget ? (lv(confirmTarget.title).az || confirmTarget.slug) : undefined}
+                busy={deleting}
+                onConfirm={handleDelete}
+                onCancel={() => setConfirmTarget(null)}
+            />
         </div>
     );
 }

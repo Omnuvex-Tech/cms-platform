@@ -1,49 +1,153 @@
+/* Dashboard landing. Each card is one whole link — the previous build nudged a
+   separate anchor into place with a hard-coded left margin, which is why the
+   buttons sat at different positions in every card. */
+
 .page {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: var(--sp-6);
+}
+
+/* ---------- Page head ---------- */
+
+.head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
 }
 
 .title {
-    font-family: 'Poppins';
-    font-weight: 700;
-    font-size: 32px;
-    color: rgba(20, 20, 20, 1);
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--text);
 }
 
 .subtitle {
-    font-family: 'Poppins';
+    font-family: var(--font);
     font-weight: 400;
-    font-size: 15px;
-    color: rgba(100, 100, 100, 1);
-    margin-top: -24px;
+    font-size: 13.5px;
+    color: var(--text-subtle);
+    margin-top: var(--sp-1);
+}
+
+/* ---------- Section ---------- */
+
+.sectionLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: calc(var(--sp-3) * -1 + var(--sp-1));
 }
 
 .cards {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--sp-4);
 }
 
+/* ---------- Card ---------- */
+
 .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 28px 24px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-5) var(--sp-5) 0;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--sh-1);
+    transition:
+        border-color var(--dur-2) var(--ease),
+        box-shadow var(--dur-2) var(--ease),
+        transform var(--dur-2) var(--ease);
+}
+
+.card:hover {
+    border-color: var(--brand-300);
+    box-shadow: var(--sh-2);
+    transform: translateY(-1px);
+}
+
+.card:active {
+    transform: translateY(0);
+    box-shadow: var(--sh-1);
+}
+
+.cardIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-md);
+    background: var(--brand-50);
+    color: var(--brand-600);
+    margin-bottom: var(--sp-4);
+    flex-shrink: 0;
+    transition: background var(--dur-2) var(--ease);
+}
+
+.card:hover .cardIcon {
+    background: var(--brand-100);
 }
 
 .cardValue {
-    font-family: 'Poppins';
-    font-weight: 700;
-    font-size: 36px;
-    color: rgba(1, 72, 194, 1);
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Placeholder dash when the stat could not be read — keeps the row height
+   identical to a real number so the grid never shifts. */
+.cardValueEmpty {
+    color: var(--n-300);
 }
 
 .cardLabel {
-    font-family: 'Poppins';
-    font-weight: 400;
-    font-size: 14px;
-    color: rgba(100, 100, 100, 1);
-    margin-top: 4px;
+    font-family: var(--font);
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: var(--sp-1);
+}
+
+.cardFoot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--brand-600);
+}
+
+.cardArrow {
+    display: flex;
+    color: var(--brand-600);
+    transition: transform var(--dur-2) var(--ease);
+}
+
+.card:hover .cardArrow {
+    transform: translateX(3px);
+}
+
+@media (max-width: 640px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
 }

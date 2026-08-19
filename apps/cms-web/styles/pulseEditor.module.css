@@ -1,406 +1,505 @@
 /* Pulse məqalə redaktoru.
    blog.module.css əsas skeleti verir (settingsCard, field, input, tabHeader və s.);
-   bu fayl yalnız həmin səhifəyə xas hissələri saxlayır. */
+   bu fayl yalnız həmin səhifəyə xas hissələri saxlayır.
+   Ölçülər və rənglər globals.css-dəki tokenlərdən gəlir. */
 
-/* ── ümumi ── */
+/* ---------- Layout primitives ---------- */
 
 .stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
 }
 
 .row {
-  display: flex;
-  gap: 8px;
+    display: flex;
+    gap: var(--sp-2);
+    align-items: center;
 }
 
 .rowWide {
-  display: flex;
-  gap: 16px;
-  margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    margin-top: var(--sp-3);
 }
 
-.grow {
-  flex: 1;
-}
+.grow { flex: 1; min-width: 0; }
 
 .wrapRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
 }
 
-/* ── seçim düymələri (dil, açar söz, müəllif tipi, məqalə seçimi) ── */
+/* ---------- Selection chips ----------
+   One chip shape for language, keyword, author type and article picking.
+   Selected state is a solid brand fill; the border stays 1px in both states so
+   the chip does not change size when it is picked. */
 
 .chip,
-.chipActive {
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  border: 1.5px solid;
+.chipActive,
+.langChip,
+.langChipActive,
+.pickerChip,
+.pickerChipActive {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 30px;
+    padding: 0 var(--sp-3);
+    border: 1px solid;
+    border-radius: var(--r-md);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        background var(--dur-1) var(--ease),
+        border-color var(--dur-1) var(--ease),
+        color var(--dur-1) var(--ease);
 }
 
-.chip {
-  border-color: #e2e8f0;
-  background: transparent;
-  color: #64748b;
-  font-weight: 400;
+.chip,
+.langChip,
+.pickerChip {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text-muted);
 }
 
-.chipActive {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
+.chip:hover,
+.langChip:hover,
+.pickerChip:hover {
+    border-color: var(--brand-400);
+    background: var(--brand-50);
+    color: var(--brand-700);
+}
+
+.chipActive,
+.langChipActive,
+.pickerChipActive {
+    border-color: var(--brand-600);
+    background: var(--brand-600);
+    color: var(--text-invert);
+}
+
+.chipActive:hover,
+.langChipActive:hover,
+.pickerChipActive:hover {
+    border-color: var(--brand-700);
+    background: var(--brand-700);
+}
+
+.pickerChip:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pickerChip:disabled:hover {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+/* Language switch reads as a segmented control rather than loose pills. */
+.langRow {
+    display: inline-flex;
+    gap: var(--sp-1);
+    padding: var(--sp-1);
+    margin-bottom: var(--sp-4);
+    background: var(--n-100);
+    border-radius: var(--r-lg);
+    /* Flex sütun valideyn stretch etməsin deyə. */
+    align-self: flex-start;
 }
 
 .langChip,
 .langChipActive {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1.5px solid;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
+    border-color: transparent;
+    background: transparent;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 11.5px;
 }
 
-.langChip {
-  border-color: #e2e8f0;
-  background: #fff;
-  color: #475569;
+.langChip:hover {
+    background: var(--n-150);
+    border-color: transparent;
+    color: var(--text);
 }
 
-.langChipActive {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: #fff;
+.langChipActive,
+.langChipActive:hover {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--brand-700);
+    box-shadow: var(--sh-1);
 }
 
-.langRow {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+.pickerThumb {
+    width: 26px;
+    height: 18px;
+    object-fit: cover;
+    border-radius: var(--r-xs);
+    flex-shrink: 0;
 }
 
-/* ── blok sahələri ── */
+/* ---------- Block fields ---------- */
 
 .imageRow {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+    display: flex;
+    gap: var(--sp-3);
+    align-items: flex-start;
 }
 
 .imageMetaRow {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: 6px;
+}
+
+.uploadLabel,
+.dashedBtn,
+.galleryAddLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    height: 34px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 
 .uploadLabel {
-  display: inline-block;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  font-size: 13px;
-  background: #fff;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+}
+
+.uploadLabel:hover {
+    border-color: var(--n-300);
+    background: var(--n-50);
+    color: var(--text);
+}
+
+.dashedBtn,
+.galleryAddLabel {
+    border: 1px dashed var(--n-300);
+    background: var(--surface-sunk);
+}
+
+.dashedBtn:hover,
+.galleryAddLabel:hover {
+    border-color: var(--brand-400);
+    border-style: solid;
+    background: var(--brand-50);
+    color: var(--brand-700);
 }
 
 .blockPreview {
-  max-width: 200px;
-  max-height: 120px;
-  border-radius: 6px;
-  margin-top: 8px;
+    max-width: 200px;
+    max-height: 120px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    margin-top: var(--sp-2);
 }
 
 .listRow {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 4px;
+    display: flex;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-1);
+    align-items: center;
 }
 
-.smallDeleteBtn {
-  padding: 4px 8px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
+.smallDeleteBtn,
+.selectedRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 var(--sp-3);
+    background: var(--dang-bg);
+    color: var(--dang-fg);
+    border: 1px solid var(--dang-br);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+    transition: background var(--dur-1) var(--ease);
 }
 
-.dashedBtn {
-  padding: 6px 12px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
-  background: #f8fafc;
-  cursor: pointer;
-  font-size: 13px;
-}
+.smallDeleteBtn:hover,
+.selectedRemove:hover { background: var(--dang-bg-hov); }
 
 .orderedToggle,
 .orderedToggleActive {
-  margin-left: 12px;
-  padding: 2px 10px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    margin-left: var(--sp-3);
+    height: 26px;
+    padding: 0 var(--sp-2);
+    border-radius: var(--r-sm);
+    border: 1px solid;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 500;
 }
 
 .orderedToggle {
-  background: #f1f5f9;
-  color: #475569;
+    background: var(--n-100);
+    border-color: var(--border);
+    color: var(--text-muted);
 }
 
 .orderedToggleActive {
-  background: #2563eb;
-  color: #fff;
+    background: var(--brand-600);
+    border-color: var(--brand-600);
+    color: var(--text-invert);
 }
 
-/* ── video bloku ── */
+/* ---------- Video block ---------- */
 
 .videoWrap {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  border-radius: 8px;
-  margin-top: 8px;
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    margin-top: var(--sp-2);
+    background: var(--n-100);
 }
 
 .videoFrame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
-/* ── qalereya bloku ── */
+/* ---------- Gallery block ---------- */
 
 .galleryGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
 }
 
 .galleryItem {
-  position: relative;
-  width: 120px;
+    position: relative;
+    width: 100%;
 }
 
 .galleryThumb {
-  width: 120px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 6px;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    height: auto;
+    object-fit: cover;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    display: block;
+    background: var(--n-100);
 }
 
 .galleryAlt {
-  font-size: 11px;
-  margin-top: 2px;
+    font-size: 11px;
+    margin-top: var(--sp-1);
+    color: var(--text-subtle);
 }
 
 .galleryRemove {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  font-size: 11px;
+    position: absolute;
+    top: var(--sp-1);
+    right: var(--sp-1);
+    background: rgba(20, 24, 31, 0.62);
+    color: var(--text-invert);
+    border: none;
+    border-radius: var(--r-full);
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.galleryAddLabel {
-  display: inline-block;
-  padding: 6px 14px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  background: #f8fafc;
-}
+.galleryRemove:hover { background: var(--dang-fg); }
 
-/* ── sosial media linkləri ── */
+/* ---------- Social links ---------- */
 
 .socialGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--sp-2);
+    align-items: center;
 }
 
 .socialItem {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1 1 180px;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
 }
 
 /* rəng komponentdən --social-color kimi gəlir */
 .socialIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--social-color);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-full);
+    background: var(--social-color);
+    color: var(--text-invert);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
 }
 
 .socialInput {
-  flex: 1;
-  font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    font-size: 12.5px;
 }
 
-/* ── örtük şəkli ── */
+/* ---------- Cover image ---------- */
 
 .coverUpload {
-  cursor: pointer;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-  background: #f8fafc;
+    cursor: pointer;
+    border: 1px dashed var(--n-300);
+    border-radius: var(--r-md);
+    padding: var(--sp-5);
+    text-align: center;
+    background: var(--surface-sunk);
+    transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+
+.coverUpload:hover {
+    border-color: var(--brand-400);
+    background: var(--brand-50);
 }
 
 .coverPreview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 6px;
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
 }
 
 .coverHint {
-  color: #94a3b8;
-  font-size: 14px;
+    color: var(--text-faint);
+    font-size: 13px;
 }
 
 .checkLabel {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
-/* ── seçilmiş məqalələr ── */
+/* ---------- Selected articles ---------- */
 
 .countHint {
-  font-weight: 400;
-  font-size: 13px;
-  color: #94a3b8;
+    font-weight: 400;
+    font-size: 12.5px;
+    color: var(--text-faint);
 }
 
 .selectedList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
 }
 
 .selectedItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: 1.5px solid #2563eb;
-  border-radius: 8px;
-  background: #eff6ff;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--brand-200);
+    border-radius: var(--r-md);
+    background: var(--brand-50);
 }
 
 .selectedThumb {
-  width: 48px;
-  height: 32px;
-  object-fit: cover;
-  border-radius: 4px;
+    width: 44px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: var(--r-sm);
+    flex-shrink: 0;
+    background: var(--n-100);
 }
 
-.selectedInfo {
-  flex: 1;
-  min-width: 0;
-}
+.selectedInfo { flex: 1; min-width: 0; }
 
 .selectedTitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1e293b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .selectedCat {
-  font-size: 11px;
-  color: #64748b;
+    font-size: 11.5px;
+    color: var(--text-subtle);
 }
 
-.selectedRemove {
-  padding: 4px 10px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.pickerChip,
-.pickerChipActive {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  border: 1.5px solid;
-  cursor: pointer;
-}
-
-.pickerChip {
-  border-color: #e2e8f0;
-  background: #fff;
-  color: #475569;
-}
-
-.pickerChipActive {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: #fff;
-}
-
-.pickerChip:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pickerThumb {
-  width: 28px;
-  height: 20px;
-  object-fit: cover;
-  border-radius: 3px;
-}
-
-/* ── blok siyahısı ── */
+/* ---------- Block list ---------- */
 
 .blockList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
 }
 
-.blockAddRow {
-  margin-top: 12px;
+.blockAddRow { margin-top: var(--sp-3); }
+
+/* ---------- Ümumi segmented control ----------
+   İki eksklüziv variant üçün. `langRow` treki ilə işlədilir, amma dil
+   kodlarından fərqli olaraq adi söz etiketləri saxlayır (böyük hərf yox).
+   Əvvəl burada `chip`/`chipActive` işlənirdi — boz trek içində dolu mavi
+   düymə iki fərqli metaforanı qarışdırırdı. */
+
+.segItem,
+.segItemActive {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 var(--sp-3);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    background: transparent;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+.segItem { color: var(--text-muted); }
+.segItem:hover { background: var(--n-150); color: var(--text); }
+
+.segItemActive {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--brand-700);
+    font-weight: 600;
+    box-shadow: var(--sh-1);
 }

@@ -1,12 +1,34 @@
+/* App shell. The sidebar is fixed, so `main` carries the offset itself. */
+
 .layout {
     display: flex;
     min-height: 100vh;
-    background: #f5f7fa;
+    background: var(--canvas);
 }
 
 .main {
     flex: 1;
-    margin-left: 260px;
-    padding: 40px;
+    min-width: 0;
+    margin-left: var(--sidebar-w);
     min-height: 100vh;
+    padding: var(--sp-8) var(--sp-10) var(--sp-12);
+}
+
+/* Content stops growing before lines get too long to scan, but stays left
+   aligned with the sidebar rather than floating in the middle of the screen. */
+.main > * {
+    max-width: 1440px;
+}
+
+@media (max-width: 1280px) {
+    .main {
+        padding: var(--sp-6) var(--sp-6) var(--sp-10);
+    }
+}
+
+@media (max-width: 960px) {
+    .main {
+        margin-left: 0;
+        padding: var(--sp-5) var(--sp-4) var(--sp-8);
+    }
 }
