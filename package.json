@@ -35,5 +35,13 @@
         "nodemailer": "^8.0.10",
         "passport": "^0.7.0",
         "passport-jwt": "^4.0.1"
+    },
+    "allowScripts": {
+        "@prisma/client": true,
+        "@prisma/engines": true,
+        "prisma": true,
+        "@nestjs/core": true,
+        "bcrypt": true,
+        "sharp": true
     }
 }

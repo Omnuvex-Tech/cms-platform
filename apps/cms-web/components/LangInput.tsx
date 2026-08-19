@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import styles from "@/styles/blog.module.css";
 
 type LocalizedValue = Record<string, string> | string | null | undefined;
 
@@ -22,53 +23,46 @@ function toObj(val: LocalizedValue): Record<string, string> {
   return { az: val.az || "", en: val.en || "", ru: val.ru || "" };
 }
 
+/**
+ * Üç dilin eyni anda redaktəsi.
+ *
+ * Dil kodu ayrıca sətirdə deyil, kontrolun içindəki sol relsdədir — beləcə bu
+ * komponent adi bir sahə ilə eyni hündürlükdə olur və iki sütunlu sırada
+ * kontrollar eyni xətdə oturur.
+ */
 export function LangInput({ label, value, onChange, type = "input", placeholder = "", rows = 3 }: LangInputProps) {
   const obj = toObj(value);
+  const isTextarea = type === "textarea";
 
   const update = (lang: string, v: string) => {
     onChange({ ...obj, [lang]: v });
   };
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6, color: "#374151" }}>
-        {label}
-      </label>
-      <div style={{ display: "flex", gap: 8 }}>
+    <div className={styles.langField}>
+      <label>{label}</label>
+      <div className={styles.langGrid}>
         {LANGS.map((lang) => (
-          <div key={lang} style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", marginBottom: 4, textTransform: "uppercase" }}>
+          <div key={lang} className={styles.langCell}>
+            <span className={`${styles.langBadge} ${isTextarea ? styles.langBadgeTop : ""}`}>
               {LANG_LABELS[lang]}
-            </div>
-            {type === "textarea" ? (
+            </span>
+            {isTextarea ? (
               <textarea
+                className={`${styles.textarea} ${styles.langControl}`}
                 value={obj[lang]}
                 onChange={(e) => update(lang, e.target.value)}
                 placeholder={placeholder}
                 rows={rows}
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
+                aria-label={`${label} (${LANG_LABELS[lang]})`}
               />
             ) : (
               <input
+                className={`${styles.input} ${styles.langControl}`}
                 value={obj[lang]}
                 onChange={(e) => update(lang, e.target.value)}
                 placeholder={placeholder}
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontFamily: "inherit",
-                }}
+                aria-label={`${label} (${LANG_LABELS[lang]})`}
               />
             )}
           </div>

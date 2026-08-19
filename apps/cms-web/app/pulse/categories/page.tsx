@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch, generateSlug } from "@/lib/pulse-api";
+import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
 
 type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
@@ -96,24 +97,42 @@ export default function PulseCategoriesPage() {
     };
 
     return (
-        <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>Pulse Kateqoriyaları</h2>
-                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Layihə</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Pulse Kateqoriyaları</h1>
+                    <p className={styles.subtitle}>
+                        Məqalələrin qruplaşdırıldığı kateqoriyaları idarə edin.
+                    </p>
+                </div>
+                <div className={styles.headerRight}>
+                    <button className={styles.addBtn} onClick={openCreate}>+ Yeni Kateqoriya</button>
+                </div>
             </div>
             {loading ? <div className={styles.empty}>Yüklənir...</div>
                 : categories.length === 0 ? <div className={styles.empty}>Hələ kateqoriya yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>AZ</th><th>EN</th><th>RU</th><th>Slug</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>Kateqoriya</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {categories.map(c => (
                                         <tr key={c.id}>
-                                            <td><strong>{getLocalizedName(c.name, "az")}</strong></td>
-                                            <td>{getLocalizedName(c.name, "en")}</td>
-                                            <td>{getLocalizedName(c.name, "ru")}</td>
-                                            <td><span className={styles.blogSlug}>/{c.slug}</span></td>
+                                            <td>
+                                                <div className={styles.cellStack}>
+                                                    <span className={styles.cellMain}>{getLocalizedName(c.name, "az")}</span>
+                                                    <span className={styles.cellSub}>/{c.slug}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <LocaleChips
+                                                    value={c.name}
+                                                    className={styles.localeChips}
+                                                    chipClassName={styles.localeChip}
+                                                    onClassName={styles.localeOn}
+                                                    offClassName={styles.localeOff}
+                                                />
+                                            </td>
                                             <td>
                                                 <div className={styles.actions}>
                                                     <button className={styles.editBtn} onClick={() => openEdit(c)}>Düzəlt</button>

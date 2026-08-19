@@ -10,6 +10,7 @@ import {
   useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Select } from "@/components/Select";
 import styles from "@/styles/vacancy.module.css";
 
 type Lang = "az" | "en" | "ru";
@@ -17,6 +18,61 @@ type LocalizedString = Record<string, string>;
 type BulletType = "BULLET" | "NUMBERED" | "DASH";
 
 const EMPTY_L: LocalizedString = { az: "", en: "", ru: "" };
+
+const LANGS: Lang[] = ["az", "en", "ru"];
+
+/**
+ * `tags` / `skills` sahələrini kanonik `LocalizedString[]` formasına gətirir.
+ *
+ * Bazada üç fərqli forma var:
+ *   1. [{az:"React", en:"React"}]        — redaktorun yazdığı kanonik forma
+ *   2. ["Tam ştat", "Bakı"]              — köhnə düz string massivi
+ *   3. {az:["React"], en:["React"]}      — dil açarlı obyekt (massiv DEYİL)
+ *
+ * Üçüncü forma `.slice is not a function` xətasını verirdi, ikincisi isə
+ * çökmədən taqları boş göstərirdi (`"mətn"["az"]` → undefined).
+ */
+function toLocalizedList(value: unknown): LocalizedString[] {
+  if (!value) return [];
+
+  // 2 və 1: massiv
+  if (Array.isArray(value)) {
+    return value.map(item => {
+      if (typeof item === "string") {
+        // Dil məlumatı yoxdur — mətn hər dildə eyni göstərilir.
+        return { az: item, en: item, ru: item };
+      }
+      if (item && typeof item === "object") return item as LocalizedString;
+      return { ...EMPTY_L };
+    });
+  }
+
+  // 3: {az:[...], en:[...], ru:[...]} → indeksə görə birləşdir
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const perLang = LANGS.map(l => (Array.isArray(obj[l]) ? (obj[l] as unknown[]) : []));
+    const len = Math.max(...perLang.map(a => a.length), 0);
+
+    // Dil açarları yoxdursa, bu tək bir LocalizedString ola bilər.
+    if (len === 0) {
+      const hasText = LANGS.some(l => typeof obj[l] === "string" && (obj[l] as string).trim());
+      return hasText ? [obj as LocalizedString] : [];
+    }
+
+    return Array.from({ length: len }, (_, i) => {
+      const entry: LocalizedString = { ...EMPTY_L };
+      LANGS.forEach((l, li) => {
+        const v = perLang[li]![i];
+        if (typeof v === "string") entry[l] = v;
+      });
+      // Boş dilləri AZ ilə doldur ki, sətir heç vaxt boş görünməsin.
+      LANGS.forEach(l => { if (!entry[l]) entry[l] = entry.az || ""; });
+      return entry;
+    });
+  }
+
+  return [];
+}
 
 interface VacancyCategory {
   id: number;
@@ -84,17 +140,14 @@ async function apiFetch(path: string, options?: RequestInit) {
 
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+    <div className={styles.langTabs}>
       {(["az", "en", "ru"] as Lang[]).map((l) => (
-        <button key={l} type="button" onClick={() => onChange(l)}
-          style={{
-            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
-            border: "1.5px solid",
-            borderColor: active === l ? "#3b82f6" : "#333",
-            background: active === l ? "#1e3a5f" : "transparent",
-            color: active === l ? "#fff" : "#888",
-            cursor: "pointer",
-          }}>
+        <button
+          key={l}
+          type="button"
+          onClick={() => onChange(l)}
+          className={active === l ? styles.langTabActive : styles.langTab}
+        >
           {l.toUpperCase()}
         </button>
       ))}
@@ -143,7 +196,7 @@ function LocalizedTagInput({ label, items, setItems, lang, large }: {
           {items.map((item, i) => (
             <span key={i} className={styles.tagChip}>
               <input
-                style={{ background: "transparent", border: "none", color: "inherit", width: 120, outline: "none" }}
+                className={styles.tagChipInput}
                 value={item[lang] ?? ""}
                 onChange={(e) => updateItem(i, e.target.value)}
               />
@@ -188,6 +241,7 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: v.id });
   const title = v.title?.[lang] || v.title?.az || "";
   const newLabelText = v.newLabel?.[lang] || v.newLabel?.az || "";
+  const tagList = toLocalizedList(v.tags);
   return (
     <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
       <td className={styles.num}>
@@ -195,23 +249,24 @@ function SortableVacancyRow({ v, index, lang, onEdit, onDelete, onToggleVisibili
         {String(index + 1).padStart(2, "0")}
       </td>
       <td>
-        <div><div>{title}</div>
-          <div style={{ fontSize: 12, color: "#94a3b8" }}>/{v.slug}</div>
+        <div className={styles.cellStack}><div className={styles.cellMain}>{title}</div>
+          <div className={styles.cellSub}>/{v.slug}</div>
         </div>
       </td>
       <td>{v.category.name?.[lang] || v.category.name?.az || ""}</td>
       <td>
         <div className={styles.tagsCell}>
-          {v.tags.slice(0, 2).map((tag, i) => (
+          {tagList.slice(0, 2).map((tag, i) => (
             <span key={i} className={styles.tag}>{tag[lang] || tag.az || ""}</span>
           ))}
-          {v.tags.length > 2 && <span className={styles.tag}>+{v.tags.length - 2}</span>}
+          {tagList.length > 2 && <span className={styles.tag}>+{tagList.length - 2}</span>}
         </div>
       </td>
       <td>
-        <span className={newLabelText ? styles.activeToggle : styles.inactiveToggle}>
-          {newLabelText || "—"}
-        </span>
+        {/* Badge yoxdursa boş pill çəkmirik — sadəcə sönük tire. */}
+        {newLabelText
+          ? <span className={`${styles.statusBadge} ${styles.toneGreen}`}>{newLabelText}</span>
+          : <span className={styles.cellMuted}>—</span>}
       </td>
       <td>
         <button className={v.isVisible ? styles.activeToggle : styles.inactiveToggle}
@@ -269,7 +324,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
       setTitle(editVac.title ?? { ...EMPTY_L });
       setSlug(editVac.slug ?? "");
       setCategoryId(editVac.categoryId);
-      setTags(editVac.tags ?? []);
+      setTags(toLocalizedList(editVac.tags));
       setNewLabel(editVac.newLabel ?? { ...EMPTY_L });
       setIsVisible(editVac.isVisible);
       setStartDate(editVac.startDate ? editVac.startDate.slice(0, 10) : "");
@@ -280,11 +335,11 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
       setSeoTitle(editVac.seoTitle ?? { ...EMPTY_L });
       setSeoDescription(editVac.seoDescription ?? { ...EMPTY_L });
       setSeoKeywords(editVac.seoKeywords ?? { ...EMPTY_L });
-      setResponsible(editVac.responsible ?? []);
+      setResponsible(toLocalizedList(editVac.responsible));
       setResponsibleType(editVac.responsibleType);
-      setRequirements(editVac.requirements ?? []);
+      setRequirements(toLocalizedList(editVac.requirements));
       setRequirementsType(editVac.requirementsType);
-      setSkills(editVac.skills ?? []);
+      setSkills(toLocalizedList(editVac.skills));
     } else {
       setTitle({ ...EMPTY_L }); setSlug(""); setCategoryId(""); setTags([]);
       setNewLabel({ ...EMPTY_L }); setIsVisible(true);
@@ -376,7 +431,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
 
         <div className={styles.modalBody}>
           {formError && (
-            <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+            <p className={styles.errorText}>
               ⚠ {formError}
             </p>
           )}
@@ -400,15 +455,15 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
 
               <div className={styles.field}>
                 <label>Kateqoriya *</label>
-                <select className={styles.input} value={categoryId}
-                  onChange={(e) => setCategoryId(Number(e.target.value))}>
-                  <option value="">Seçin...</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name?.[lang] || c.name?.az || ""}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  ariaLabel="Kateqoriya"
+                  value={categoryId ? String(categoryId) : ""}
+                  onChange={(v) => setCategoryId(Number(v))}
+                  options={categories.map((c) => ({
+                    value: String(c.id),
+                    label: c.name?.[lang] || c.name?.az || "",
+                  }))}
+                />
               </div>
 
               <LocalizedTagInput label="Taqlər / Skills" items={tags} setItems={setTags} lang={lang} />
@@ -471,25 +526,29 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
 
               <div className={styles.field}>
                 <label>Responsible — siyahı tipi</label>
-                <select className={styles.input} value={responsibleType}
-                  onChange={(e) => setResponsibleType(e.target.value as BulletType)}>
-                  {bulletOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <Select
+                  ariaLabel="Responsible — siyahı tipi"
+                  value={responsibleType}
+                  onChange={(v) => setResponsibleType(v as BulletType)}
+                  options={bulletOptions}
+                />
               </div>
               <LocalizedTagInput label="Responsible" items={responsible} setItems={setResponsible} lang={lang} large />
 
               <div className={styles.field}>
                 <label>Requirements — siyahı tipi</label>
-                <select className={styles.input} value={requirementsType}
-                  onChange={(e) => setRequirementsType(e.target.value as BulletType)}>
-                  {bulletOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <Select
+                  ariaLabel="Requirements — siyahı tipi"
+                  value={requirementsType}
+                  onChange={(v) => setRequirementsType(v as BulletType)}
+                  options={bulletOptions}
+                />
               </div>
               <LocalizedTagInput label="Requirements" items={requirements} setItems={setRequirements} lang={lang} large />
             </>
           )}
-          <div className={styles.field} style={{ borderTop: "1px solid #222", paddingTop: 16, marginTop: 8 }}>
-            <label style={{ fontWeight: 700, fontSize: 14 }}>SEO</label>
+          <div className={styles.field} style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+            <label className={styles.sectionCardTitle}>SEO</label>
           </div>
           <div className={styles.field}>
             <label>SEO Title ({lang.toUpperCase()})</label>
@@ -700,7 +759,7 @@ export default function VacancyPage() {
       </div>
 
       {listError && (
-        <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>
+        <p className={styles.errorText}>
           ⚠ {listError}
         </p>
       )}
@@ -715,7 +774,7 @@ export default function VacancyPage() {
             placeholder="Vakansiyalar" />
         </div>
         {headerError && (
-          <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
+          <p className={styles.errorText}>
             ⚠ {headerError}
           </p>
         )}
@@ -734,7 +793,7 @@ export default function VacancyPage() {
             {catReordering && <span className={styles.reorderingText}>Saxlanır...</span>}
             <button className={styles.addBtn}
               onClick={() => { setEditCat(null); setCatName({ ...EMPTY_L }); setCatLang("az"); setCatError(null); setCatModalOpen(true); }}>
-              + Yeni Layihə
+              + Yeni Kateqoriya
             </button>
           </div>
         </div>
@@ -814,7 +873,7 @@ export default function VacancyPage() {
               <LangTabs active={catLang} onChange={setCatLang} />
 
               {catError && (
-                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
+                <p className={styles.errorText}>
                   ⚠ {catError}
                 </p>
               )}
@@ -847,7 +906,7 @@ export default function VacancyPage() {
             <div className={styles.modalBody}>
               <p>Bu kateqoriyanı silmək istədiyinizə əminsiniz?</p>
               {deleteCatError && (
-                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                <p className={styles.errorText}>
                   ⚠ {deleteCatError}
                 </p>
               )}
@@ -870,7 +929,7 @@ export default function VacancyPage() {
             <div className={styles.modalBody}>
               <p>Bu vakansiyanı silmək istədiyinizə əminsiniz?</p>
               {deleteVacError && (
-                <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 500, marginTop: 8 }}>
+                <p className={styles.errorText}>
                   ⚠ {deleteVacError}
                 </p>
               )}

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
+import { Avatar } from "@/components/Avatar";
+import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
 
 type LocalizedValue = string | { az?: string; en?: string; ru?: string };
@@ -150,26 +152,51 @@ export default function PulseAuthorsPage() {
     };
 
     return (
-        <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>Pulse Müəllifləri</h2>
-                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Müəllif</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Pulse Müəllifləri</h1>
+                    <p className={styles.subtitle}>
+                        Məqalələrə təyin olunan müəllif profillərini idarə edin.
+                    </p>
+                </div>
+                <div className={styles.headerRight}>
+                    <button className={styles.addBtn} onClick={openCreate}>+ Yeni Müəllif</button>
+                </div>
             </div>
             {loading ? <div className={styles.empty}>Yüklənir...</div>
                 : authors.length === 0 ? <div className={styles.empty}>Hələ müəllif yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>Şəkil</th><th>AZ</th><th>EN</th><th>RU</th><th>Slug</th><th>Vəzifə (AZ)</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>Müəllif</th><th>Vəzifə</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {authors.map(a => (
                                         <tr key={a.id}>
-                                            <td>{a.avatar && <img src={toAbsUrl(a.avatar)} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />}</td>
-                                            <td><strong>{getLocalizedValue(a.name, "az")}</strong></td>
-                                            <td>{getLocalizedValue(a.name, "en")}</td>
-                                            <td>{getLocalizedValue(a.name, "ru")}</td>
-                                            <td><span className={styles.blogSlug}>/{a.slug}</span></td>
+                                            <td>
+                                                <div className={styles.blogInfo}>
+                                                    <Avatar
+                                                        src={a.avatar ? toAbsUrl(a.avatar) : null}
+                                                        name={getLocalizedValue(a.name, "az")}
+                                                        className={styles.avatar}
+                                                        imgClassName={styles.avatarImg}
+                                                    />
+                                                    <div className={styles.cellStack}>
+                                                        <span className={styles.cellMain}>{getLocalizedValue(a.name, "az")}</span>
+                                                        <span className={styles.cellSub}>/{a.slug}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td>{getLocalizedValue(a.title, "az") || "—"}</td>
+                                            <td>
+                                                <LocaleChips
+                                                    value={a.name}
+                                                    className={styles.localeChips}
+                                                    chipClassName={styles.localeChip}
+                                                    onClassName={styles.localeOn}
+                                                    offClassName={styles.localeOff}
+                                                />
+                                            </td>
                                             <td>
                                                 <div className={styles.actions}>
                                                     <button className={styles.editBtn} onClick={() => openEdit(a)}>Düzəlt</button>
@@ -231,15 +258,15 @@ export default function PulseAuthorsPage() {
                             </div>
                             <div className={styles.field}>
                                 <label>Təsvir (AZ)</label>
-                                <textarea className={styles.input} rows={3} value={descriptionAz} onChange={e => setDescriptionAz(e.target.value)} />
+                                <textarea className={styles.textarea} rows={3} value={descriptionAz} onChange={e => setDescriptionAz(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label>Təsvir (EN)</label>
-                                <textarea className={styles.input} rows={3} value={descriptionEn} onChange={e => setDescriptionEn(e.target.value)} />
+                                <textarea className={styles.textarea} rows={3} value={descriptionEn} onChange={e => setDescriptionEn(e.target.value)} />
                             </div>
                             <div className={styles.field}>
                                 <label>Təsvir (RU)</label>
-                                <textarea className={styles.input} rows={3} value={descriptionRu} onChange={e => setDescriptionRu(e.target.value)} />
+                                <textarea className={styles.textarea} rows={3} value={descriptionRu} onChange={e => setDescriptionRu(e.target.value)} />
                             </div>
                         </div>
                         <div className={styles.modalFooter}>

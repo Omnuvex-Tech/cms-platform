@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch, generateSlug } from "@/lib/pulse-api";
+import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
 
 type LocalizedName = string | { az?: string; en?: string; ru?: string };
@@ -97,24 +98,42 @@ export default function PulseKeywordsPage() {
     };
 
     return (
-        <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>Pulse Açar Sözləri</h2>
-                <button className={styles.addBtn} onClick={openCreate}>+ Yeni Açar söz</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Pulse Açar Sözləri</h1>
+                    <p className={styles.subtitle}>
+                        Məqalələrə əlavə olunan açar sözləri idarə edin.
+                    </p>
+                </div>
+                <div className={styles.headerRight}>
+                    <button className={styles.addBtn} onClick={openCreate}>+ Yeni Açar söz</button>
+                </div>
             </div>
             {loading ? <div className={styles.empty}>Yüklənir...</div>
                 : keywords.length === 0 ? <div className={styles.empty}>Hələ açar söz yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>AZ</th><th>EN</th><th>RU</th><th>Slug</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>Açar söz</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {keywords.map(k => (
                                         <tr key={k.id}>
-                                            <td><strong>{getLocalizedName(k.name, "az")}</strong></td>
-                                            <td>{getLocalizedName(k.name, "en")}</td>
-                                            <td>{getLocalizedName(k.name, "ru")}</td>
-                                            <td><span className={styles.blogSlug}>/{k.slug}</span></td>
+                                            <td>
+                                                <div className={styles.cellStack}>
+                                                    <span className={styles.cellMain}>{getLocalizedName(k.name, "az")}</span>
+                                                    <span className={styles.cellSub}>/{k.slug}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <LocaleChips
+                                                    value={k.name}
+                                                    className={styles.localeChips}
+                                                    chipClassName={styles.localeChip}
+                                                    onClassName={styles.localeOn}
+                                                    offClassName={styles.localeOff}
+                                                />
+                                            </td>
                                             <td>
                                                 <div className={styles.actions}>
                                                     <button className={styles.editBtn} onClick={() => openEdit(k)}>Düzəlt</button>

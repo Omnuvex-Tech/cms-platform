@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Avatar } from "@/components/Avatar";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -32,34 +34,14 @@ function formatDate(iso: string) {
     });
 }
 
-function Avatar({ name }: { name: string }) {
-    const initials = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-    return (
-        <div style={{
-            width: 38, height: 38, borderRadius: "50%",
-            background: "#f0f0f0", border: "1px solid #e5e5e5",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 700, color: "#555", flexShrink: 0,
-        }}>
-            {initials}
-        </div>
-    );
-}
-
 function RoleBadge({ role }: { role: string }) {
-    const colors: Record<string, { bg: string; fg: string }> = {
-        Client: { bg: "#e8f5e9", fg: "#2e7d32" },
-        Developer: { bg: "#e3f2fd", fg: "#1565c0" },
-        Broker: { bg: "#fff3e0", fg: "#e65100" },
+    const tone: Record<string, string | undefined> = {
+        Client: styles.toneGreen,
+        Developer: styles.toneBlue,
+        Broker: styles.toneAmber,
     };
-    const c = colors[role] || { bg: "#f4f4f5", fg: "#444" };
     return (
-        <span style={{
-            fontSize: 12, fontWeight: 500,
-            padding: "3px 10px",
-            background: c.bg, color: c.fg,
-            borderRadius: 20, whiteSpace: "nowrap",
-        }}>
+        <span className={`${styles.statusBadge} ${tone[role] || styles.toneNeutral}`}>
             {role}
         </span>
     );
@@ -70,6 +52,7 @@ export default function CallbackRequestsPage() {
     const [requests, setRequests] = useState<CallbackRequest[]>([]);
     const [search, setSearch] = useState("");
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<CallbackRequest | null>(null);
 
     useEffect(() => {
         apiFetch("/callback")
@@ -87,15 +70,17 @@ export default function CallbackRequestsPage() {
         );
     });
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Bu sorğunu silmək istədiyinizə əminsiniz?")) return;
-        setDeleting(id);
+    const handleDelete = async () => {
+        const target = confirmTarget;
+        if (!target) return;
+        setDeleting(target.id);
         try {
-            await fetch(`${API}/callback/${id}`, {
+            await fetch(`${API}/callback/${target.id}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${getToken()}` },
             });
-            setRequests(prev => prev.filter(r => r.id !== id));
+            setRequests(prev => prev.filter(r => r.id !== target.id));
+            setConfirmTarget(null);
         } catch (err) {
             console.error(err);
         } finally {
@@ -114,14 +99,18 @@ export default function CallbackRequestsPage() {
                 </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
+            <div className={styles.toolbar}>
                 <input
-                    className={styles.input}
+                    className={styles.searchInput}
                     placeholder="Ad, telefon və ya rol üzrə axtar..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    style={{ maxWidth: 400 }}
                 />
+                {search && (
+                    <span className={styles.resultCount}>
+                        {filtered.length} nəticə
+                    </span>
+                )}
             </div>
 
             {filtered.length === 0 ? (
@@ -129,48 +118,39 @@ export default function CallbackRequestsPage() {
                     {search ? "Nəticə tapılmadı" : "Heç bir callback sorğusu yoxdur"}
                 </div>
             ) : (
-                <div style={{
-                    background: "#fff",
-                    border: "1px solid #e8e8e8",
-                    borderRadius: 10,
-                    overflow: "hidden",
-                }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <div className={styles.tableWrap}>
+                    <table className={styles.table}>
                         <thead>
-                            <tr style={{ borderBottom: "1px solid #f0f0f0", background: "#fafafa" }}>
-                                <th style={{ textAlign: "left", padding: "12px 20px", fontWeight: 600, color: "#666", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Ad</th>
-                                <th style={{ textAlign: "left", padding: "12px 20px", fontWeight: 600, color: "#666", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Telefon</th>
-                                <th style={{ textAlign: "left", padding: "12px 20px", fontWeight: 600, color: "#666", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Rol</th>
-                                <th style={{ textAlign: "left", padding: "12px 20px", fontWeight: 600, color: "#666", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarix</th>
-                                <th style={{ textAlign: "right", padding: "12px 20px", fontWeight: 600, color: "#666", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Əməliyyat</th>
+                            <tr>
+                                <th>Ad</th>
+                                <th>Telefon</th>
+                                <th>Rol</th>
+                                <th>Tarix</th>
+                                <th>Əməliyyat</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filtered.map(req => (
-                                <tr key={req.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                                    <td style={{ padding: "14px 20px" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                            <Avatar name={req.name} />
-                                            <span style={{ fontWeight: 500, color: "#1a1a1a" }}>{req.name}</span>
+                                <tr key={req.id}>
+                                    <td>
+                                        <div className={styles.blogInfo}>
+                                            <Avatar name={req.name} className={styles.avatar} />
+                                            <span className={styles.cellMain}>{req.name}</span>
                                         </div>
                                     </td>
-                                    <td style={{ padding: "14px 20px", color: "#444" }}>{req.phone}</td>
-                                    <td style={{ padding: "14px 20px" }}><RoleBadge role={req.role} /></td>
-                                    <td style={{ padding: "14px 20px", color: "#999", fontSize: 13 }}>{formatDate(req.createdAt)}</td>
-                                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                                        <button
-                                            onClick={() => handleDelete(req.id)}
-                                            disabled={deleting === req.id}
-                                            style={{
-                                                background: "none", border: "1px solid #e5e5e5",
-                                                borderRadius: 6, padding: "5px 10px", cursor: "pointer",
-                                                color: deleting === req.id ? "#ccc" : "#e53e3e",
-                                                fontSize: 12, fontWeight: 500,
-                                                transition: "all 0.15s",
-                                            }}
-                                        >
-                                            {deleting === req.id ? "Silinir..." : "Sil"}
-                                        </button>
+                                    <td>{req.phone}</td>
+                                    <td><RoleBadge role={req.role} /></td>
+                                    <td className={styles.cellMuted}>{formatDate(req.createdAt)}</td>
+                                    <td>
+                                        <div className={styles.actions}>
+                                            <button
+                                                className={styles.deleteBtn}
+                                                onClick={() => setConfirmTarget(req)}
+                                                disabled={deleting === req.id}
+                                            >
+                                                Sil
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -178,6 +158,15 @@ export default function CallbackRequestsPage() {
                     </table>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={confirmTarget !== null}
+                message="Bu callback sorğusu silinəcək:"
+                subject={confirmTarget?.name}
+                busy={deleting !== null}
+                onConfirm={handleDelete}
+                onCancel={() => setConfirmTarget(null)}
+            />
         </div>
     );
 }

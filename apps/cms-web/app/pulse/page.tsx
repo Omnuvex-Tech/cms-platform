@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
+import { Thumb } from "@/components/Thumb";
 import styles from "@/styles/blog.module.css";
 
 type Article = {
@@ -64,15 +65,16 @@ export default function PulseArticlesPage() {
 
     const positionBadge = (positions?: string[]) => {
         if (!positions || positions.length === 0) return null;
-        const colors: Record<string, string> = { left: "#3b82f6", center: "#10b981", right: "#f59e0b", week: "#8b5cf6" };
+        const tone: Record<string, string | undefined> = {
+            left: styles.posLeft,
+            center: styles.posCenter,
+            right: styles.posRight,
+            week: styles.posWeek,
+        };
         return (
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <div className={styles.posBadgeRow}>
                 {positions.map(pos => (
-                    <span key={pos} style={{
-                        display: "inline-block", padding: "2px 8px", borderRadius: 4,
-                        fontSize: 11, fontWeight: 600, color: "#fff",
-                        background: colors[pos] || "#6b7280",
-                    }}>
+                    <span key={pos} className={`${styles.posBadge} ${tone[pos] || styles.posOther}`}>
                         {pos === "week" ? "Həftə" : pos.toUpperCase()}
                     </span>
                 ))}
@@ -81,10 +83,17 @@ export default function PulseArticlesPage() {
     };
 
     return (
-        <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>Pulse Məqalələri</h2>
-                <Link href="/pulse/new" className={styles.addBtn}>+ Yeni Məqalə</Link>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.title}>Pulse Məqalələri</h1>
+                    <p className={styles.subtitle}>
+                        Məqalələri yaradın, dərc edin və header bölmələrinə yerləşdirin.
+                    </p>
+                </div>
+                <div className={styles.headerRight}>
+                    <Link href="/pulse/new" className={styles.addBtn}>+ Yeni Məqalə</Link>
+                </div>
             </div>
             {loading ? <div className={styles.empty}>Yüklənir...</div>
                 : articles.length === 0 ? <div className={styles.empty}>Hələ məqalə yoxdur</div>
@@ -107,9 +116,11 @@ export default function PulseArticlesPage() {
                                         <tr key={a.id}>
                                             <td>
                                                 <div className={styles.blogInfo}>
-                                                    {a.coverImage && (
-                                                        <img src={toAbsUrl(a.coverImage)} alt="" className={styles.coverThumb} />
-                                                    )}
+                                                    <Thumb
+                                                        src={a.coverImage ? toAbsUrl(a.coverImage) : null}
+                                                        className={styles.coverThumb}
+                                                        fallbackClassName={styles.thumbFallback}
+                                                    />
                                                     <div>
                                                         <div className={styles.blogTitle}>{getLocalizedName(a.title)}</div>
                                                         <div className={styles.blogSlug}>/{a.slug}</div>

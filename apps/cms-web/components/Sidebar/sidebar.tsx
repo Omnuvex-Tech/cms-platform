@@ -156,6 +156,7 @@ export function Sidebar() {
                                 <button
                                     className={`${styles.navItem} ${styles.navItemDropdown} ${openItems.includes(item.label) ? styles.navItemOpen : ""}`}
                                     onClick={() => toggleItem(item.label)}
+                                    aria-expanded={openItems.includes(item.label)}
                                 >
                                     <span className={styles.navIcon}>{item.icon}</span>
                                     <span className={styles.navLabel}>{item.label}</span>
@@ -164,19 +165,26 @@ export function Sidebar() {
                                         className={`${styles.chevron} ${openItems.includes(item.label) ? styles.chevronOpen : ""}`}
                                     />
                                 </button>
-                                {openItems.includes(item.label) && (
-                                    <div className={styles.dropdown}>
-                                        {item.children.map((child) => (
-                                            <Link
-                                                key={child.href}
-                                                href={child.href}
-                                                className={`${styles.dropdownItem} ${pathname === child.href ? styles.dropdownItemActive : ""}`}
-                                            >
-                                                {child.label}
-                                            </Link>
-                                        ))}
+                                {/* Always rendered — the open/closed height is animated in CSS,
+                                    and `inert` keeps a collapsed group out of the tab order. */}
+                                <div
+                                    className={`${styles.dropdown} ${openItems.includes(item.label) ? styles.dropdownOpen : ""}`}
+                                    {...(openItems.includes(item.label) ? {} : { inert: "" as never })}
+                                >
+                                    <div className={styles.dropdownInner}>
+                                        <div className={styles.dropdownList}>
+                                            {item.children.map((child) => (
+                                                <Link
+                                                    key={child.href}
+                                                    href={child.href}
+                                                    className={`${styles.dropdownItem} ${pathname === child.href ? styles.dropdownItemActive : ""}`}
+                                                >
+                                                    {child.label}
+                                                </Link>
+                                            ))}
+                                        </div>
                                     </div>
-                                )}
+                                </div>
                             </>
                         ) : (
                             <Link

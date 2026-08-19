@@ -486,7 +486,7 @@ export default function FooterPage() {
                     <h3 className={styles.drawerSectionTitle}>Təsvir</h3>
                     <div className={styles.field}>
                         <label>Açıqlama mətni ({activeLang.toUpperCase()})</label>
-                        <textarea className={styles.input} value={settings.description?.[activeLang] || ""}
+                        <textarea className={styles.textarea} value={settings.description?.[activeLang] || ""}
                             placeholder="Şirkət haqqında qısa məlumat..." rows={3}
                             style={{ resize: "vertical" }}
                             onChange={e => updL("description", activeLang, e.target.value)} />

@@ -33,17 +33,14 @@ async function apiFetch(path: string, options?: RequestInit) {
 
 function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+    <div className={styles.langTabs}>
       {(["az", "en", "ru"] as Lang[]).map((l) => (
-        <button key={l} type="button" onClick={() => onChange(l)}
-          style={{
-            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
-            border: "1.5px solid",
-            borderColor: active === l ? "#3b82f6" : "#333",
-            background: active === l ? "#1e3a5f" : "transparent",
-            color: active === l ? "#fff" : "#888",
-            cursor: "pointer",
-          }}>
+        <button
+          key={l}
+          type="button"
+          onClick={() => onChange(l)}
+          className={active === l ? styles.langTabActive : styles.langTab}
+        >
           {l.toUpperCase()}
         </button>
       ))}

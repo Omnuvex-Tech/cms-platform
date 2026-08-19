@@ -128,10 +128,13 @@ function ToolbarButton({ onClick, isActive, disabled, title, children }: Toolbar
             aria-label={title}
             aria-pressed={isActive}
             className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                "text-[#4E525D] hover:bg-[#EBEBEB] hover:text-[#1A1A1A]",
+                "flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors",
+                "text-[var(--text-muted,#58606e)] hover:bg-[var(--n-150,#e6e9ef)] hover:text-[var(--text,#14181f)]",
                 "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent",
-                isActive && "bg-[#4E525D] text-white hover:bg-[#3D404A] hover:text-white",
+                // Aktiv hal panelin qalanı ilə eyni dildə: tünd boz dolğu yox,
+                // brend tonu.
+                isActive &&
+                    "bg-[var(--brand-50,#eff4fd)] text-[var(--brand-700,#013da5)] hover:bg-[var(--brand-100,#dbe6fb)] hover:text-[var(--brand-700,#013da5)]",
             )}
         >
             {children}
@@ -190,7 +193,7 @@ function Toolbar({
     });
 
     return (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-[#FAFAFB] px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--border,#e6e9ef)] bg-[var(--surface-sunk,#fbfcfd)] px-2 py-1.5">
             <ToolbarButton
                 title="Bold"
                 isActive={state.bold}
@@ -303,12 +306,12 @@ function Toolbar({
 
             <label
                 title="Text colour"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-[#4E525D] transition-colors hover:bg-[#EBEBEB]"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted,#58606e)] transition-colors hover:bg-[var(--n-150,#e6e9ef)]"
             >
                 <Palette size={16} />
                 <input
                     type="color"
-                    value={state.color ?? "#1A1A1A"}
+                    value={state.color ?? "var(--text,#14181f)"}
                     onChange={(event) => editor.chain().focus().setColor(event.target.value).run()}
                     className="sr-only"
                 />
@@ -607,8 +610,9 @@ export function RichTextEditor({
             <div
                 className={cn(
                     // `relative` anchors the absolutely positioned drag handle.
-                    "relative overflow-hidden rounded-xl border border-gray-200 bg-white transition-colors",
-                    "focus-within:border-gray-400",
+                    "relative overflow-hidden rounded-md border border-[var(--border-strong,#dde1e8)] bg-white transition-colors",
+                    // Digər sahələrlə eyni fokus dili: brend kənarı + yumşaq halqa.
+                    "focus-within:border-[var(--brand-600,#0148c2)] focus-within:shadow-[0_0_0_3px_var(--brand-100,#dbe6fb)]",
                     disabled && "opacity-60",
                 )}
             >
@@ -625,7 +629,7 @@ export function RichTextEditor({
                         />
 
                         {linkDraft !== null ? (
-                            <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-2 py-2">
+                            <div className="flex items-center gap-2 border-b border-[var(--border,#e6e9ef)] bg-white px-2 py-2">
                                 <input
                                     autoFocus
                                     value={linkDraft}
@@ -638,27 +642,27 @@ export function RichTextEditor({
                                         if (event.key === "Escape") setLinkDraft(null);
                                     }}
                                     placeholder="https://example.com"
-                                    className="h-8 flex-1 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-gray-400"
+                                    className="h-8 flex-1 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-sm outline-none focus:border-[var(--n-300,#c4cad5)]"
                                 />
                                 <button
                                     type="button"
                                     onClick={applyLink}
                                     className="h-8 rounded-lg px-3 text-xs font-medium text-white"
-                                    style={{ background: "#4E525D" }}
+                                    style={{ background: "var(--text-muted,#58606e)" }}
                                 >
                                     Apply
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setLinkDraft(null)}
-                                    className="h-8 rounded-lg border border-gray-200 px-3 text-xs font-medium text-[#666666]"
+                                    className="h-8 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-xs font-medium text-[var(--text-subtle,#737c8c)]"
                                 >
                                     Cancel
                                 </button>
                             </div>
                         ) : null}
                         {imageDraft !== null ? (
-                            <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-2 py-2">
+                            <div className="flex items-center gap-2 border-b border-[var(--border,#e6e9ef)] bg-white px-2 py-2">
                                 <input
                                     autoFocus
                                     value={imageDraft}
@@ -671,27 +675,27 @@ export function RichTextEditor({
                                         if (event.key === "Escape") setImageDraft(null);
                                     }}
                                     placeholder="https://example.com/photo.jpg"
-                                    className="h-8 flex-1 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-gray-400"
+                                    className="h-8 flex-1 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-sm outline-none focus:border-[var(--n-300,#c4cad5)]"
                                 />
                                 <button
                                     type="button"
                                     onClick={applyImageUrl}
                                     className="h-8 rounded-lg px-3 text-xs font-medium text-white"
-                                    style={{ background: "#4E525D" }}
+                                    style={{ background: "var(--text-muted,#58606e)" }}
                                 >
                                     Insert
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setImageDraft(null)}
-                                    className="h-8 rounded-lg border border-gray-200 px-3 text-xs font-medium text-[#666666]"
+                                    className="h-8 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-xs font-medium text-[var(--text-subtle,#737c8c)]"
                                 >
                                     Cancel
                                 </button>
                             </div>
                         ) : null}
                         {videoDraft !== null ? (
-                            <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-2 py-2">
+                            <div className="flex items-center gap-2 border-b border-[var(--border,#e6e9ef)] bg-white px-2 py-2">
                                 <input
                                     autoFocus
                                     value={videoDraft}
@@ -704,20 +708,20 @@ export function RichTextEditor({
                                         if (event.key === "Escape") setVideoDraft(null);
                                     }}
                                     placeholder="https://example.com/clip.mp4"
-                                    className="h-8 flex-1 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-gray-400"
+                                    className="h-8 flex-1 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-sm outline-none focus:border-[var(--n-300,#c4cad5)]"
                                 />
                                 <button
                                     type="button"
                                     onClick={applyVideoUrl}
                                     className="h-8 rounded-lg px-3 text-xs font-medium text-white"
-                                    style={{ background: "#4E525D" }}
+                                    style={{ background: "var(--text-muted,#58606e)" }}
                                 >
                                     Insert
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setVideoDraft(null)}
-                                    className="h-8 rounded-lg border border-gray-200 px-3 text-xs font-medium text-[#666666]"
+                                    className="h-8 rounded-lg border border-[var(--border,#e6e9ef)] px-3 text-xs font-medium text-[var(--text-subtle,#737c8c)]"
                                 >
                                     Cancel
                                 </button>
@@ -808,7 +812,7 @@ export function RichTextEditor({
                     outline: none;
                     font-size: 14px;
                     line-height: 22px;
-                    color: #1A1A1A;
+                    color: var(--text,#14181f);
                     overflow-wrap: break-word;
                 }
                 .treva-rte__content > * + * { margin-top: 12px; }
@@ -820,7 +824,7 @@ export function RichTextEditor({
                 .treva-rte__content li { margin: 4px 0; }
                 .treva-rte__content li > p { margin: 0; }
                 .treva-rte__content blockquote {
-                    color: #4E525D;
+                    color: var(--text-muted,#58606e);
                     font-style: italic;
                 }
                 /* Opening and closing marks wrap the quoted text itself. They are
@@ -867,15 +871,15 @@ export function RichTextEditor({
                     height: 24px;
                     margin-right: 4px;
                     border-radius: 6px;
-                    color: #9CA3AF;
+                    color: var(--text-faint,#9aa2b1);
                     background: #FFFFFF;
-                    border: 1px solid #E7E9EE;
+                    border: 1px solid var(--border,#e6e9ef);
                     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
                     cursor: grab;
                 }
-                .treva-rte__drag-handle:hover { color: #4E525D; background: #F4F5F6; }
+                .treva-rte__drag-handle:hover { color: var(--text-muted,#58606e); background: var(--n-50,#f5f6f8); }
                 .treva-rte__drag-handle:active { cursor: grabbing; }
-                .ProseMirror-dropcursor { border-top: 2px solid #4E525D !important; }
+                .ProseMirror-dropcursor { border-top: 2px solid var(--text-muted,#58606e) !important; }
 
                 /* The track is the same markup the site renders, so what the
                    author pages through here is what a reader gets. Snap points
@@ -893,7 +897,7 @@ export function RichTextEditor({
                     width: 48px;
                     height: 8px;
                     border-radius: 999px;
-                    background: #4E525D;
+                    background: var(--text-muted,#58606e);
                     border: 2px solid #FFFFFF;
                     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
                     cursor: ns-resize;
@@ -921,7 +925,7 @@ export function RichTextEditor({
                 /* A lone picture has nothing to peek at, so it fills the track. */
                 .treva-slider img:only-child { flex-basis: 100%; width: 100%; }
                 .treva-rte__slider[data-selected="true"] .treva-slider {
-                    outline: 2px solid #4E525D;
+                    outline: 2px solid var(--text-muted,#58606e);
                     outline-offset: 2px;
                 }
                 .treva-rte__slider-arrow {
@@ -990,7 +994,7 @@ export function RichTextEditor({
                 }
                 .treva-rte__media[data-selected="true"] .treva-rte__media-frame img,
                 .treva-rte__media[data-selected="true"] .treva-rte__media-frame video {
-                    outline: 2px solid #4E525D;
+                    outline: 2px solid var(--text-muted,#58606e);
                     outline-offset: 2px;
                 }
                 .treva-rte__media-handle,
@@ -999,7 +1003,7 @@ export function RichTextEditor({
                     height: 12px;
                     border-radius: 3px;
                     background: #FFFFFF;
-                    border: 2px solid #4E525D;
+                    border: 2px solid var(--text-muted,#58606e);
                     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
                     z-index: 2;
                     touch-action: none;
@@ -1039,7 +1043,7 @@ export function RichTextEditor({
                     float: left;
                     height: 0;
                     pointer-events: none;
-                    color: #9CA3AF;
+                    color: var(--text-faint,#9aa2b1);
                 }
             `}</style>
         </div>

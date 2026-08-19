@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Avatar } from "@/components/Avatar";
+import { ChevronDown } from "lucide-react";
 import styles from "@/styles/blog.module.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -40,84 +42,48 @@ function decode(str: string | null | undefined) {
     return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
 }
 
-function Avatar({ name }: { name: string }) {
-    const initials = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-    return (
-        <div style={{
-            width: 38, height: 38, borderRadius: "50%",
-            background: "#f0f0f0", border: "1px solid #e5e5e5",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, fontWeight: 700, color: "#555", flexShrink: 0,
-        }}>
-            {initials}
-        </div>
-    );
-}
-
 function SubmissionCard({ sub, isOpen, onToggle }: {
     sub: Submission; isOpen: boolean; onToggle: () => void;
 }) {
     return (
-        <div style={{
-            background: "#fff",
-            border: "1px solid #e8e8e8",
-            borderRadius: 10,
-            overflow: "hidden",
-            transition: "box-shadow 0.15s",
-            boxShadow: isOpen ? "0 2px 12px rgba(0,0,0,0.08)" : "none",
-        }}>
-            <div onClick={onToggle} style={{
-                display: "flex", alignItems: "center",
-                justifyContent: "space-between",
-                padding: "14px 20px", cursor: "pointer", gap: 12,
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                    <Avatar name={sub.name} />
-                    <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {sub.name}
-                        </p>
-                        <p style={{ fontSize: 12, color: "#999", margin: 0 }}>{sub.email}</p>
-                    </div>
-                </div>
+        <div className={`${styles.accordionItem} ${isOpen ? styles.accordionItemOpen : ""}`}>
+            <button
+                type="button"
+                className={styles.accordionHead}
+                onClick={onToggle}
+                aria-expanded={isOpen}
+            >
+                <span className={styles.accordionMain}>
+                    <Avatar name={sub.name} className={styles.avatar} />
+                    <span className={styles.cellStack}>
+                        <span className={styles.cellMain}>{sub.name}</span>
+                        <span className={styles.cellSub}>{sub.email}</span>
+                    </span>
+                </span>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <span className={styles.accordionMeta}>
                     {sub.service && (
-                        <span style={{
-                            fontSize: 12, fontWeight: 500,
-                            padding: "3px 10px",
-                            background: "#f4f4f5",
-                            color: "#444",
-                            borderRadius: 20,
-                            whiteSpace: "nowrap",
-                        }}>
+                        <span className={`${styles.statusBadge} ${styles.toneNeutral}`}>
                             {decode(sub.service)}
                         </span>
                     )}
-                    <span style={{ fontSize: 12, color: "#bbb", whiteSpace: "nowrap" }}>
-                        {formatDate(sub.createdAt)}
+                    <span className={styles.cellMuted}>{formatDate(sub.createdAt)}</span>
+                    <span className={`${styles.accordionChevron} ${isOpen ? styles.accordionChevronOpen : ""}`}>
+                        <ChevronDown size={16} />
                     </span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2"
-                        style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
-                        <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                </div>
-            </div>
+                </span>
+            </button>
 
             {isOpen && (
-                <div style={{
-                    padding: "0 20px 20px",
-                    borderTop: "1px solid #f0f0f0",
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0 24px",
-                }}>
-                    <InfoRow label="Telefon" value={sub.phone || "—"} />
-                    <InfoRow label="Servis" value={decode(sub.service) || "—"} />
-                    <InfoRow label="Büdcə" value={sub.budget || "—"} />
-                    <InfoRow label="Timeline" value={sub.timeline || "—"} />
-                    <div style={{ gridColumn: "1 / -1" }}>
-                        <InfoRow label="Mesaj" value={sub.message || "—"} multiline />
+                <div className={styles.accordionBody}>
+                    <div className={styles.infoGrid}>
+                        <InfoRow label="Telefon" value={sub.phone || "—"} />
+                        <InfoRow label="Servis" value={decode(sub.service) || "—"} />
+                        <InfoRow label="Büdcə" value={sub.budget || "—"} />
+                        <InfoRow label="Timeline" value={sub.timeline || "—"} />
+                        <div className={styles.infoWide}>
+                            <InfoRow label="Mesaj" value={sub.message || "—"} multiline />
+                        </div>
                     </div>
                 </div>
             )}
@@ -127,11 +93,9 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
 
 function InfoRow({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
     return (
-        <div style={{ paddingTop: 14 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "#bbb", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {label}
-            </p>
-            <p style={{ fontSize: 13, color: "#444", margin: 0, whiteSpace: multiline ? "pre-wrap" : "normal", lineHeight: 1.6 }}>
+        <div>
+            <p className={styles.infoLabel}>{label}</p>
+            <p className={`${styles.infoValue} ${multiline ? styles.infoValueMultiline : ""}`}>
                 {value}
             </p>
         </div>
@@ -173,14 +137,16 @@ export default function SubmissionsPage() {
                 </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
+            <div className={styles.toolbar}>
                 <input
-                    className={styles.input}
+                    className={styles.searchInput}
                     placeholder="Ad, email və ya servis üzrə axtar..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    style={{ maxWidth: 400 }}
                 />
+                {search && (
+                    <span className={styles.resultCount}>{filtered.length} nəticə</span>
+                )}
             </div>
 
             {filtered.length === 0 ? (
@@ -188,7 +154,7 @@ export default function SubmissionsPage() {
                     {search ? "Nəticə tapılmadı" : "Heç bir müraciət yoxdur"}
                 </div>
             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className={styles.accordionList}>
                     {filtered.map(sub => (
                         <SubmissionCard
                             key={sub.id}

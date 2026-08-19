@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { LangInput } from "@/components/LangInput";
 import { RichTextEditor } from "@repo/ui";
+import { ImagePlus } from "lucide-react";
+import { Select } from "@/components/Select";
 import styles from "@/styles/blog.module.css";
 import ed from "@/styles/pulseEditor.module.css";
 
@@ -373,9 +375,9 @@ export default function PulseArticleEditPage() {
 
     return (
         <div>
-            <div className={styles.tabHeader}>
-                <h2 className={styles.tabTitle}>{isNew ? "Yeni Məqalə" : "Məqaləni Düzəlt"}</h2>
-                <div className={ed.row}>
+            <div className={styles.editorBar}>
+                <h1 className={styles.editorBarTitle}>{isNew ? "Yeni Məqalə" : "Məqaləni Düzəlt"}</h1>
+                <div className={styles.editorBarActions}>
                     <button className={styles.cancelBtn} onClick={() => router.push("/pulse")}>Ləğv et</button>
                     <button className={styles.saveBtn} onClick={save} disabled={saving}>{saving ? "Saxlanır..." : "Saxla"}</button>
                 </div>
@@ -383,20 +385,20 @@ export default function PulseArticleEditPage() {
 
             <div className={styles.settingsCard}>
                 <h3 className={styles.settingsGroupTitle}>Əsas məlumatlar</h3>
-                <div className={styles.twoCol}>
-                    <div className={styles.field}>
-                        <LangInput
-                            label="Başlıq *"
-                            value={title}
-                            onChange={(value) => {
-                                setTitle(value);
-                                if (!isNew) {
-                                    setSlug(generateSlug(value.az || value.en || value.ru || ""));
-                                }
-                            }}
-                            placeholder="Məqalə başlığı"
-                        />
-                    </div>
+                {/* Başlıq üç dili tutduğu üçün sıranın çox hissəsini alır;
+                    slug tək sahədir və eyni xətdə oturur. */}
+                <div className={styles.titleRow}>
+                    <LangInput
+                        label="Başlıq *"
+                        value={title}
+                        onChange={(value) => {
+                            setTitle(value);
+                            if (!isNew) {
+                                setSlug(generateSlug(value.az || value.en || value.ru || ""));
+                            }
+                        }}
+                        placeholder="Məqalə başlığı"
+                    />
                     <div className={styles.field}>
                         <label>Slug *</label>
                         <input className={styles.input} value={slug} onChange={e => setSlug(e.target.value)} placeholder="meqale-basligi" />
@@ -405,63 +407,73 @@ export default function PulseArticleEditPage() {
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
                         <label>Kateqoriya *</label>
-                        <select
-                            className={styles.input}
+                        <Select
+                            ariaLabel="Kateqoriya"
                             value={(() => {
                                 const currentName = getLocalizedName(category);
                                 const found = categories.find((c) => getLocalizedName(c.name) === currentName);
                                 return found?.id || "";
                             })()}
-                            onChange={e => {
-                                const selected = categories.find(c => c.id === e.target.value);
+                            onChange={val => {
+                                const selected = categories.find(c => c.id === val);
                                 if (selected) setCategory(toLocalizedValue(selected.name));
                                 else setCategory({ az: "", en: "", ru: "" });
                             }}
-                        >
-                            <option value="">Seçin...</option>
-                            {categories.map(c => {
-                                const catName = typeof c.name === "string" ? c.name : (c.name?.az || Object.values(c.name)[0] || "");
-                                return <option key={c.id} value={c.id}>{catName}</option>;
-                            })}
-                        </select>
+                            options={categories.map(c => ({
+                                value: c.id,
+                                label: typeof c.name === "string" ? c.name : (c.name?.az || Object.values(c.name)[0] || ""),
+                            }))}
+                        />
                     </div>
                     <div className={styles.field}>
-                        <label>Müəllif</label>
-                        <div className={ed.langRow}>
-                            <button type="button" onClick={() => setAuthorType("existing")}
-                                className={authorType === "existing" ? ed.chipActive : ed.chip}>
-                                Mövcud müəllif
-                            </button>
-                            <button type="button" onClick={() => setAuthorType("custom")}
-                                className={authorType === "custom" ? ed.chipActive : ed.chip}>
-                                Xüsusi + Sosial media
-                            </button>
+                        {/* Rejim seçici etiketlə eyni sətirdədir — ayrı sətirdə
+                            dayansaydı, altındakı select qonşu sütundakı
+                            Kateqoriya seçicisindən aşağı düşərdi. */}
+                        <div className={styles.fieldHead}>
+                            <label>Müəllif</label>
+                            <div className={`${ed.langRow} ${styles.fieldHeadSeg}`}>
+                                <button type="button" onClick={() => setAuthorType("existing")}
+                                    className={authorType === "existing" ? ed.segItemActive : ed.segItem}>
+                                    Mövcud müəllif
+                                </button>
+                                <button type="button" onClick={() => setAuthorType("custom")}
+                                    className={authorType === "custom" ? ed.segItemActive : ed.segItem}>
+                                    Xüsusi + Sosial media
+                                </button>
+                            </div>
                         </div>
                         {authorType === "existing" ? (
-                            <select className={styles.input} value={authorId} onChange={e => setAuthorId(e.target.value)}>
-                                <option value="">Seçin...</option>
-                                {authors.map(a => <option key={a.id} value={a.id}>{getLocalizedName(a.name)}</option>)}
-                            </select>
+                            <Select
+                                ariaLabel="Müəllif"
+                                value={authorId}
+                                onChange={setAuthorId}
+                                options={authors.map(a => ({ value: a.id, label: getLocalizedName(a.name) }))}
+                            />
                         ) : (
                             <div className={ed.stack}>
                                 <input className={styles.input} value={customAuthorName}
                                     onChange={e => setCustomAuthorName(e.target.value)} placeholder="Müəllif adı" />
-                                <div className={ed.socialGrid}>
+                                {/* İkona sahənin içindəki neytral relsdədir. Əvvəl hər
+                                    platformanın öz doymuş rəngli dairəsi və emoji işarəsi
+                                    vardı — dörd fərqli rəng sahəni parçalayırdı. */}
+                                <div className={styles.socialGrid}>
                                     {[
-                                        { key: "facebook", icon: "f", color: "#1877F2", label: "Facebook" },
-                                        { key: "instagram", icon: "📷", color: "#E4405F", label: "Instagram" },
-                                        { key: "tiktok", icon: "♪", color: "#000000", label: "TikTok" },
-                                        { key: "website", icon: "🌐", color: "#4A90D9", label: "Vebsayt" },
-                                    ].map(platform => (
-                                        <div key={platform.key} className={ed.socialItem}>
-                                            <span title={platform.label} className={ed.socialIcon}
-                                                style={{ "--social-color": platform.color } as React.CSSProperties}>
-                                                {platform.icon}
+                                        { key: "facebook", code: "FB", label: "Facebook" },
+                                        { key: "instagram", code: "IG", label: "Instagram" },
+                                        { key: "tiktok", code: "TT", label: "TikTok" },
+                                        { key: "website", code: "WEB", label: "Vebsayt" },
+                                    ].map(({ key, code, label }) => (
+                                        <div key={key} className={styles.socialCell}>
+                                            <span className={styles.socialIcon} title={label} aria-hidden="true">
+                                                {code}
                                             </span>
-                                            <input className={styles.input}
-                                                value={socialLinks[platform.key] || ""}
-                                                onChange={e => setSocialLinks(prev => ({ ...prev, [platform.key]: e.target.value }))}
-                                                placeholder={`${platform.label} URL`} />
+                                            <input
+                                                className={`${styles.input} ${styles.socialInput}`}
+                                                value={socialLinks[key] || ""}
+                                                onChange={e => setSocialLinks(prev => ({ ...prev, [key]: e.target.value }))}
+                                                placeholder={`${label} URL`}
+                                                aria-label={`${label} URL`}
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -469,41 +481,54 @@ export default function PulseArticleEditPage() {
                         )}
                     </div>
                 </div>
-                <div className={styles.field}>
-                    <LangInput
-                        label="Qısa məzmun"
-                        value={excerpt}
-                        onChange={setExcerpt}
-                        type="textarea"
-                        placeholder="Məqalənin qısa təsviri"
-                    />
-                </div>
+                <LangInput
+                    label="Qısa məzmun"
+                    value={excerpt}
+                    onChange={setExcerpt}
+                    type="textarea"
+                    placeholder="Məqalənin qısa təsviri"
+                />
 
-                <div className={styles.field}>
-                    <label>Dərc olunma tarixi</label>
-                    <input
-                        type="date"
-                        className={styles.input}
-                        value={publishDate}
-                        onChange={e => setPublishDate(e.target.value)}
-                    />
-                </div>
+                <div className={styles.twoCol}>
+                    <div className={styles.field}>
+                        <label>Dərc olunma tarixi</label>
+                        <input
+                            type="date"
+                            className={styles.input}
+                            value={publishDate}
+                            onChange={e => setPublishDate(e.target.value)}
+                        />
+                    </div>
 
-                <div className={styles.field}>
-                    <label>Örtük şəkli</label>
-                    <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleCoverUpload} />
-                    <div className={ed.coverUpload} onClick={() => fileRef.current?.click()}>
-                        {coverImage
-                            ? <img src={toAbsUrl(coverImage)} alt="" className={ed.coverPreview} />
-                            : <span className={ed.coverHint}>Şəkil yüklə</span>}
+                    <div className={styles.field}>
+                        <label>Örtük şəkli</label>
+                        <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleCoverUpload} />
+                        <div className={styles.coverRow}>
+                            <div className={styles.coverBox} onClick={() => fileRef.current?.click()}>
+                                {coverImage ? (
+                                    <>
+                                        <img src={toAbsUrl(coverImage)} alt="" />
+                                        <span>Dəyişdir</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ImagePlus size={15} />
+                                        <span>Şəkil yüklə</span>
+                                    </>
+                                )}
+                            </div>
+                            <p className={styles.coverNote}>
+                                JPG və ya PNG. Siyahıda və məqalə başlığında görünür.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div className={ed.rowWide}>
-                    <label className={ed.checkLabel}>
+                <div className={styles.checkRow}>
+                    <label className={styles.checkLabel}>
                         <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} /> Dərc olunub
                     </label>
-                    <label className={ed.checkLabel}>
+                    <label className={styles.checkLabel}>
                         <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} /> Seçilmiş
                     </label>
                 </div>
@@ -583,6 +608,7 @@ export default function PulseArticleEditPage() {
                     minHeight={240}
                     onUploadImage={uploadArticleMedia}
                     onUploadVideo={uploadArticleMedia}
+                    className="rte-scope"
                 />
             </div>
         </div>
