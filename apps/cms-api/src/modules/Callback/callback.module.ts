@@ -3,8 +3,10 @@ import { CallbackController } from './callback.controller';
 import { CallbackService } from './callback.service';
 import { CallbackRepository } from './callback.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { BitrixModule } from '../Bitrix/bitrix.module';
 
 @Module({
+  imports: [BitrixModule],
   controllers: [CallbackController],
   providers: [CallbackService, CallbackRepository, PrismaService],
 })
