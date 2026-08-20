@@ -340,6 +340,11 @@ model PulseAuthor {
   linkedin    String?
   avatar      String?
   description Json?
+  // Saytdakı komanda bölməsində göstərilsin? Gizlədilən müəllif məqalələrdə
+  // qalır, yalnız siyahıdan çıxır.
+  isVisible   Boolean  @default(true)
+  // Seçilmiş komanda üzvləri siyahının əvvəlində dayanır.
+  featured    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   articles    PulseArticle[]

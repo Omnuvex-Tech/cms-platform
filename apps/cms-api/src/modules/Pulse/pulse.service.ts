@@ -187,8 +187,8 @@ export class PulseService {
   }
 
   // ── Authors ──────────────────────────────────────────
-  async findAllAuthors() {
-    const authors = await this.repo.findAllAuthors();
+  async findAllAuthors(includeHidden = false) {
+    const authors = await this.repo.findAllAuthors(includeHidden);
     return authors.map((author: any) => sanitizeAuthorEntity(author));
   }
 

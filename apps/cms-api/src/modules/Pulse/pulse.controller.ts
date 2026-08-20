@@ -135,10 +135,12 @@ export class PulseController {
   }
 
   // ── Authors (PUBLIC for treva-web) ──────────────────
+  // Sayt bu endpoint-i tokensiz çağırır — gizlədilmiş müəllif ora sızmamalıdır.
+  // Admin paneli bütün siyahını includeHidden=true sorğu parametri ilə alır.
   @Public()
   @Get('authors')
-  findAllAuthors() {
-    return this.service.findAllAuthors();
+  findAllAuthors(@Query('includeHidden') includeHidden?: string) {
+    return this.service.findAllAuthors(includeHidden === 'true');
   }
 
   @Public()
