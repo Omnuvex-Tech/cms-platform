@@ -119,6 +119,23 @@ body {
    Base layer — shared behaviour the modules should not each re-declare.
    Kept to element selectors so Tailwind utilities always win.
    -------------------------------------------------------------------------- */
+/* Bu panel sənəd deyil, tətbiqdir. Default `cursor: auto` hər mətn üzərində
+   I-beam göstərir — istifadəçi etiketin, başlığın, cədvəl xanasının redaktə
+   oluna biləcəyini düşünür. Ona görə əsas kursor `default`-dur; I-beam yalnız
+   həqiqətən mətn yazılan yerlərdə qalır (aşağıda geri qaytarılır).
+   Mətn seçmək yenə mümkündür — dəyişən yalnız göstəricidir. */
+body {
+    cursor: default;
+}
+
+/* Yalnız redaktə olunan sahələr mətn kursoru alır. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]),
+textarea,
+[contenteditable="true"],
+.ProseMirror {
+    cursor: text;
+}
+
 a[href],
 button:not(:disabled),
 summary,
@@ -126,7 +143,11 @@ label[for],
 select:not(:disabled),
 input[type="checkbox"]:not(:disabled),
 input[type="radio"]:not(:disabled),
-input[type="file"]:not(:disabled) {
+input[type="file"]:not(:disabled),
+/* ARIA rolu ilə düymə kimi davranan elementlər. */
+[role="button"],
+[role="option"],
+[role="tab"] {
     cursor: pointer;
 }
 

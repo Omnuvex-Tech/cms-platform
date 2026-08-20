@@ -6,6 +6,7 @@ import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { LangInput } from "@/components/LangInput";
 import { RichTextEditor } from "@repo/ui";
 import { ImagePlus } from "lucide-react";
+import { DatePicker } from "@/components/DatePicker";
 import { Select } from "@/components/Select";
 import styles from "@/styles/blog.module.css";
 import ed from "@/styles/pulseEditor.module.css";
@@ -374,7 +375,7 @@ export default function PulseArticleEditPage() {
     if (loading) return <div className={styles.empty}>Yüklənir...</div>;
 
     return (
-        <div>
+        <div className={styles.fullWidth}>
             <div className={styles.editorBar}>
                 <h1 className={styles.editorBarTitle}>{isNew ? "Yeni Məqalə" : "Məqaləni Düzəlt"}</h1>
                 <div className={styles.editorBarActions}>
@@ -492,11 +493,10 @@ export default function PulseArticleEditPage() {
                 <div className={styles.twoCol}>
                     <div className={styles.field}>
                         <label>Dərc olunma tarixi</label>
-                        <input
-                            type="date"
-                            className={styles.input}
+                        <DatePicker
+                            ariaLabel="Dərc olunma tarixi"
                             value={publishDate}
-                            onChange={e => setPublishDate(e.target.value)}
+                            onChange={setPublishDate}
                         />
                     </div>
 

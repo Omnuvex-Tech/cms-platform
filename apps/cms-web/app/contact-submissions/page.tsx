@@ -76,29 +76,31 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
 
             {isOpen && (
                 <div className={styles.accordionBody}>
-                    <div className={styles.infoGrid}>
-                        <InfoRow label="Telefon" value={sub.phone || "—"} />
-                        <InfoRow label="Servis" value={decode(sub.service) || "—"} />
-                        <InfoRow label="Büdcə" value={sub.budget || "—"} />
-                        <InfoRow label="Timeline" value={sub.timeline || "—"} />
-                        <div className={styles.infoWide}>
-                            <InfoRow label="Mesaj" value={sub.message || "—"} multiline />
-                        </div>
+                    {/* Kontekst — kiçik və sönük. */}
+                    <div className={styles.detailMeta}>
+                        <MetaItem label="Telefon" value={sub.phone} />
+                        <MetaItem label="Servis" value={decode(sub.service)} />
+                        <MetaItem label="Büdcə" value={sub.budget} />
+                        <MetaItem label="Timeline" value={sub.timeline} />
                     </div>
+
+                    {/* Əsas məzmun — istifadəçinin yazdığı mesaj. */}
+                    {sub.message
+                        ? <p className={styles.detailBody}>{sub.message}</p>
+                        : <p className={styles.detailEmpty}>Mesaj yazılmayıb.</p>}
                 </div>
             )}
         </div>
     );
 }
 
-function InfoRow({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
+/** Meta sətrindəki bir element: etiket + dəyər. Dəyər boşdursa tire göstərir. */
+function MetaItem({ label, value }: { label: string; value?: string | null }) {
     return (
-        <div>
-            <p className={styles.infoLabel}>{label}</p>
-            <p className={`${styles.infoValue} ${multiline ? styles.infoValueMultiline : ""}`}>
-                {value}
-            </p>
-        </div>
+        <span className={styles.metaItem}>
+            <span className={styles.metaLabel}>{label}</span>
+            <span className={styles.metaValue}>{value?.trim() || "—"}</span>
+        </span>
     );
 }
 

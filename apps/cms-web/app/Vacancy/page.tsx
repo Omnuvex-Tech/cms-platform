@@ -10,6 +10,7 @@ import {
   useSortable, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { DatePicker } from "@/components/DatePicker";
 import { Select } from "@/components/Select";
 import styles from "@/styles/vacancy.module.css";
 
@@ -478,8 +479,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
               <div className={styles.twoCol}>
                 <div className={styles.field}>
                   <label>Başlama tarixi</label>
-                  <input type="date" className={styles.input} value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)} />
+                  <DatePicker ariaLabel="Başlama tarixi" value={startDate} onChange={setStartDate} />
                 </div>
                 <div className={styles.field}>
                   <label>Başlama tarixini göstər</label>
@@ -492,8 +492,7 @@ function VacancyModal({ open, onClose, editVac, categories, onSaved }: {
               <div className={styles.twoCol}>
                 <div className={styles.field}>
                   <label>Bağlanma tarixi</label>
-                  <input type="date" className={styles.input} value={closingDate}
-                    onChange={(e) => setClosingDate(e.target.value)} />
+                  <DatePicker ariaLabel="Bağlanma tarixi" value={closingDate} onChange={setClosingDate} />
                 </div>
                 <div className={styles.field}>
                   <label>Bağlanma tarixini göstər</label>
