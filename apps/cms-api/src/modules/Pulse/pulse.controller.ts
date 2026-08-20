@@ -9,6 +9,7 @@ import { CreatePulseArticleDto } from './dto/create-pulse-article.dto';
 import { UpdatePulseArticleDto } from './dto/update-pulse-article.dto';
 import { CreatePulseAuthorDto } from './dto/create-pulse-author.dto';
 import { UpdatePulseAuthorDto } from './dto/update-pulse-author.dto';
+import { ReorderPulseAuthorsDto } from './dto/reorder-pulse-authors.dto';
 import { CreatePulseKeywordDto } from './dto/create-pulse-keyword.dto';
 import { UpdatePulseKeywordDto } from './dto/update-pulse-keyword.dto';
 import { CreatePulseCategoryDto } from './dto/create-pulse-category.dto';
@@ -141,6 +142,13 @@ export class PulseController {
   @Get('authors')
   findAllAuthors(@Query('includeHidden') includeHidden?: string) {
     return this.service.findAllAuthors(includeHidden === 'true');
+  }
+
+  // ⚠️ STATIC ROUTE — 'authors/:id' variantlarından ƏVVƏL olmalıdır.
+  // Komanda bölməsinin ardıcıllığı; yalnız admin panelindən çağırılır.
+  @Patch('authors/reorder')
+  reorderAuthors(@Body() dto: ReorderPulseAuthorsDto) {
+    return this.service.reorderAuthors(dto);
   }
 
   @Public()

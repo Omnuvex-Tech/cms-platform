@@ -143,14 +143,39 @@ export class PulseRepository {
   // ── Authors ──────────────────────────────────────────
   /**
    * Sayt yalnız görünən müəllifləri alır; admin paneli `includeHidden` ilə
-   * hamısını istəyir. Sıralama: seçilmiş komanda üzvləri əvvəldə, sonra ada
-   * görə — belədə saytdakı komanda bölməsi əlavə sıralama tələb etmir.
+   * hamısını istəyir. Ardıcıllıq admin panelində əl ilə təyin olunan `order`
+   * sütunudur — sayt siyahını olduğu kimi göstərir, özü sıralamır.
+   * `slug` yalnız eyni `order` dəyərlərində nəticə sabit qalsın deyədir.
    */
   findAllAuthors(includeHidden = false) {
     return this.prisma.pulseAuthor.findMany({
       where: includeHidden ? undefined : { isVisible: true },
-      orderBy: [{ featured: 'desc' }, { slug: 'asc' }],
+      orderBy: [{ order: 'asc' }, { slug: 'asc' }],
     });
+  }
+
+  /**
+   * Yeni müəllif siyahının sonuna düşsün deyə növbəti `order` dəyəri.
+   * Gizli müəlliflər də sayılır — onlar sonradan göstəriləndə öz yerinə qayıdır.
+   */
+  async nextAuthorOrder() {
+    const last = await this.prisma.pulseAuthor.findFirst({
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    });
+    return last ? last.order + 1 : 0;
+  }
+
+  /** `ids` massivindəki ardıcıllıq `order` sütununa yazılır. */
+  reorderAuthors(ids: string[]) {
+    return this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.pulseAuthor.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 
   findAuthorById(id: string) {
@@ -164,7 +189,7 @@ export class PulseRepository {
     });
   }
 
-  createAuthor(dto: CreatePulseAuthorDto & { slug: string }) {
+  createAuthor(dto: CreatePulseAuthorDto & { slug: string; order: number }) {
     return this.prisma.pulseAuthor.create({ data: dto });
   }
 

@@ -1,13 +1,28 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+    useSortable,
+    arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { Avatar } from "@/components/Avatar";
 import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
 
 type LocalizedValue = string | { az?: string; en?: string; ru?: string };
-type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue; isVisible?: boolean; featured?: boolean };
+type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue; isVisible?: boolean; order?: number };
 
 const PULSE_UPLOAD_PREFIX = "/uploads/pulse/";
 
@@ -42,6 +57,90 @@ function toLocalizedFields(value: LocalizedValue | undefined) {
     };
 }
 
+/**
+ * Sürüşdürülə bilən komanda sətri.
+ *
+ * Sürüşdürmə yalnız tutacaqdan (⠿) işləyir — bütün sətir sürüşdürmə sahəsi
+ * olsaydı, "Düzəlt"/"Sil" düymələrinə toxunmaq da sürüşdürmə kimi başlayardı.
+ */
+function SortableAuthorRow({
+    author,
+    index,
+    onEdit,
+    onToggleVisibility,
+    onDelete,
+}: {
+    author: Author;
+    index: number;
+    onEdit: (a: Author) => void;
+    onToggleVisibility: (a: Author) => void;
+    onDelete: (id: string) => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({ id: author.id });
+
+    const hidden = author.isVisible === false;
+
+    return (
+        <tr
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.5 : 1,
+            }}
+        >
+            <td className={styles.num}>
+                <span className={styles.dragHandle} {...attributes} {...listeners} title="Sürüşdür">
+                    ⠿
+                </span>
+                {String(index + 1).padStart(2, "0")}
+            </td>
+            <td>
+                <div className={styles.blogInfo}>
+                    <Avatar
+                        src={author.avatar ? toAbsUrl(author.avatar) : null}
+                        name={getLocalizedValue(author.name, "az")}
+                        className={styles.avatar}
+                        imgClassName={styles.avatarImg}
+                    />
+                    <div className={styles.cellStack}>
+                        <span className={styles.cellMain}>{getLocalizedValue(author.name, "az")}</span>
+                        <span className={styles.cellSub}>/{author.slug}</span>
+                    </div>
+                </div>
+            </td>
+            <td>{getLocalizedValue(author.title, "az") || "—"}</td>
+            <td>
+                <span className={`${styles.statusBadge} ${hidden ? styles.badgeHidden : styles.badgeVisible}`}>
+                    {hidden ? "Gizli" : "Görünür"}
+                </span>
+            </td>
+            <td>
+                <LocaleChips
+                    value={author.name}
+                    className={styles.localeChips}
+                    chipClassName={styles.localeChip}
+                    onClassName={styles.localeOn}
+                    offClassName={styles.localeOff}
+                />
+            </td>
+            <td>
+                <div className={styles.actions}>
+                    <button className={styles.editBtn} onClick={() => onEdit(author)}>Düzəlt</button>
+                    <button
+                        className={`${styles.visBtn} ${hidden ? styles.visBtnShow : styles.visBtnHide}`}
+                        onClick={() => onToggleVisibility(author)}
+                    >
+                        {hidden ? "Göstər" : "Gizlət"}
+                    </button>
+                    <button className={styles.deleteBtn} onClick={() => onDelete(author.id)}>Sil</button>
+                </div>
+            </td>
+        </tr>
+    );
+}
+
 export default function PulseAuthorsPage() {
     const [authors, setAuthors] = useState<Author[]>([]);
     const [loading, setLoading] = useState(true);
@@ -60,10 +159,12 @@ export default function PulseAuthorsPage() {
     const [descriptionEn, setDescriptionEn] = useState("");
     const [descriptionRu, setDescriptionRu] = useState("");
     const [isVisible, setIsVisible] = useState(true);
-    const [featured, setFeatured] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [reordering, setReordering] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
+
+    const sensors = useSensors(useSensor(PointerSensor));
 
     const load = async () => {
         setLoading(true);
@@ -72,6 +173,50 @@ export default function PulseAuthorsPage() {
     };
 
     useEffect(() => { load(); }, []);
+
+    /**
+     * Sıra dərhal ekranda dəyişir, sonra serverə yazılır — şəbəkə gözləntisi
+     * sürüşdürməni ləng göstərməsin. Yazı alınmasa siyahı serverdən yenidən
+     * yüklənir ki, ekranda saxlanılmamış sıra qalmasın.
+     */
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = authors.findIndex(a => a.id === active.id);
+        const newIndex = authors.findIndex(a => a.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const next = arrayMove(authors, oldIndex, newIndex);
+        setAuthors(next);
+        setReordering(true);
+        try {
+            await apiFetch("/pulse/authors/reorder", {
+                method: "PATCH",
+                body: JSON.stringify({ ids: next.map(a => a.id) }),
+            });
+        } catch (err: any) {
+            alert(err?.message ?? "Sıralama saxlanılarkən xəta baş verdi");
+            load();
+        } finally {
+            setReordering(false);
+        }
+    };
+
+    /** Siyahıdan birbaşa gizlətmək/göstərmək — işdən ayrılan üzv üçün. */
+    const toggleVisibility = async (author: Author) => {
+        const nextVisible = author.isVisible === false;
+        setAuthors(prev => prev.map(a => (a.id === author.id ? { ...a, isVisible: nextVisible } : a)));
+        try {
+            await apiFetch(`/pulse/authors/${author.id}`, {
+                method: "PUT",
+                body: JSON.stringify({ isVisible: nextVisible }),
+            });
+        } catch (err: any) {
+            alert(err?.message ?? "Dəyişiklik saxlanılmadı");
+            load();
+        }
+    };
 
     const openCreate = () => {
         setEditItem(null);
@@ -82,7 +227,6 @@ export default function PulseAuthorsPage() {
         setAvatar("");
         setDescriptionAz(""); setDescriptionEn(""); setDescriptionRu("");
         setIsVisible(true);
-        setFeatured(false);
         setModalOpen(true);
     };
 
@@ -105,7 +249,6 @@ export default function PulseAuthorsPage() {
         setDescriptionEn(localizedDescription.en);
         setDescriptionRu(localizedDescription.ru);
         setIsVisible(a.isVisible !== false);
-        setFeatured(a.featured === true);
         setModalOpen(true);
     };
 
@@ -146,7 +289,6 @@ export default function PulseAuthorsPage() {
                     },
                 }),
                 isVisible,
-                featured,
             };
             if (editItem) await apiFetch(`/pulse/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/authors", { method: "POST", body: JSON.stringify(body) });
@@ -167,9 +309,12 @@ export default function PulseAuthorsPage() {
                     <h1 className={styles.title}>Pulse Müəllifləri</h1>
                     <p className={styles.subtitle}>
                         Məqalələrə təyin olunan müəllif profillərini idarə edin.
+                        Sıra saytdakı «Komandamızla tanış olun» bölməsində eyni
+                        ardıcıllıqla görünür — dəyişmək üçün sətri ⠿ ilə sürüşdürün.
                     </p>
                 </div>
                 <div className={styles.headerRight}>
+                    {reordering && <span className={styles.reorderingText}>Sıra saxlanılır...</span>}
                     <button className={styles.addBtn} onClick={openCreate}>+ Yeni Müəllif</button>
                 </div>
             </div>
@@ -177,55 +322,32 @@ export default function PulseAuthorsPage() {
                 : authors.length === 0 ? <div className={styles.empty}>Hələ müəllif yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>
-                            <table className={styles.table}>
-                                <thead><tr><th>Müəllif</th><th>Vəzifə</th><th>Saytda</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
-                                <tbody>
-                                    {authors.map(a => (
-                                        <tr key={a.id}>
-                                            <td>
-                                                <div className={styles.blogInfo}>
-                                                    <Avatar
-                                                        src={a.avatar ? toAbsUrl(a.avatar) : null}
-                                                        name={getLocalizedValue(a.name, "az")}
-                                                        className={styles.avatar}
-                                                        imgClassName={styles.avatarImg}
-                                                    />
-                                                    <div className={styles.cellStack}>
-                                                        <span className={styles.cellMain}>{getLocalizedValue(a.name, "az")}</span>
-                                                        <span className={styles.cellSub}>/{a.slug}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>{getLocalizedValue(a.title, "az") || "—"}</td>
-                                            <td>
-                                                <div className={styles.actions}>
-                                                    <span className={`${styles.statusBadge} ${a.isVisible === false ? styles.badgeHidden : styles.badgeVisible}`}>
-                                                        {a.isVisible === false ? "Gizli" : "Görünür"}
-                                                    </span>
-                                                    {a.featured && (
-                                                        <span className={`${styles.statusBadge} ${styles.toneBlue}`}>Seçilmiş</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <LocaleChips
-                                                    value={a.name}
-                                                    className={styles.localeChips}
-                                                    chipClassName={styles.localeChip}
-                                                    onClassName={styles.localeOn}
-                                                    offClassName={styles.localeOff}
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
+                                <table className={styles.table}>
+                                    <thead><tr><th>Sıra</th><th>Müəllif</th><th>Vəzifə</th><th>Saytda</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
+                                    <tbody>
+                                        <SortableContext
+                                            items={authors.map(a => a.id)}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            {authors.map((a, index) => (
+                                                <SortableAuthorRow
+                                                    key={a.id}
+                                                    author={a}
+                                                    index={index}
+                                                    onEdit={openEdit}
+                                                    onToggleVisibility={toggleVisibility}
+                                                    onDelete={setDeleteId}
                                                 />
-                                            </td>
-                                            <td>
-                                                <div className={styles.actions}>
-                                                    <button className={styles.editBtn} onClick={() => openEdit(a)}>Düzəlt</button>
-                                                    <button className={styles.deleteBtn} onClick={() => setDeleteId(a.id)}>Sil</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            ))}
+                                        </SortableContext>
+                                    </tbody>
+                                </table>
+                            </DndContext>
                         </div>
                     )}
             {modalOpen && (
@@ -300,7 +422,8 @@ export default function PulseAuthorsPage() {
                                 <textarea className={styles.textarea} rows={3} value={descriptionRu} onChange={e => setDescriptionRu(e.target.value)} />
                             </div>
 
-                            {/* Saytdakı "İlham verən komanda" bölməsinə təsir edir. */}
+                            {/* Saytdakı komanda bölməsinə təsir edir. Sıra siyahıda
+                                sürüşdürməklə təyin olunur. */}
                             <div className={styles.checkRow}>
                                 <label className={styles.checkLabel}>
                                     <input
@@ -309,14 +432,6 @@ export default function PulseAuthorsPage() {
                                         onChange={e => setIsVisible(e.target.checked)}
                                     />
                                     Saytda görünsün
-                                </label>
-                                <label className={styles.checkLabel}>
-                                    <input
-                                        type="checkbox"
-                                        checked={featured}
-                                        onChange={e => setFeatured(e.target.checked)}
-                                    />
-                                    Seçilmiş (əvvəldə göstərilsin)
                                 </label>
                             </div>
                         </div>

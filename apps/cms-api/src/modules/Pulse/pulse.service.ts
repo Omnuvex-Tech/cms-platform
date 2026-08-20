@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PulseRepository } from './pulse.repository';
 import { CreatePulseArticleDto } from './dto/create-pulse-article.dto';
 import { UpdatePulseArticleDto } from './dto/update-pulse-article.dto';
 import { generatePulseArticleSchema } from './pulse-schema-generator';
 import { CreatePulseAuthorDto } from './dto/create-pulse-author.dto';
 import { UpdatePulseAuthorDto } from './dto/update-pulse-author.dto';
+import { ReorderPulseAuthorsDto } from './dto/reorder-pulse-authors.dto';
 import { CreatePulseKeywordDto } from './dto/create-pulse-keyword.dto';
 import { UpdatePulseKeywordDto } from './dto/update-pulse-keyword.dto';
 import { CreatePulseCategoryDto } from './dto/create-pulse-category.dto';
@@ -217,6 +218,9 @@ export class PulseService {
       ...(normalizedDescription !== undefined && { description: normalizedDescription }),
       avatar: sanitizePulseAvatar(dto.avatar),
       slug: dto.slug || slugify(getPrimaryLocalizedValue(normalizedName)),
+      // Yeni üzv siyahının sonuna düşür. Default 0 qalsaydı, hər yeni müəllif
+      // birinci sıraya girərdi.
+      order: await this.repo.nextAuthorOrder(),
     });
     return sanitizeAuthorEntity(author);
   }
@@ -244,6 +248,34 @@ export class PulseService {
     const existing = await this.repo.findAuthorById(id);
     if (!existing) throw new NotFoundException('Müəllif tapılmadı');
     return this.repo.deleteAuthor(id);
+  }
+
+  /**
+   * Komanda bölməsinin ardıcıllığını yazır.
+   *
+   * Massivdəki yer birbaşa `order`-a çevrildiyi üçün natamam siyahı sıranı
+   * pozar (göndərilməyən üzvlər köhnə nömrələri ilə qalıb qarışardı), ona görə
+   * bütün müəlliflərin göndərildiyi yoxlanılır.
+   */
+  async reorderAuthors(dto: ReorderPulseAuthorsDto) {
+    const uniqueIds = [...new Set(dto.ids)];
+    if (uniqueIds.length !== dto.ids.length) {
+      throw new BadRequestException('Siyahıda təkrarlanan müəllif var');
+    }
+
+    const authors = await this.repo.findAllAuthors(true);
+    if (authors.length !== uniqueIds.length) {
+      throw new BadRequestException(
+        'Sıralama üçün bütün müəlliflərin siyahısı göndərilməlidir',
+      );
+    }
+
+    const knownIds = new Set(authors.map((author) => author.id));
+    const unknownId = uniqueIds.find((id) => !knownIds.has(id));
+    if (unknownId) throw new NotFoundException('Müəllif tapılmadı');
+
+    const reordered = await this.repo.reorderAuthors(uniqueIds);
+    return reordered.map((author: any) => sanitizeAuthorEntity(author));
   }
 
   // ── Keywords ──────────────────────────────────────────
