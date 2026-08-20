@@ -16,6 +16,7 @@
 .badgeVisible { composes: badgeVisible from "./blog.module.css"; }
 .cancelBtn { composes: cancelBtn from "./blog.module.css"; }
 .contentItemBlock { composes: contentItemBlock from "./blog.module.css"; }
+.contentItemActions { composes: contentItemActions from "./blog.module.css"; }
 .contentItemHeader { composes: contentItemHeader from "./blog.module.css"; }
 .contentItemLabel { composes: contentItemLabel from "./blog.module.css"; }
 .coverThumb { composes: coverThumb from "./blog.module.css"; }
@@ -39,6 +40,7 @@
 .num { composes: num from "./blog.module.css"; }
 .overlay { composes: overlay from "./blog.module.css"; }
 .page { composes: page from "./blog.module.css"; }
+.moveBtn { composes: moveBtn from "./blog.module.css"; }
 .removeBtn { composes: removeBtn from "./blog.module.css"; }
 .reorderingText { composes: reorderingText from "./blog.module.css"; }
 .saveBtn { composes: saveBtn from "./blog.module.css"; }

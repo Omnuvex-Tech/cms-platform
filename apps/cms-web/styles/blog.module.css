@@ -1093,6 +1093,43 @@
 
 .removeBtn:hover { background: var(--dang-bg-hov); }
 
+/* Təkrarlanan elementlərin başlığındakı düymə qrupu (sırala + sil). */
+.contentItemActions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+/* Sıranı dəyişən kiçik kvadrat düymə. Neytraldır — silmə düyməsi ilə
+   qarışmasın deyə qırmızı deyil. */
+.moveBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-muted);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+
+.moveBtn:hover:not(:disabled) {
+    background: var(--surface-sunk);
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+.moveBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .statIconWrap {
     width: 52px;
     height: 36px;

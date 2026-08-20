@@ -542,6 +542,73 @@ function LocationSectionEditor({ data, onChange, activeLang }: {
     );
 }
 
+/**
+ * Foto qalereyası bloku — interyer və eksteryer şəkilləri.
+ *
+ * Features bloklarındakı şəkillərdən fərqi: burada mətn yoxdur, sayı sərbəstdir
+ * və treva-web-də şəbəkə şəklində göstərilir. Şəkillərin hamısı səhifənin ümumi
+ * tam ekran qalereyasına düşür.
+ */
+function GallerySectionEditor({ data, onChange, activeLang }: {
+    data: any; onChange: (d: any) => void; activeLang: Lang;
+}) {
+    const items = asArray(data.items);
+
+    const setItem = (i: number, patch: any) =>
+        onChange({ ...data, items: items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)) });
+
+    const move = (i: number, dir: -1 | 1) => {
+        const j = i + dir;
+        if (j < 0 || j >= items.length) return;
+        const next = [...items];
+        [next[i], next[j]] = [next[j], next[i]];
+        onChange({ ...data, items: next });
+    };
+
+    return (
+        <div className={styles.sectionFields}>
+            <LocalizedInput label="Başlıq (nazik hissə)" value={data.titleLight} activeLang={activeLang}
+                placeholder="Interior " onChange={v => onChange({ ...data, titleLight: v })} />
+            <LocalizedInput label="Başlıq (qalın hissə)" value={data.titleBold} activeLang={activeLang}
+                placeholder="Gallery" onChange={v => onChange({ ...data, titleBold: v })} />
+            <RichField label="Təsvir" value={data.description} activeLang={activeLang}
+                onChange={v => onChange({ ...data, description: v })} />
+
+            <div className={styles.sectionDivider} />
+            <label className={styles.sectionGroupLabel}>Qalereya şəkilləri</label>
+            {items.map((item: any, i: number) => {
+                const caption = lv(item?.caption);
+                return (
+                    <div key={i} className={styles.contentItemBlock}>
+                        <div className={styles.contentItemHeader}>
+                            <span className={styles.contentItemLabel}>Şəkil #{i + 1}</span>
+                            <div className={styles.contentItemActions}>
+                                <button type="button" className={styles.moveBtn} disabled={i === 0}
+                                    onClick={() => move(i, -1)} aria-label="Yuxarı">↑</button>
+                                <button type="button" className={styles.moveBtn} disabled={i === items.length - 1}
+                                    onClick={() => move(i, 1)} aria-label="Aşağı">↓</button>
+                                <button type="button" className={styles.removeBtn}
+                                    onClick={() => onChange({ ...data, items: items.filter((_, idx) => idx !== i) })}>✕</button>
+                            </div>
+                        </div>
+                        <FileUpload value={asStr(item?.url)} onChange={url => setItem(i, { url })} />
+                        <div className={styles.field}>
+                            <label>Başlıq / alt mətn ({activeLang.toUpperCase()})</label>
+                            <input className={styles.input} value={caption[activeLang] ?? ""}
+                                placeholder="Yaşayış otağı"
+                                onChange={e => setItem(i, { caption: { ...caption, [activeLang]: e.target.value } })} />
+                        </div>
+                    </div>
+                );
+            })}
+            <button type="button" className={styles.addRowBtn}
+                onClick={() => onChange({ ...data, items: [...items, { url: "", caption: { az: "", en: "", ru: "" } }] })}>
+                + Şəkil əlavə et
+            </button>
+        </div>
+    );
+}
+
 function LayoutsSectionEditor() {
     return (
         <div className={styles.sectionFields}>
@@ -562,6 +629,7 @@ const SECTION_TYPES = [
     { type: "features", label: "Features" },
     { type: "location", label: "Location" },
     { type: "layouts", label: "Layouts" },
+    { type: "gallery", label: "Qalereya" },
 ];
 
 /** Yeni əlavə olunan blokun boş şablonu. */
@@ -590,6 +658,8 @@ function emptySection(type: string): any {
                 titleLight: L(), titleBold: L(), brandName: L(), mainLead: L(), subText: L(),
                 mapImage: "", footerAddress: L(), googleMapsUrl: "",
             };
+        case "gallery":
+            return { type, isVisible: true, titleLight: L(), titleBold: L(), description: L(), items: [] };
         default:
             return { type, isVisible: true };
     }
@@ -608,6 +678,7 @@ function SectionEditor({ section, index, activeLang, onChange, onRemove }: {
             case "features": return <FeaturesSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
             case "location": return <LocationSectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
             case "layouts": return <LayoutsSectionEditor />;
+            case "gallery": return <GallerySectionEditor data={section} onChange={onChange} activeLang={activeLang} />;
             default: return null;
         }
     };

@@ -18,6 +18,8 @@ export const PROJECT_SECTION_TYPES = [
   'features',
   'location',
   'layouts',
+  // İnteryer/eksteryer foto qalereyası — sərbəst sayda şəkil.
+  'gallery',
 ] as const;
 
 export type ProjectSectionType = (typeof PROJECT_SECTION_TYPES)[number];
