@@ -14,6 +14,23 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * Nüsxənin başlığını işarələyir. Başlıq lokallaşdırılmış JSON-dur, ona görə
+ * hər dil ayrıca işlənir; köhnə sətir formatı da qorunur.
+ */
+function appendCopySuffix(title: unknown) {
+  const suffix = ' (kopya)';
+  if (typeof title === 'string') return `${title}${suffix}`;
+  if (!title || typeof title !== 'object') return title;
+
+  return Object.fromEntries(
+    Object.entries(title as Record<string, unknown>).map(([locale, value]) => [
+      locale,
+      typeof value === 'string' && value.trim() ? `${value}${suffix}` : value,
+    ]),
+  );
+}
+
 @Injectable()
 export class LayihelerimizService {
   constructor(private readonly repo: LayihelerimizRepository) {}
@@ -63,5 +80,39 @@ export class LayihelerimizService {
   async delete(id: string) {
     await this.findOne(id);
     return this.repo.delete(id);
+  }
+
+  /**
+   * Layihənin tam nüsxəsi: kartın bütün sahələri + detal səhifəsinin blokları.
+   *
+   * Slug unikaldır, ona görə `-kopya` sonluğu əlavə olunur; o ad da tutulubsa
+   * nömrələnir. Başlığa da "(kopya)" yazılır — eyni adlı iki sətir arasında
+   * admin hansının nüsxə olduğunu ayıra bilməzdi.
+   */
+  async duplicate(id: string) {
+    const source = await this.findOne(id);
+    const [slug, detail] = await Promise.all([
+      this.buildCopySlug(source.slug),
+      this.repo.findDetailBySlug(source.slug),
+    ]);
+
+    return this.repo.duplicate({
+      category: source,
+      detail,
+      slug,
+      title: appendCopySuffix(source.title),
+    });
+  }
+
+  private async buildCopySlug(slug: string) {
+    const base = `${slug}-kopya`;
+    if (!(await this.repo.findBySlug(base))) return base;
+
+    // Praktikada bir neçə nüsxədən çox olmur; hədd sonsuz döngəyə qarşıdır.
+    for (let index = 2; index <= 100; index += 1) {
+      const candidate = `${base}-${index}`;
+      if (!(await this.repo.findBySlug(candidate))) return candidate;
+    }
+    throw new ConflictException('Bu layihə üçün çox sayda nüsxə var');
   }
 }

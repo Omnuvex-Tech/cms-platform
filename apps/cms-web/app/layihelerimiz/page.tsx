@@ -201,11 +201,13 @@ const emptyForm: FormState = {
 
 /* ─────────────────────────── sıralanan cədvəl sətri ───────────────────── */
 
-function SortableRow({ item, onEdit, onToggle, onDelete }: {
+function SortableRow({ item, onEdit, onToggle, onDelete, onDuplicate, duplicating }: {
     item: LayihelerimizCategory;
     onEdit: (item: LayihelerimizCategory) => void;
     onToggle: (item: LayihelerimizCategory) => void;
     onDelete: (item: LayihelerimizCategory) => void;
+    onDuplicate: (item: LayihelerimizCategory) => void;
+    duplicating: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
         useSortable({ id: item.id });
@@ -242,6 +244,12 @@ function SortableRow({ item, onEdit, onToggle, onDelete }: {
                 <div className={styles.actions}>
                     <button type="button" className={styles.editBtn} onClick={() => onEdit(item)}>Düzəlt</button>
                     <a className={styles.editBtn} href={`/layihelerimiz/${item.slug}`}>Bloklar</a>
+                    <button type="button" className={styles.editBtn}
+                        disabled={duplicating}
+                        title="Layihəni bütün blokları ilə köçürür; nüsxə gizli yaranır"
+                        onClick={() => onDuplicate(item)}>
+                        {duplicating ? "Köçürülür..." : "Dublikat"}
+                    </button>
                     <button type="button"
                         className={`${styles.visBtn} ${item.isVisible ? styles.visBtnHide : styles.visBtnShow}`}
                         onClick={() => onToggle(item)}>
@@ -271,6 +279,7 @@ export default function LayihelerimizPage() {
     const [brandImageUploading, setBrandImageUploading] = useState(false);
     const [confirmTarget, setConfirmTarget] = useState<LayihelerimizCategory | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const brandFileInputRef = useRef<HTMLInputElement>(null);
@@ -385,6 +394,26 @@ export default function LayihelerimizPage() {
             load();
         } catch (e: unknown) {
             alert("Xəta: " + (e instanceof Error ? e.message : String(e)));
+        }
+    };
+
+    /**
+     * Layihəni bütün blokları ilə birlikdə köçürür.
+     *
+     * Nüsxə server tərəfdə gizli yaradılır — admin adını və məzmununu
+     * dəyişdikdən sonra "Göstər" ilə saytda açır.
+     */
+    const handleDuplicate = async (item: LayihelerimizCategory) => {
+        setDuplicatingId(item.id);
+        try {
+            await cmsApiFetch(`/layihelerimiz/categories/${item.id}/duplicate`, {
+                method: "POST",
+            });
+            await load();
+        } catch (e: unknown) {
+            alert("Dublikat alınmadı: " + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setDuplicatingId(null);
         }
     };
 
@@ -536,7 +565,9 @@ export default function LayihelerimizPage() {
                                         <SortableRow key={item.id} item={item}
                                             onEdit={openEdit}
                                             onToggle={toggleVisibility}
-                                            onDelete={setConfirmTarget} />
+                                            onDelete={setConfirmTarget}
+                                            onDuplicate={handleDuplicate}
+                                            duplicating={duplicatingId === item.id} />
                                     ))}
                                 </tbody>
                             </table>

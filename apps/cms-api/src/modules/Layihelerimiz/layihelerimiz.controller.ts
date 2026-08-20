@@ -76,6 +76,13 @@ export class LayihelerimizController {
     return this.service.reorder(dto);
   }
 
+  // Layihənin tam nüsxəsi: kart sahələri + detal səhifəsinin blokları.
+  // Nüsxə gizli yaradılır və orijinalın düz ardınca dayanır.
+  @Post('categories/:id/duplicate')
+  duplicate(@Param('id') id: string) {
+    return this.service.duplicate(id);
+  }
+
   @Patch('categories/:id')
   update(@Param('id') id: string, @Body() dto: UpdateLayihelerimizDto) {
     return this.service.update(id, dto);
