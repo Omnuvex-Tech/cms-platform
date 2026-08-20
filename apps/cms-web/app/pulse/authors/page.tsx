@@ -7,7 +7,7 @@ import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
 
 type LocalizedValue = string | { az?: string; en?: string; ru?: string };
-type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue };
+type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue; isVisible?: boolean; featured?: boolean };
 
 const PULSE_UPLOAD_PREFIX = "/uploads/pulse/";
 
@@ -59,13 +59,16 @@ export default function PulseAuthorsPage() {
     const [descriptionAz, setDescriptionAz] = useState("");
     const [descriptionEn, setDescriptionEn] = useState("");
     const [descriptionRu, setDescriptionRu] = useState("");
+    const [isVisible, setIsVisible] = useState(true);
+    const [featured, setFeatured] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const load = async () => {
         setLoading(true);
-        try { setAuthors(await apiFetch("/pulse/authors")); } finally { setLoading(false); }
+        // Admin bütün siyahını görür; sayt yalnız görünənləri alır.
+        try { setAuthors(await apiFetch("/pulse/authors?includeHidden=true")); } finally { setLoading(false); }
     };
 
     useEffect(() => { load(); }, []);
@@ -78,6 +81,8 @@ export default function PulseAuthorsPage() {
         setLinkedin("");
         setAvatar("");
         setDescriptionAz(""); setDescriptionEn(""); setDescriptionRu("");
+        setIsVisible(true);
+        setFeatured(false);
         setModalOpen(true);
     };
 
@@ -99,6 +104,8 @@ export default function PulseAuthorsPage() {
         setDescriptionAz(localizedDescription.az);
         setDescriptionEn(localizedDescription.en);
         setDescriptionRu(localizedDescription.ru);
+        setIsVisible(a.isVisible !== false);
+        setFeatured(a.featured === true);
         setModalOpen(true);
     };
 
@@ -138,6 +145,8 @@ export default function PulseAuthorsPage() {
                         ru: descriptionRu.trim() || normalizedDescriptionAz,
                     },
                 }),
+                isVisible,
+                featured,
             };
             if (editItem) await apiFetch(`/pulse/authors/${editItem.id}`, { method: "PUT", body: JSON.stringify(body) });
             else await apiFetch("/pulse/authors", { method: "POST", body: JSON.stringify(body) });
@@ -169,7 +178,7 @@ export default function PulseAuthorsPage() {
                     : (
                         <div className={styles.tableWrap}>
                             <table className={styles.table}>
-                                <thead><tr><th>Müəllif</th><th>Vəzifə</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
+                                <thead><tr><th>Müəllif</th><th>Vəzifə</th><th>Saytda</th><th>Tərcümələr</th><th>Əməliyyatlar</th></tr></thead>
                                 <tbody>
                                     {authors.map(a => (
                                         <tr key={a.id}>
@@ -188,6 +197,16 @@ export default function PulseAuthorsPage() {
                                                 </div>
                                             </td>
                                             <td>{getLocalizedValue(a.title, "az") || "—"}</td>
+                                            <td>
+                                                <div className={styles.actions}>
+                                                    <span className={`${styles.statusBadge} ${a.isVisible === false ? styles.badgeHidden : styles.badgeVisible}`}>
+                                                        {a.isVisible === false ? "Gizli" : "Görünür"}
+                                                    </span>
+                                                    {a.featured && (
+                                                        <span className={`${styles.statusBadge} ${styles.toneBlue}`}>Seçilmiş</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td>
                                                 <LocaleChips
                                                     value={a.name}
@@ -279,6 +298,26 @@ export default function PulseAuthorsPage() {
                             <div className={styles.field}>
                                 <label>Təsvir (RU)</label>
                                 <textarea className={styles.textarea} rows={3} value={descriptionRu} onChange={e => setDescriptionRu(e.target.value)} />
+                            </div>
+
+                            {/* Saytdakı "İlham verən komanda" bölməsinə təsir edir. */}
+                            <div className={styles.checkRow}>
+                                <label className={styles.checkLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isVisible}
+                                        onChange={e => setIsVisible(e.target.checked)}
+                                    />
+                                    Saytda görünsün
+                                </label>
+                                <label className={styles.checkLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={featured}
+                                        onChange={e => setFeatured(e.target.checked)}
+                                    />
+                                    Seçilmiş (əvvəldə göstərilsin)
+                                </label>
                             </div>
                         </div>
                         <div className={styles.modalFooter}>

@@ -1,4 +1,4 @@
-import { IsObject, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, IsString, ValidateIf } from 'class-validator';
 
 type LocalizedTextInput = string | { az?: string; en?: string; ru?: string };
 
@@ -35,4 +35,12 @@ export class UpdatePulseAuthorDto {
   @ValidateIf((_, value) => typeof value === 'object' && value !== null)
   @IsObject()
   description?: LocalizedTextInput;
+
+  @IsBoolean()
+  @IsOptional()
+  isVisible?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  featured?: boolean;
 }

@@ -141,8 +141,16 @@ export class PulseRepository {
   }
 
   // ── Authors ──────────────────────────────────────────
-  findAllAuthors() {
-    return this.prisma.pulseAuthor.findMany({ orderBy: { slug: 'asc' } });
+  /**
+   * Sayt yalnız görünən müəllifləri alır; admin paneli `includeHidden` ilə
+   * hamısını istəyir. Sıralama: seçilmiş komanda üzvləri əvvəldə, sonra ada
+   * görə — belədə saytdakı komanda bölməsi əlavə sıralama tələb etmir.
+   */
+  findAllAuthors(includeHidden = false) {
+    return this.prisma.pulseAuthor.findMany({
+      where: includeHidden ? undefined : { isVisible: true },
+      orderBy: [{ featured: 'desc' }, { slug: 'asc' }],
+    });
   }
 
   findAuthorById(id: string) {
