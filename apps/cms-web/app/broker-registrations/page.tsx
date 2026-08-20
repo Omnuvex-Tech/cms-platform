@@ -144,7 +144,7 @@ export default function BrokerRegistrationsPage() {
                                 const isOpen = expanded === reg.id;
                                 return (
                                     <React.Fragment key={reg.id}>
-                                        <tr onClick={() => setExpanded(isOpen ? null : reg.id)}>
+                                        <tr className={styles.clickableRow} onClick={() => setExpanded(isOpen ? null : reg.id)}>
                                             <td className={styles.expandCell}>
                                                 <span
                                                     className={`${styles.expandBtn} ${isOpen ? styles.expandBtnOpen : ""}`}
@@ -177,26 +177,30 @@ export default function BrokerRegistrationsPage() {
                                             </td>
                                         </tr>
                                         {isOpen && (
-                                            <tr>
-                                                <td colSpan={8} className={styles.detailCell}>
-                                                    <div className={styles.infoGrid}>
-                                                        <div>
-                                                            <p className={styles.infoLabel}>Təcrübə</p>
-                                                            <p className={styles.infoValue}>{reg.experience || "—"}</p>
-                                                        </div>
-                                                        <div>
-                                                            <p className={styles.infoLabel}>Vebsayt</p>
-                                                            <p className={styles.infoValue}>
-                                                                {reg.website
-                                                                    ? <a href={reg.website} target="_blank" rel="noopener noreferrer" className={styles.link}>{reg.website}</a>
-                                                                    : "—"}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <p className={styles.infoLabel}>Şərhlər</p>
-                                                            <p className={`${styles.infoValue} ${styles.infoValueMultiline}`}>{reg.message || "—"}</p>
-                                                        </div>
-                                                    </div>
+                                            /* Təfərrüat eyni cədvəlin real xanalarındadır — belədə hər
+                                               sahə yuxarıdakı sütunun tam altında dayanır: Təcrübə "Ad"-ın,
+                                               Vebsayt "Email"-in, Şərhlər "Telefon"-un altında. Ayrı grid
+                                               qursaydıq, sütun enləri məzmuna görə dəyişdiyi üçün
+                                               hizalanma pozulardı. */
+                                            <tr className={styles.detailRow}>
+                                                <td className={styles.expandCell} />
+                                                <td>
+                                                    <span className={styles.detailLabel}>Təcrübə</span>
+                                                    <span className={styles.detailValue}>{reg.experience || "—"}</span>
+                                                </td>
+                                                <td>
+                                                    <span className={styles.detailLabel}>Vebsayt</span>
+                                                    <span className={styles.detailValue}>
+                                                        {reg.website
+                                                            ? <a href={reg.website} target="_blank" rel="noopener noreferrer" className={styles.link}>{reg.website}</a>
+                                                            : "—"}
+                                                    </span>
+                                                </td>
+                                                <td colSpan={5}>
+                                                    <span className={styles.detailLabel}>Şərhlər</span>
+                                                    <span className={styles.detailValue}>
+                                                        {reg.message || "—"}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         )}

@@ -251,9 +251,21 @@ export default function PulseAuthorsPage() {
                             </div>
                             <div className={styles.field}>
                                 <label>Şəkil</label>
-                                <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} />
-                                <div onClick={() => fileRef.current?.click()} style={{ cursor: "pointer", border: "1px dashed #444", borderRadius: 8, padding: 12, textAlign: "center" }}>
-                                    {avatar ? <img src={toAbsUrl(avatar)} alt="" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover" }} /> : <span style={{ color: "#888" }}>Şəkil yüklə</span>}
+                                <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
+                                <div className={styles.coverRow}>
+                                    <div className={styles.coverBox} onClick={() => fileRef.current?.click()}>
+                                        {avatar ? (
+                                            <>
+                                                <img src={toAbsUrl(avatar)} alt="" />
+                                                <span>Dəyişdir</span>
+                                            </>
+                                        ) : (
+                                            <span>Şəkil yüklə</span>
+                                        )}
+                                    </div>
+                                    <p className={styles.coverNote}>
+                                        Kvadrat şəkil daha yaxşı görünür. Siyahıda və məqalə altında istifadə olunur.
+                                    </p>
                                 </div>
                             </div>
                             <div className={styles.field}>

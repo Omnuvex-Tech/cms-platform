@@ -1533,31 +1533,7 @@
 }
 
 /* Definition grid for the expanded detail. */
-.infoGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--sp-4);
-}
 
-.infoWide { grid-column: 1 / -1; }
-
-.infoLabel {
-    font-size: 10.5px;
-    font-weight: 600;
-    color: var(--text-faint);
-    margin: 0 0 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-.infoValue {
-    font-size: 13px;
-    color: var(--text);
-    margin: 0;
-    line-height: 1.6;
-}
-
-.infoValueMultiline { white-space: pre-wrap; }
 
 /* ---------- Expandable table row ---------- */
 
@@ -1581,10 +1557,7 @@
 .expandBtn:hover { background: var(--n-100); color: var(--text); }
 .expandBtnOpen { transform: rotate(180deg); color: var(--brand-600); }
 
-.detailCell {
-    padding: 0 var(--sp-4) var(--sp-4) !important;
-    background: var(--surface-sunk);
-}
+
 
 .link {
     color: var(--brand-600);
@@ -2416,3 +2389,119 @@ textarea.langControl {
 }
 
 .dateFootBtn:hover { background: var(--brand-50); }
+
+/* ---------- Təfərrüat paneli ----------
+   İyerarxiya: şərh/mesaj mətni əsas məzmundur — oxumaq istənilən odur.
+   Qısa sahələr (təcrübə, vebsayt, büdcə) onun konteksti olduğu üçün üstdə
+   kiçik və sönük meta sətrindədir.
+
+   Əvvəlki iki variant bunu nəzərə almırdı: hamısını bərabər çəkidə göstərirdi,
+   ona görə panel ya səpələnmiş, ya da boş görünürdü. */
+
+.detailMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-1) var(--sp-4);
+    margin-bottom: var(--sp-3);
+    font-size: 12px;
+}
+
+.metaItem {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* Ayırıcı nöqtə — sonuncudan sonra qoyulmur. */
+.metaItem:not(:last-child)::after {
+    content: "·";
+    margin-left: var(--sp-3);
+    color: var(--n-300);
+}
+
+.metaLabel {
+    color: var(--text-faint);
+    white-space: nowrap;
+}
+
+.metaValue {
+    color: var(--text-muted);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+/* Əsas mətn — normal ölçüdə, rahat sətir aralığı ilə. */
+.detailBody {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-width: 78ch;
+}
+
+/* Mətn olmayanda panel boş qalmasın. */
+.detailEmpty {
+    font-size: 13px;
+    color: var(--text-faint);
+    margin: 0;
+}
+
+/* ---------- Açılan təfərrüat sətri ----------
+   Eyni cədvəlin xanalarıdır, ona görə hər sahə yuxarıdakı sütunun altında
+   dayanır. Yuxarıdan boşluq `border-top` ilə verilir — <td> üzərində `margin`
+   işləmir. */
+
+.detailRow td {
+    background: var(--surface);
+    border-top: 10px solid var(--surface-sunk);
+    border-bottom: 1px solid var(--border);
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-4);
+    vertical-align: top;
+}
+
+/* Sıra açıq olanda üstündəki sətrin alt sərhədi təkrarlanmasın. */
+.detailRow td.expandCell {
+    border-bottom-color: var(--border);
+}
+
+.detailLabel {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: var(--sp-1);
+}
+
+.detailValue {
+    display: block;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Tam en ----------
+   Səhifə qabığı (`dashboard.module.css` → `.main > *`) məzmunu 1440px-ə
+   məhdudlaşdırır: siyahılarda uzun sətirlərin oxunmasını asanlaşdırır.
+   Məqalə redaktoru isə üç dilli sahələri yan-yana tutduğu üçün nə qədər en
+   varsa, o qədər faydalanır.
+
+   Sinif adı iki dəfə yazılıb — bu, `!important` işlətmədən spesifikliyi
+   qaldırır (0,2,0 > 0,1,0) və modul yükləmə sırasından asılı olmur. */
+.fullWidth.fullWidth {
+    max-width: none;
+}
+
+/* Klikləndikdə açılan cədvəl sətri. React `onclick` HTML atributu yaratmır,
+   ona görə atribut selektoru ilə tutmaq mümkün deyil — sinif lazımdır. */
+.clickableRow {
+    cursor: pointer;
+}
