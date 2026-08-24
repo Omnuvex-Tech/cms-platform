@@ -111,7 +111,7 @@ private decodeHtmlEntities(text: string): string {
             ) {
                 matches.push({
                     title,
-                    url: `/Blog/${b.slug}`,
+                    url: `/blog/${b.slug}`,
                     breadcrumb: `Blog · ${badge}`,
                     rawExcerpt: excerpt,
                 });
@@ -181,7 +181,7 @@ private decodeHtmlEntities(text: string): string {
             ) {
                 matches.push({
                     title: name,
-                    url: a.slug ? `/BlogAuthor/${a.slug}` : '/blog',
+                    url: a.slug ? `/blogauthor/${a.slug}` : '/blog',
                     breadcrumb: 'Blog · Müəlliflər',
                     rawExcerpt: bio || role,
                 });
@@ -205,7 +205,7 @@ private decodeHtmlEntities(text: string): string {
             ) {
                 matches.push({
                     title,
-                    url: `/Vacancy/${v.slug}`,
+                    url: `/vacancy/${v.slug}`,
                     breadcrumb: 'Vakansiyalar',
                     rawExcerpt: tags,
                 });
