@@ -21,6 +21,9 @@ import { LayihelerimizModule } from './modules/Layihelerimiz/layihelerimiz.modul
 import { CallbackModule } from './modules/Callback/callback.module';
 import { BrokerRegistrationModule } from './modules/BrokerRegistration/broker-registration.module';
 import { SubscriberModule } from './modules/Subscriber/subscriber.module';
+import { ProjectInquiryModule } from './modules/ProjectInquiry/project-inquiry.module';
+import { OffPlanInquiryModule } from './modules/OffPlanInquiry/off-plan-inquiry.module';
+import { ResaleInquiryModule } from './modules/ResaleInquiry/resale-inquiry.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 // Qeyd: Blog / Portfolio / Service / Partners / About modulları v2-də silindi —
@@ -47,6 +50,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     CallbackModule,
     BrokerRegistrationModule,
     SubscriberModule,
+    ProjectInquiryModule,
+    OffPlanInquiryModule,
+    ResaleInquiryModule,
   ],
   controllers: [AppController],
   providers: [

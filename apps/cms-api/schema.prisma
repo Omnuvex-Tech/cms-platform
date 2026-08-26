@@ -493,3 +493,56 @@ model Subscriber {
 
   @@map("subscribers")
 }
+
+// ─── Part 2: Inventory / project inquiry CTAs ─────────────────
+// Added 2026-08-25 alongside ProjectInquiry / OffPlanInquiry / ResaleInquiry
+// modules. No Inventory/Resale/OffPlan content models exist yet in this repo
+// (the public treva.realestate frontend that owns those pages lives in a
+// separate codebase) — these are lead-capture tables only, matching the
+// CallbackRequest / ContactSubmission / BrokerRegistration pattern.
+
+model ProjectInquiry {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  projectSlug String?
+  projectName String?
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@map("project_inquiries")
+}
+
+model OffPlanInquiry {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  email       String?
+  projectSlug String?
+  projectName String?
+  tower       String?
+  unitNumber  String?
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@map("off_plan_inquiries")
+}
+
+model ResaleInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  listingId String?
+  rooms     String?
+  area      String?
+  floor     String?
+  price     String?
+  agentName String?
+  message   String?
+  createdAt DateTime @default(now())
+
+  @@map("resale_inquiries")
+}
+

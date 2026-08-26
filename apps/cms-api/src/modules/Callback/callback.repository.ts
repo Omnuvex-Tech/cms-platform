@@ -12,7 +12,10 @@ export class CallbackRepository {
     });
   }
 
-  create(data: CreateCallbackDto) {
+  // role is required by the CallbackRequest table; CreateCallbackDto.role is
+  // optional at the DTO/validation layer (homepage CTA omits it), so the
+  // service defaults it before calling this method — enforce that here too.
+  create(data: CreateCallbackDto & { role: string }) {
     return this.prisma.callbackRequest.create({ data });
   }
 

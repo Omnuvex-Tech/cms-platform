@@ -23,15 +23,19 @@ export class CallbackService {
   }
 
   async create(dto: CreateCallbackDto) {
-    const created = await this.repo.create(dto);
+    // Homepage callback CTA has no role selector and is always a customer
+    // lead — default here so it can reuse this same endpoint (see
+    // CreateCallbackDto.role) instead of needing a separate one.
+    const role = dto.role?.trim() || 'Müştəri';
+    const created = await this.repo.create({ ...dto, role });
 
     // Fire-and-forget: never blocks or fails the CTA's own response.
     this.bitrixService.createLead({
       name: dto.name,
       phone: dto.phone,
-      comments: `Contact type: ${dto.role}`,
+      comments: `Contact type: ${role}`,
       sourceDescription: 'Callback request',
-      sourceId: bitrixSourceForRole(dto.role),
+      sourceId: bitrixSourceForRole(role),
     });
 
     return created;
