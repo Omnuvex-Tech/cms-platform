@@ -1,24 +1,11 @@
 services:
-  postgres:
-    # Matches the local dev server (postgresql-x64-18) so the migrated dump
-    # (pg_dump 18.x) restores in cleanly with no cross-major-version surprises.
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-cms_platform}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms_platform}"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    expose:
-      - "5432"
-    networks:
-      - default
+  # NOTE: no `postgres` service here — this stack talks to the HOST Postgres
+  # (127.0.0.1:5432 on the host, database `treva_sales_cms`, role `treva`).
+  # The container reaches it through the pinned bridge gateway 172.20.0.1
+  # (see `extra_hosts` + the external `cms-platform-net` network below).
+  # The host must listen on that gateway and allow the docker subnet:
+  #   postgresql.conf : listen_addresses = 'localhost,172.20.0.1'
+  #   pg_hba.conf     : host treva_sales_cms treva 172.20.0.0/16 scram-sha-256
 
   cms-api:
     build:
@@ -28,7 +15,10 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DB_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms_platform}?schema=public
+      PORT: 4000
+      # Password is URL-encoded in .env (POSTGRES_PASSWORD, `@` -> `%40`) so it
+      # is safe to interpolate straight into the connection URI here.
+      DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}?schema=public
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
       INGEST_API_KEY: ${INGEST_API_KEY}
@@ -47,9 +37,9 @@ services:
       TELEGRAM_ALERT_CHAT_ID: ${TELEGRAM_ALERT_CHAT_ID:-}
       TELEGRAM_ALERT_TIMEZONE: ${TELEGRAM_ALERT_TIMEZONE:-}
       PANEL_BASE_URL: ${PANEL_BASE_URL:-}
-    depends_on:
-      postgres:
-        condition: service_healthy
+    extra_hosts:
+      # host.docker.internal -> the cms-platform-net bridge gateway, i.e. the host
+      - "host.docker.internal:172.20.0.1"
     expose:
       - "4000"
     volumes:
@@ -80,37 +70,14 @@ services:
     networks:
       - default
 
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    # Only map one port — this host already runs an nginx (see the bot's own
-    # docker-compose.yml) that owns 80/443 and routes by domain to services
-    # like this one. Add two server blocks there (one per domain, both
-    # proxying to 127.0.0.1:8090 with the Host header preserved); Caddy does
-    # the panel-vs-api split itself by hostname below.
-    ports:
-      - "8090:80"
-    environment:
-      PANEL_DOMAIN: ${PANEL_DOMAIN}
-      API_DOMAIN: ${API_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - cms-web
-      - cms-api
-    networks:
-      - default
-
-volumes:
-  postgres-data:
-  caddy-data:
-  caddy-config:
-
 networks:
+  # Externally created so the bridge (and its stable 172.20.0.1 gateway that
+  # Postgres listens on) survives `docker compose down`:
+  #   docker network create --driver bridge \
+  #     --subnet=172.20.0.0/16 --gateway=172.20.0.1 cms-platform-net
   default:
-    driver: bridge
+    name: cms-platform-net
+    external: true
   treva_bot_net:
     external: true
     name: treva-sales-agent_default
