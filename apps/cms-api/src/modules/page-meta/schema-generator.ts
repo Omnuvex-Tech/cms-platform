@@ -49,8 +49,10 @@ export function generatePageSchema(pageKey: string, meta: any, baseUrl: string) 
         return { ...base, "@type": "CollectionPage", "name": title, "description": description, "mainEntity": { "@type": "ItemList", "name": title } };
       case "team":
         return { ...base, "@type": "CollectionPage", "name": title, "description": description };
-      case "partners":
+       case "partners":
         return { ...base, "@type": "CollectionPage", "name": title, "description": description };
+      case "privacy":
+        return { ...base, "@type": "WebPage", "name": title, "description": description };
       default:
         return { ...base, "@type": "WebPage", "name": title, "description": description };
     }

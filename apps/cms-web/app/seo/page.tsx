@@ -16,6 +16,7 @@ const PAGE_KEYS = [
   { key: "blog", label: "Blog" },
   { key: "portfolio", label: "Portfolio" },
   { key: "vacancy", label: "Vakansiya" },
+  { key: "privacy", label: "Məxfilik Siyasəti" },
 ];
 
 function getToken() {
