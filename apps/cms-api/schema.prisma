@@ -289,6 +289,7 @@ model BlogAuthor {
   isOurTeam    Boolean  @default(false)
   isVisible    Boolean  @default(true)
   blogs        Blog[]
+  aboutQuotes  AboutSettings[]
   @@map("blog_authors")
 }
 model BlogCategory {
@@ -366,23 +367,30 @@ model OurTeamSettings {
 }
 
 model AboutSettings {
-  id              Int      @id @default(autoincrement())
-  heroImage       String?
-  heroImageAlt    Json     @default("{}")
-  heroBadge       Json     @default("{}")
-  heroTitle       Json     @default("{}")
-  heroParagraphs  Json     @default("[]")
-  storyBlocks     Json     @default("[]")
-  teamTitle       Json     @default("{}")
-  teamDescription Json     @default("{}")
-  teamCtaLabel    Json     @default("{}")
-  teamCtaHref     String?
+  id               Int      @id @default(autoincrement())
+  heroImage        String?
+  heroImageAlt     Json     @default("{}")
+  heroBadge        Json     @default("{}")
+  heroTitle        Json     @default("{}")
+  heroParagraphs   Json     @default("[]")
+  storyBlocks      Json     @default("[]")
+  quoteImage       String?
+  quoteImageAlt    Json?
+  quoteTitle       Json?
+  quoteDescription Json?
+  quoteAuthorId    Int?
+  quoteAuthor      BlogAuthor? @relation(fields: [quoteAuthorId], references: [id], onDelete: SetNull)
+  teamTitle        Json     @default("{}")
+  teamDescription  Json     @default("{}")
+  teamCtaLabel     Json     @default("{}")
+  teamCtaHref      String?
   heroStats Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("about_settings")
 }
+
 
 model NavbarSettings {
   id           Int       @id @default(autoincrement())

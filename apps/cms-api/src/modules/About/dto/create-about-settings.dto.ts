@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsArray, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsObject, IsInt } from 'class-validator';
 
 export class CreateAboutSettingsDto {
   @IsOptional() @IsString()  heroImage?: string;
@@ -12,6 +12,11 @@ export class CreateAboutSettingsDto {
     image?: string;
     imageAlt?: Record<string, string>;
   }[];
+  @IsOptional() @IsString()  quoteImage?: string;
+  @IsOptional() @IsObject()  quoteImageAlt?: Record<string, string>;
+  @IsOptional() @IsObject()  quoteTitle?: Record<string, string>;
+  @IsOptional() @IsObject()  quoteDescription?: Record<string, string>;
+  @IsOptional() @IsInt()     quoteAuthorId?: number;
   @IsOptional() @IsObject()  teamTitle?: Record<string, string>;
   @IsOptional() @IsObject()  teamDescription?: Record<string, string>;
   @IsOptional() @IsObject()  teamCtaLabel?: Record<string, string>;

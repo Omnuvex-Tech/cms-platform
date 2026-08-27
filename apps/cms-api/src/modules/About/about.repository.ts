@@ -7,9 +7,14 @@ export class AboutRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findSettings() {
-    let settings = await this.prisma.aboutSettings.findFirst();
+    let settings = await this.prisma.aboutSettings.findFirst({
+      include: { quoteAuthor: true },
+    });
     if (!settings) {
-      settings = await this.prisma.aboutSettings.create({ data: {} });
+      settings = await this.prisma.aboutSettings.create({
+        data: {},
+        include: { quoteAuthor: true },
+      });
     }
     return settings;
   }
@@ -19,6 +24,7 @@ export class AboutRepository {
     return this.prisma.aboutSettings.update({
       where: { id: settings.id },
       data: dto,
+      include: { quoteAuthor: true },
     });
   }
 }

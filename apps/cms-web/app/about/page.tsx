@@ -33,10 +33,23 @@ interface AboutData {
   heroParagraphs: LocalizedString[];
   heroStats: HeroStat[];
   storyBlocks: StoryBlock[];
+  quoteImage: string;
+  quoteImageAlt: LocalizedString;
+  quoteTitle: LocalizedString;
+  quoteDescription: LocalizedString;
+  quoteAuthorId: number | null;
   teamTitle: LocalizedString;
   teamDescription: LocalizedString;
   teamCtaLabel: LocalizedString;
   teamCtaHref: string;
+}
+
+interface BlogAuthorOption {
+  id: number;
+  name: LocalizedString;
+  role: LocalizedString;
+  avatar?: string | null;
+  slug?: string | null;
 }
 
 const EMPTY_LOCALIZED: LocalizedString = { az: "", en: "", ru: "" };
@@ -49,6 +62,11 @@ const DEFAULT_DATA: AboutData = {
   heroParagraphs: [{ ...EMPTY_LOCALIZED }],
   heroStats: [],
   storyBlocks: [],
+  quoteImage: "",
+  quoteImageAlt: { ...EMPTY_LOCALIZED },
+  quoteTitle: { ...EMPTY_LOCALIZED },
+  quoteDescription: { ...EMPTY_LOCALIZED },
+  quoteAuthorId: null,
   teamTitle: { ...EMPTY_LOCALIZED },
   teamDescription: { ...EMPTY_LOCALIZED },
   teamCtaLabel: { ...EMPTY_LOCALIZED },
@@ -87,7 +105,12 @@ async function uploadFile(file: File): Promise<string> {
   return (await res.json()).url;
 }
 
-function toAbsUrl(path: string) {
+function stripHtml(html?: string | null): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function toAbsUrl(path?: string | null) {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("blob:")) return path;
   return `${API}${path}`;
@@ -412,6 +435,126 @@ function StorySection({ data, onChange, lang }: { data: AboutData; onChange: (d:
   );
 }
 
+function AuthorPicker({ value, onChange, lang, authors }: {
+  value: number | null; onChange: (id: number | null) => void; lang: Lang; authors: BlogAuthorOption[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const selected = authors.find(a => a.id === value);
+
+  const authorLabel = (a: BlogAuthorOption) =>
+    stripHtml(a.name?.[lang] || a.name?.az || "") || `Author #${a.id}`;
+
+  const filtered = authors.filter(a =>
+    authorLabel(a).toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <div className={styles.input} style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        onClick={() => setOpen(o => !o)}>
+        <span>{selected ? authorLabel(selected) : "— Seçilməyib —"}</span>
+        <span>▾</span>
+      </div>
+       {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+          background: "#fff", border: "1.5px solid #ddd", borderRadius: 6,
+          marginTop: 4, maxHeight: 320, overflowY: "auto",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        }}>
+          <input autoFocus className={styles.input} placeholder="Axtar..."
+            value={query} onChange={e => setQuery(e.target.value)}
+            style={{ borderRadius: 0, borderTop: "none", borderLeft: "none", borderRight: "none", color: "#222", background: "#fff" }} />
+          <div style={{ padding: "8px 12px", cursor: "pointer", color: "#888" }}
+            onMouseDown={() => { onChange(null); setOpen(false); setQuery(""); }}>
+            — Seçilməyib —
+          </div>
+          {filtered.map(a => (
+            <div key={a.id} style={{ padding: "8px 12px", cursor: "pointer", color: "#222" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#f5f5f5")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              onMouseDown={() => { onChange(a.id); setOpen(false); setQuery(""); }}>
+              {authorLabel(a)}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div style={{ padding: "8px 12px", color: "#999" }}>Nəticə tapılmadı</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuoteSection({ data, onChange, lang, authors }: {
+  data: AboutData; onChange: (d: AboutData) => void; lang: Lang; authors: BlogAuthorOption[];
+}) {
+  const updL = (field: keyof AboutData, val: string) =>
+    onChange({ ...data, [field]: { ...(data[field] as LocalizedString), [lang]: val } });
+
+  const selectedAuthor = authors.find(a => a.id === data.quoteAuthorId);
+
+  return (
+    <div className={styles.fullDrawerSection}>
+      <h3 className={styles.drawerSectionTitle}>Sitat Bölməsi</h3>
+
+      <SingleImageUpload label="Sitat şəkli" accept="image/webp"
+        value={data.quoteImage} onChange={v => onChange({ ...data, quoteImage: v })} />
+
+      <div className={styles.field}>
+        <label>Şəkil alt mətn ({lang.toUpperCase()})</label>
+        <input className={styles.input} value={data.quoteImageAlt[lang] ?? ""}
+          onChange={e => updL("quoteImageAlt", e.target.value)} />
+      </div>
+
+      <div className={styles.field}>
+        <label>Başlıq ({lang.toUpperCase()})</label>
+        <RichEditor value={data.quoteTitle[lang] ?? ""} onChange={v => updL("quoteTitle", v)} />
+      </div>
+
+      <div className={styles.field}>
+        <label>Təsvir ({lang.toUpperCase()})</label>
+        <RichEditor value={data.quoteDescription[lang] ?? ""} onChange={v => updL("quoteDescription", v)} />
+      </div>
+
+      <div className={styles.sectionDivider} />
+      <div className={styles.field}>
+        <label>Müəllif (Ad və Vəzifə "+" düyməsi ilə birlikdə göstəriləcək)</label>
+        <AuthorPicker value={data.quoteAuthorId} lang={lang} authors={authors}
+          onChange={id => onChange({ ...data, quoteAuthorId: id })} />
+      </div>
+
+      {selectedAuthor && (
+        <div className={styles.contentItemBlock}>
+          <span className={styles.contentItemLabel}>Önizləmə</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+            {selectedAuthor.avatar && (
+              <img src={toAbsUrl(selectedAuthor.avatar)} alt=""
+                style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+            )}
+            <div>
+              <div style={{ fontWeight: 600 }}>{stripHtml(selectedAuthor.name[lang] || selectedAuthor.name.az)}</div>
+              <div style={{ fontSize: 13, color: "#888" }}>{stripHtml(selectedAuthor.role?.[lang] || selectedAuthor.role?.az || "")}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function TeamSection({ data, onChange, lang }: { data: AboutData; onChange: (d: AboutData) => void; lang: Lang }) {
   const updL = (field: keyof AboutData, val: string) =>
     onChange({ ...data, [field]: { ...(data[field] as LocalizedString), [lang]: val } });
@@ -448,10 +591,12 @@ export default function AboutPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [lang, setLang] = useState<Lang>("az");
   const [data, setData] = useState<AboutData>(DEFAULT_DATA);
+  const [authors, setAuthors] = useState<BlogAuthorOption[]>([]);
 
   useEffect(() => {
-    apiFetch("/about/settings")
-      .then(d => {
+    Promise.all([apiFetch("/about/settings"), apiFetch("/blog/authors")])
+      .then(([d, authorList]) => {
+        setAuthors(Array.isArray(authorList) ? authorList : []);
         if (!d) return;
         setData({
           heroImage: d.heroImage ?? "",
@@ -462,6 +607,11 @@ export default function AboutPage() {
             ? d.heroParagraphs : [{ ...EMPTY_LOCALIZED }],
           heroStats: Array.isArray(d.heroStats) ? d.heroStats : [],
           storyBlocks: Array.isArray(d.storyBlocks) ? d.storyBlocks : [],
+          quoteImage: d.quoteImage ?? "",
+          quoteImageAlt: d.quoteImageAlt ?? { ...EMPTY_LOCALIZED },
+          quoteTitle: d.quoteTitle ?? { ...EMPTY_LOCALIZED },
+          quoteDescription: d.quoteDescription ?? { ...EMPTY_LOCALIZED },
+          quoteAuthorId: d.quoteAuthorId ?? d.quoteAuthor?.id ?? null,
           teamTitle: d.teamTitle ?? { ...EMPTY_LOCALIZED },
           teamDescription: d.teamDescription ?? { ...EMPTY_LOCALIZED },
           teamCtaLabel: d.teamCtaLabel ?? { ...EMPTY_LOCALIZED },
@@ -507,8 +657,9 @@ export default function AboutPage() {
         <LangTabs active={lang} onChange={setLang} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <HeroSection data={data} onChange={setData} lang={lang} />
+              <HeroSection data={data} onChange={setData} lang={lang} />
         <StorySection data={data} onChange={setData} lang={lang} />
+        <QuoteSection data={data} onChange={setData} lang={lang} authors={authors} />
         <TeamSection data={data} onChange={setData} lang={lang} />
       </div>
     </div>
