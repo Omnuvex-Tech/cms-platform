@@ -23,7 +23,8 @@
     "seed:project-details": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-project-details.ts",
     "seed:pulse": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-pulse.ts",
     "seed:all": "npm run seed:layihelerimiz && npm run seed:multilingual && npm run seed:project-details && npm run seed:pulse && npm run seed",
-    "translate:pulse": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js translate-pulse.ts --missing-only"
+    "translate:pulse": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js translate-pulse.ts --missing-only",
+    "seed:fake": "node ../../scripts/run-with-env.cjs .env.development ts-node/dist/bin.js seed-fake.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
