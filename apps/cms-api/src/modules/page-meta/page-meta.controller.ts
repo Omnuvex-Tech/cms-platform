@@ -1,6 +1,7 @@
 import { Controller, Get, Patch, Param, Body } from '@nestjs/common';
 import { PageMetaService } from './page-meta.service';
 import { UpdatePageMetaDto } from './dto/update-page-meta.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('page-meta')
 export class PageMetaController {
@@ -12,11 +13,15 @@ export class PageMetaController {
     return this.pageMetaService.listDynamicItems(type);
   }
 
+  /** Saytın (treva-web) generateMetadata / JSON-LD üçün oxuduğu açıq endpoint. */
+  @Public()
   @Get(':pageKey')
   findOne(@Param('pageKey') pageKey: string) {
     return this.pageMetaService.findByKey(pageKey);
   }
 
+  /** Admin schema saxlamayıbsa, sayt bura düşür — generasiya olunmuş JSON-LD. */
+  @Public()
   @Get(':pageKey/schema/preview')
   previewSchema(@Param('pageKey') pageKey: string) {
     return this.pageMetaService.generateSchema(pageKey);

@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdatePageMetaDto } from './dto/update-page-meta.dto';
 import { generatePageSchema } from './schema-generator';
 
 @Injectable()
 export class PageMetaService {
+  private readonly logger = new Logger(PageMetaService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findByKey(pageKey: string) {
@@ -14,7 +16,7 @@ export class PageMetaService {
   }
 
  async upsert(pageKey: string, dto: UpdatePageMetaDto) {
-  return this.prisma.pageMeta.upsert({
+  const result = await this.prisma.pageMeta.upsert({
     where: { pageKey },
     update: {
       seoTitle: dto.seoTitle as any,
@@ -28,7 +30,35 @@ export class PageMetaService {
       seoKeywords: dto.seoKeywords as any,
     },
   });
+  void this.revalidateSite(pageKey);
+  return result;
 }
+
+  /**
+   * treva-web-ə "bu səhifənin SEO-su dəyişdi, keşi təzələ" siqnalı.
+   * Fire-and-forget: heç vaxt throw etmir, admin cavabını ləngitmir.
+   */
+  private async revalidateSite(pageKey: string) {
+    const base = process.env.SITE_REVALIDATE_URL;
+    const secret = process.env.SITE_REVALIDATE_SECRET;
+    if (!base || !secret) {
+      this.logger.warn(
+        'SITE_REVALIDATE_URL/SECRET set deyil — treva-web revalidate ötürülür',
+      );
+      return;
+    }
+    try {
+      const url = `${base}?secret=${encodeURIComponent(
+        secret,
+      )}&pageKey=${encodeURIComponent(pageKey)}`;
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        this.logger.warn(`treva-web revalidate ${res.status} (${pageKey})`);
+      }
+    } catch (e) {
+      this.logger.warn(`treva-web revalidate xətası (${pageKey}): ${e}`);
+    }
+  }
 
   /** JSON-LD-ni yaradır, amma yazmır — CMS-də önizləmə üçün. */
   async generateSchema(pageKey: string) {
@@ -105,10 +135,12 @@ export class PageMetaService {
 
   /** Admin təsdiqlədikdən sonra JSON-LD-ni saxlayır. */
   async saveSchema(pageKey: string, schema: Record<string, any> | null) {
-    return this.prisma.pageMeta.upsert({
+    const result = await this.prisma.pageMeta.upsert({
       where: { pageKey },
       update: { schema: schema as any },
       create: { pageKey, schema: schema as any },
     });
+    void this.revalidateSite(pageKey);
+    return result;
   }
 }

@@ -23,7 +23,9 @@ export function generatePageSchema(
     !!dynamicId && (DYNAMIC_PREFIXES as readonly string[]).includes(prefix);
 
   const dynamicPath = (slug: string) => {
-    if (prefix === 'author') return '/author/' + slug;
+    // treva-web route-ları: /[locale]/authors/[slug], /[locale]/projects/[slug],
+    // /[locale]/pulse/[slug]
+    if (prefix === 'author') return '/authors/' + slug;
     if (prefix === 'project') return '/projects/' + slug;
     return '/pulse/' + slug; // pulse
   };
