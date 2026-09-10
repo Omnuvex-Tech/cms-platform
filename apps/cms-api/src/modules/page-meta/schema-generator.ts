@@ -52,12 +52,23 @@ export function generatePageSchema(
         return { ...base, '@type': 'WebPage', name: title, description };
 
       case 'projects':
+      case 'off-plan':
+      case 'resale':
         return {
           ...base,
           '@type': 'CollectionPage',
           name: title,
           description,
           mainEntity: { '@type': 'ItemList', name: title },
+        };
+
+      case 'author':
+        return {
+          ...base,
+          '@type': 'ProfilePage',
+          name: title,
+          description,
+          mainEntity: { '@type': 'Person', name: title },
         };
 
       case 'pulse':

@@ -1,24 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "@/styles/blog.module.css";
+import seo from "./seo.module.css";
 import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-type Lang = "az" | "en" | "ru";
+type Lang = "en" | "az" | "ru";
 
-const PAGE_KEYS = [
-  { key: "home", label: "Ana Səhifə" },
-  { key: "about", label: "Haqqımızda" },
-  { key: "contact", label: "Əlaqə" },
-  { key: "team", label: "Komanda" },
-  { key: "partners", label: "Tərəfdaşlar" },
-  { key: "services", label: "Xidmətlər" },
-  { key: "blog", label: "Blog" },
-  { key: "portfolio", label: "Portfolio" },
-  { key: "vacancy", label: "Vakansiya" },
+const LANGS: { code: Lang; flag: string; label: string }[] = [
+  { code: "en", flag: "🇬🇧", label: "English" },
+  { code: "az", flag: "🇦🇿", label: "Azərbaycan" },
+  { code: "ru", flag: "🇷🇺", label: "Русский" },
 ];
+
+/** Sol siyahıda görünən statik səhifələr — detal deyil, əsas səhifələrin özü. */
+const PAGES: readonly { key: string; label: string }[] = [
+  { key: "home", label: "Home" },
+  { key: "about-us", label: "About Us" },
+  { key: "projects", label: "Projects" },
+  { key: "off-plan", label: "Off Plan" },
+  { key: "resale", label: "Resale" },
+  { key: "brokers", label: "Brokers" },
+  { key: "developers", label: "Developers" },
+  { key: "pulse", label: "Pulse" },
+  { key: "contact", label: "Contact" },
+  { key: "privacy-policy", label: "Privacy Policy" },
+  { key: "author", label: "Author" },
+];
+
+type LocalizedString = Record<string, string>;
+type SchemaByLang = Record<string, Record<string, unknown>>;
+
+interface MetaState {
+  seoTitle: LocalizedString;
+  seoDescription: LocalizedString;
+  seoKeywords: LocalizedString;
+}
+
+const emptyMeta = (): MetaState => ({
+  seoTitle: { en: "", az: "", ru: "" },
+  seoDescription: { en: "", az: "", ru: "" },
+  seoKeywords: { en: "", az: "", ru: "" },
+});
+
+const emptyByLang = <T,>(v: T): Record<Lang, T> => ({ en: v, az: v, ru: v });
 
 function getToken() {
   return document.cookie.split("access_token=")[1]?.split(";")[0] ?? "";
@@ -38,172 +65,319 @@ async function apiFetch(path: string, options?: RequestInit) {
   return text ? JSON.parse(text) : null;
 }
 
-function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
-  return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-      {(["az", "en", "ru"] as Lang[]).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => onChange(l)}
-          style={{
-            padding: "4px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600,
-            border: "1.5px solid",
-            borderColor: active === l ? "#3b82f6" : "#333",
-            background: active === l ? "#1e3a5f" : "transparent",
-            color: active === l ? "#fff" : "#888",
-            cursor: "pointer",
-          }}
-        >
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-interface SeoData {
-  seoTitle?: Record<string, string>;
-  seoDescription?: Record<string, string>;
-  seoKeywords?: Record<string, string>;
-}
+const pretty = (v: unknown) => JSON.stringify(v ?? {}, null, 2);
 
 export default function SeoPage() {
-  const [activeLang, setActiveLang] = useState<Lang>("az");
-  const [selectedKey, setSelectedKey] = useState("home");
-  const [data, setData] = useState<SeoData>({});
-  const [loading, setLoading] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string>("home");
+  const [activeLang, setActiveLang] = useState<Lang>("en");
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveMsg, setSaveMsg] = useState("");
+
+  const [meta, setMeta] = useState<MetaState>(emptyMeta());
+  const [generated, setGenerated] = useState<Record<Lang, Record<string, unknown>>>(
+    emptyByLang({})
+  );
+  const [savedSchema, setSavedSchema] = useState<SchemaByLang>({});
+  const [schemaText, setSchemaText] = useState<Record<Lang, string>>(emptyByLang(""));
+  const [schemaErr, setSchemaErr] = useState<Record<Lang, string | null>>(
+    emptyByLang(null)
+  );
+
+  const load = useCallback(async (key: string) => {
+    setLoading(true);
+    setSaveStatus("idle");
+    setSchemaErr(emptyByLang(null));
+    try {
+      const [record, gen] = await Promise.all([
+        apiFetch(`/page-meta/${key}`).catch(() => null),
+        apiFetch(`/page-meta/${key}/schema/preview`).catch(() => ({})),
+      ]);
+
+      const nextMeta = emptyMeta();
+      for (const f of ["seoTitle", "seoDescription", "seoKeywords"] as const) {
+        nextMeta[f] = { en: "", az: "", ru: "", ...(record?.[f] ?? {}) };
+      }
+      setMeta(nextMeta);
+
+      const genByLang: Record<Lang, Record<string, unknown>> = emptyByLang({});
+      for (const { code } of LANGS) genByLang[code] = gen?.[code] ?? {};
+      setGenerated(genByLang);
+
+      const saved: SchemaByLang = record?.schema ?? {};
+      setSavedSchema(saved);
+
+      const text: Record<Lang, string> = emptyByLang("");
+      for (const { code } of LANGS) {
+        text[code] = pretty(saved?.[code] ?? genByLang[code]);
+      }
+      setSchemaText(text);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    apiFetch(`/page-meta/${selectedKey}`)
-      .then((d) => setData(d ?? {}))
-      .catch(() => setData({}))
-      .finally(() => setLoading(false));
-  }, [selectedKey]);
+    load(selectedKey);
+  }, [selectedKey, load]);
 
-  const updateField = (
-    field: "seoTitle" | "seoDescription" | "seoKeywords",
+  const updateMeta = (
+    field: keyof MetaState,
     lang: Lang,
     value: string
   ) => {
-    setData((prev) => ({
-      ...prev,
-      [field]: { ...prev[field], [lang]: value },
-    }));
+    setMeta((prev) => ({ ...prev, [field]: { ...prev[field], [lang]: value } }));
+  };
+
+  const updateSchemaText = (lang: Lang, value: string) => {
+    setSchemaText((prev) => ({ ...prev, [lang]: value }));
+    setSchemaErr((prev) => (prev[lang] ? { ...prev, [lang]: null } : prev));
+  };
+
+  /** schemaText-i bütün dillər üzrə parse edir; xətaları qeyd edir. */
+  const buildSchema = (): { ok: boolean; schema: SchemaByLang } => {
+    const schema: SchemaByLang = {};
+    const errs: Record<Lang, string | null> = emptyByLang(null);
+    let ok = true;
+    for (const { code } of LANGS) {
+      const raw = schemaText[code].trim();
+      if (!raw) {
+        schema[code] = generated[code];
+        continue;
+      }
+      try {
+        schema[code] = JSON.parse(raw);
+      } catch {
+        ok = false;
+        errs[code] = "JSON sintaksis xətası";
+      }
+    }
+    setSchemaErr(errs);
+    return { ok, schema };
+  };
+
+  const flash = (status: "success" | "error", msg: string) => {
+    setSaveStatus(status);
+    setSaveMsg(msg);
+    setTimeout(() => setSaveStatus("idle"), 3500);
   };
 
   const save = async () => {
+    const { ok, schema } = buildSchema();
+    if (!ok) {
+      flash("error", "Schema JSON-u düzəldin");
+      return;
+    }
     setSaving(true);
     setSaveStatus("idle");
     try {
       await apiFetch(`/page-meta/${selectedKey}`, {
         method: "PATCH",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          seoTitle: meta.seoTitle,
+          seoDescription: meta.seoDescription,
+          seoKeywords: meta.seoKeywords,
+        }),
       });
-      setSaveStatus("success");
+      await apiFetch(`/page-meta/${selectedKey}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema }),
+      });
+      setSavedSchema(schema);
+      flash("success", "Saxlanıldı");
     } catch {
-      setSaveStatus("error");
+      flash("error", "Xəta baş verdi");
     } finally {
       setSaving(false);
-      setTimeout(() => setSaveStatus("idle"), 3000);
     }
   };
+
+  /** Aktiv dilin schema-sını avtomatik generasiyaya qaytarır və saxlayır. */
+  const resetSchema = async () => {
+    const genText = pretty(generated[activeLang]);
+    const nextText = { ...schemaText, [activeLang]: genText };
+    setSchemaText(nextText);
+    setSchemaErr(emptyByLang(null));
+
+    const schema: SchemaByLang = {};
+    for (const { code } of LANGS) {
+      if (code === activeLang) {
+        schema[code] = generated[code];
+        continue;
+      }
+      const raw = nextText[code].trim();
+      try {
+        schema[code] = raw ? JSON.parse(raw) : generated[code];
+      } catch {
+        schema[code] = savedSchema?.[code] ?? generated[code];
+      }
+    }
+
+    setSaving(true);
+    try {
+      await apiFetch(`/page-meta/${selectedKey}/schema`, {
+        method: "PATCH",
+        body: JSON.stringify({ schema }),
+      });
+      setSavedSchema(schema);
+      flash("success", `Schema (${activeLang.toUpperCase()}) sıfırlandı`);
+    } catch {
+      flash("error", "Xəta baş verdi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectedPage = PAGES.find((p) => p.key === selectedKey)!;
+  const schemaIsAuto = savedSchema?.[activeLang] == null;
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>SEO Ayarları</h1>
-          <p className={styles.subtitle}>Hər səhifə üçün meta məlumatlarını idarə edin</p>
+          <h1 className={styles.title}>SEO</h1>
+          <p className={styles.subtitle}>
+            Statik səhifələr üçün meta məlumatları və JSON-LD schema
+          </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {saveStatus === "success" && (
-            <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>✓ Saxlanıldı</span>
+            <span style={{ color: "#16a34a", fontSize: 14, fontWeight: 600 }}>
+              ✓ {saveMsg}
+            </span>
           )}
           {saveStatus === "error" && (
-            <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>✕ Xəta baş verdi</span>
+            <span style={{ color: "#dc2626", fontSize: 14, fontWeight: 600 }}>
+              ✕ {saveMsg}
+            </span>
           )}
-          <button className={styles.saveBtn} onClick={save} disabled={saving}>
+          <button className={styles.saveBtn} onClick={save} disabled={saving || loading}>
             {saving ? "Saxlanır..." : "Saxla"}
           </button>
         </div>
       </div>
 
-      {/* Səhifə seçimi */}
-      <div className={styles.fullDrawerSection} style={{ marginBottom: 24 }}>
-        <h3 className={styles.drawerSectionTitle}>Səhifə seçin</h3>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {PAGE_KEYS.map((p) => (
+      <div className={seo.wrap}>
+        {/* Sol: səhifə siyahısı */}
+        <div className={seo.list}>
+          {PAGES.map((p) => (
             <button
               key={p.key}
               type="button"
+              className={`${seo.listItem} ${
+                selectedKey === p.key ? seo.listItemActive : ""
+              }`}
               onClick={() => setSelectedKey(p.key)}
-              style={{
-                padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                border: "1.5px solid",
-                borderColor: selectedKey === p.key ? "#3b82f6" : "#333",
-                background: selectedKey === p.key ? "#1e3a5f" : "transparent",
-                color: selectedKey === p.key ? "#fff" : "#888",
-                cursor: "pointer",
-              }}
             >
               {p.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {loading ? (
-        <Spinner block />
-      ) : (
-        <>
-          <LangTabs active={activeLang} onChange={setActiveLang} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-            <div className={styles.fullDrawerSection}>
-              <h3 className={styles.drawerSectionTitle}>SEO Title ({activeLang.toUpperCase()})</h3>
-              <div className={styles.field}>
-                <input
-                  className={styles.input}
-                  value={data.seoTitle?.[activeLang] ?? ""}
-                  placeholder={`Səhifə başlığı (${activeLang})`}
-                  onChange={(e) => updateField("seoTitle", activeLang, e.target.value)}
-                />
+        {/* Sağ: seçilmiş səhifənin idarəetməsi */}
+        <div className={seo.panel}>
+          {loading ? (
+            <Spinner block />
+          ) : (
+            <>
+              <div className={seo.langTabs}>
+                {LANGS.map((l) => (
+                  <button
+                    key={l.code}
+                    type="button"
+                    className={`${seo.langTab} ${
+                      activeLang === l.code ? seo.langTabActive : ""
+                    }`}
+                    onClick={() => setActiveLang(l.code)}
+                  >
+                    <span className={seo.langFlag}>{l.flag}</span>
+                    {l.label}
+                  </button>
+                ))}
               </div>
-            </div>
 
-            <div className={styles.fullDrawerSection}>
-              <h3 className={styles.drawerSectionTitle}>SEO Description ({activeLang.toUpperCase()})</h3>
-              <div className={styles.field}>
+              <div className={styles.fullDrawerSection}>
+                <h3 className={styles.drawerSectionTitle}>
+                  {selectedPage.label} — Meta ({activeLang.toUpperCase()})
+                </h3>
+
+                <div className={styles.field}>
+                  <label>Meta Title</label>
+                  <input
+                    className={styles.input}
+                    value={meta.seoTitle[activeLang] ?? ""}
+                    placeholder={`Meta title (${activeLang})`}
+                    onChange={(e) =>
+                      updateMeta("seoTitle", activeLang, e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label>Meta Description</label>
+                  <textarea
+                    className={styles.textarea}
+                    rows={3}
+                    value={meta.seoDescription[activeLang] ?? ""}
+                    placeholder={`Meta description (${activeLang})`}
+                    onChange={(e) =>
+                      updateMeta("seoDescription", activeLang, e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label>Meta Keywords</label>
+                  <input
+                    className={styles.input}
+                    value={meta.seoKeywords[activeLang] ?? ""}
+                    placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
+                    onChange={(e) =>
+                      updateMeta("seoKeywords", activeLang, e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className={styles.fullDrawerSection}>
+                <div className={seo.sectionRow}>
+                  <h3 className={styles.drawerSectionTitle} style={{ border: "none", padding: 0 }}>
+                    Schema (JSON-LD) ({activeLang.toUpperCase()})
+                  </h3>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={resetSchema}
+                    disabled={saving}
+                  >
+                    Sıfırla
+                  </button>
+                </div>
+
+                <p className={seo.hint}>
+                  {schemaIsAuto
+                    ? "Bu schema səhifə tipinə görə avtomatik generasiya olunub. Redaktə edib saxlaya bilərsiniz."
+                    : "Admin tərəfindən redaktə olunmuş schema. «Sıfırla» avtomatik variantı geri qaytarır."}
+                </p>
+
                 <textarea
-                  className={styles.input}
-                  rows={3}
-                  value={data.seoDescription?.[activeLang] ?? ""}
-                  placeholder={`Qısa açıqlama (${activeLang})`}
-                  onChange={(e) => updateField("seoDescription", activeLang, e.target.value)}
+                  className={`${seo.jsonArea} ${
+                    schemaErr[activeLang] ? seo.jsonAreaError : ""
+                  }`}
+                  spellCheck={false}
+                  value={schemaText[activeLang]}
+                  onChange={(e) => updateSchemaText(activeLang, e.target.value)}
                 />
+                {schemaErr[activeLang] && (
+                  <p className={seo.jsonError}>{schemaErr[activeLang]}</p>
+                )}
               </div>
-            </div>
-
-            <div className={styles.fullDrawerSection}>
-              <h3 className={styles.drawerSectionTitle}>SEO Keywords ({activeLang.toUpperCase()})</h3>
-              <div className={styles.field}>
-                <input
-                  className={styles.input}
-                  value={data.seoKeywords?.[activeLang] ?? ""}
-                  placeholder={`açar söz 1, açar söz 2 (${activeLang})`}
-                  onChange={(e) => updateField("seoKeywords", activeLang, e.target.value)}
-                />
-              </div>
-            </div>
-
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ export class PageMetaService {
   /** JSON-LD-ni yaradır, amma yazmır — CMS-də önizləmə üçün. */
   async generateSchema(pageKey: string) {
     const meta = await this.prisma.pageMeta.findUnique({ where: { pageKey } });
-    const baseUrl = process.env.SITE_URL!;
+    const baseUrl = process.env.SITE_URL || 'https://treva.realestate';
     return generatePageSchema(pageKey, meta, baseUrl);
   }
 

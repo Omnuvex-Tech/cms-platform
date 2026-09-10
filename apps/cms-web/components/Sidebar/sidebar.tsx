@@ -105,7 +105,6 @@ const NAV_ITEMS = [
         label: "SEO",
         href: "/seo",
         icon: <Search size={18} />,
-        hidden: true,
     },
 ];
 
