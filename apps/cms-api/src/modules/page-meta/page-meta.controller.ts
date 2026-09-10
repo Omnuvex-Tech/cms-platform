@@ -6,6 +6,12 @@ import { UpdatePageMetaDto } from './dto/update-page-meta.dto';
 export class PageMetaController {
   constructor(private readonly pageMetaService: PageMetaService) {}
 
+  /** Dynamic Pages siyahısı: author | project | pulse detal elementləri. */
+  @Get('dynamic/:type')
+  listDynamic(@Param('type') type: string) {
+    return this.pageMetaService.listDynamicItems(type);
+  }
+
   @Get(':pageKey')
   findOne(@Param('pageKey') pageKey: string) {
     return this.pageMetaService.findByKey(pageKey);

@@ -30,6 +30,42 @@ const PAGES: readonly { key: string; label: string }[] = [
   { key: "author", label: "Author" },
 ];
 
+/** Açılıb-bağlanan "Dynamic Pages" qrupundakı detal tipləri. */
+const DYNAMIC_TYPES: readonly { type: string; label: string }[] = [
+  { type: "author", label: "Author Detail" },
+  { type: "project", label: "Project Detail" },
+  { type: "pulse", label: "Pulse Detail" },
+];
+
+interface DynItem {
+  id: string;
+  slug: string;
+  label: string;
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{
+        transition: "transform .15s ease",
+        transform: open ? "rotate(180deg)" : "none",
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 type LocalizedString = Record<string, string>;
 type SchemaByLang = Record<string, Record<string, unknown>>;
 
@@ -85,6 +121,34 @@ export default function SeoPage() {
   const [schemaErr, setSchemaErr] = useState<Record<Lang, string | null>>(
     emptyByLang(null)
   );
+
+  // Sol siyahının "Dynamic Pages" hissəsi
+  const [dynamicOpen, setDynamicOpen] = useState(false);
+  const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
+  const [dynItems, setDynItems] = useState<Record<string, DynItem[] | undefined>>({});
+  const [dynLoading, setDynLoading] = useState<Record<string, boolean>>({});
+
+  const loadDynItems = useCallback(
+    async (type: string) => {
+      if (dynItems[type] || dynLoading[type]) return;
+      setDynLoading((p) => ({ ...p, [type]: true }));
+      try {
+        const rows = await apiFetch(`/page-meta/dynamic/${type}`);
+        setDynItems((p) => ({ ...p, [type]: Array.isArray(rows) ? rows : [] }));
+      } catch {
+        setDynItems((p) => ({ ...p, [type]: [] }));
+      } finally {
+        setDynLoading((p) => ({ ...p, [type]: false }));
+      }
+    },
+    [dynItems, dynLoading]
+  );
+
+  const toggleType = (type: string) => {
+    const willOpen = !openTypes[type];
+    setOpenTypes((p) => ({ ...p, [type]: !p[type] }));
+    if (willOpen) loadDynItems(type);
+  };
 
   const load = useCallback(async (key: string) => {
     setLoading(true);
@@ -230,8 +294,20 @@ export default function SeoPage() {
     }
   };
 
-  const selectedPage = PAGES.find((p) => p.key === selectedKey)!;
   const schemaIsAuto = savedSchema?.[activeLang] == null;
+
+  // Sağ panelin başlığı üçün seçilmiş elementin adı
+  const dynSep = selectedKey.indexOf(":");
+  let currentLabel: string;
+  if (dynSep === -1) {
+    currentLabel = PAGES.find((p) => p.key === selectedKey)?.label ?? selectedKey;
+  } else {
+    const t = selectedKey.slice(0, dynSep);
+    const id = selectedKey.slice(dynSep + 1);
+    const typeLabel = DYNAMIC_TYPES.find((d) => d.type === t)?.label ?? t;
+    const item = dynItems[t]?.find((i) => i.id === id);
+    currentLabel = item ? `${typeLabel} — ${item.label}` : typeLabel;
+  }
 
   return (
     <div className={styles.page}>
@@ -239,7 +315,7 @@ export default function SeoPage() {
         <div>
           <h1 className={styles.title}>SEO</h1>
           <p className={styles.subtitle}>
-            Statik səhifələr üçün meta məlumatları və JSON-LD schema
+            Statik və dinamik səhifələr üçün meta məlumatları və JSON-LD schema
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -274,6 +350,60 @@ export default function SeoPage() {
               {p.label}
             </button>
           ))}
+
+          {/* Dynamic Pages — açılıb-bağlanan */}
+          <button
+            type="button"
+            className={seo.groupHeader}
+            onClick={() => setDynamicOpen((v) => !v)}
+            aria-expanded={dynamicOpen}
+          >
+            <span>Dynamic Pages</span>
+            <Chevron open={dynamicOpen} />
+          </button>
+
+          {dynamicOpen &&
+            DYNAMIC_TYPES.map((d) => (
+              <div key={d.type}>
+                <button
+                  type="button"
+                  className={seo.subGroupHeader}
+                  onClick={() => toggleType(d.type)}
+                  aria-expanded={!!openTypes[d.type]}
+                >
+                  <span>{d.label}</span>
+                  <Chevron open={!!openTypes[d.type]} />
+                </button>
+
+                {openTypes[d.type] && (
+                  <>
+                    {dynLoading[d.type] && (
+                      <div className={seo.mutedRow}>Yüklənir…</div>
+                    )}
+                    {!dynLoading[d.type] &&
+                      dynItems[d.type]?.length === 0 && (
+                        <div className={seo.mutedRow}>Element yoxdur</div>
+                      )}
+                    {dynItems[d.type]?.map((item) => {
+                      const key = `${d.type}:${item.id}`;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`${seo.listItem} ${seo.listItemNested} ${
+                            selectedKey === key ? seo.listItemActive : ""
+                          }`}
+                          onClick={() => setSelectedKey(key)}
+                          title={item.slug}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            ))}
         </div>
 
         {/* Sağ: seçilmiş səhifənin idarəetməsi */}
@@ -300,7 +430,7 @@ export default function SeoPage() {
 
               <div className={styles.fullDrawerSection}>
                 <h3 className={styles.drawerSectionTitle}>
-                  {selectedPage.label} — Meta ({activeLang.toUpperCase()})
+                  {currentLabel} — Meta ({activeLang.toUpperCase()})
                 </h3>
 
                 <div className={styles.field}>

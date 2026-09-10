@@ -7,19 +7,45 @@
 
 const LANGS = ['az', 'en', 'ru'] as const;
 
+/** Dynamic detal açarları: `author:<id>`, `project:<id>`, `pulse:<id>`. */
+const DYNAMIC_PREFIXES = ['author', 'project', 'pulse'] as const;
+
 export function generatePageSchema(
   pageKey: string,
   meta: any,
   baseUrl: string,
+  entity?: { slug?: string; name?: string },
 ) {
+  const sep = pageKey.indexOf(':');
+  const prefix = sep === -1 ? '' : pageKey.slice(0, sep);
+  const dynamicId = sep === -1 ? '' : pageKey.slice(sep + 1);
+  const isDynamic =
+    !!dynamicId && (DYNAMIC_PREFIXES as readonly string[]).includes(prefix);
+
+  const dynamicPath = (slug: string) => {
+    if (prefix === 'author') return '/author/' + slug;
+    if (prefix === 'project') return '/projects/' + slug;
+    return '/pulse/' + slug; // pulse
+  };
+
   const buildForLang = (locale: string) => {
-    const title = meta?.seoTitle?.[locale] || meta?.seoTitle?.az || '';
+    const title =
+      meta?.seoTitle?.[locale] ||
+      meta?.seoTitle?.az ||
+      (isDynamic ? entity?.name : '') ||
+      '';
     const description =
       meta?.seoDescription?.[locale] || meta?.seoDescription?.az || '';
 
+    const path = isDynamic
+      ? dynamicPath(entity?.slug || dynamicId)
+      : pageKey === 'home'
+        ? ''
+        : '/' + pageKey;
+
     const base = {
       '@context': 'https://schema.org',
-      url: `${baseUrl}/${locale}${pageKey === 'home' ? '' : '/' + pageKey}`,
+      url: `${baseUrl}/${locale}${path}`,
       inLanguage: locale,
       publisher: {
         '@type': 'Organization',
@@ -27,6 +53,35 @@ export function generatePageSchema(
         url: baseUrl,
       },
     };
+
+    if (isDynamic) {
+      switch (prefix) {
+        case 'author':
+          return {
+            ...base,
+            '@type': 'ProfilePage',
+            name: title,
+            description,
+            mainEntity: { '@type': 'Person', name: title, description },
+          };
+        case 'project':
+          return {
+            ...base,
+            '@type': 'WebPage',
+            name: title,
+            description,
+            about: { '@type': 'Place', name: title },
+          };
+        default: // pulse
+          return {
+            ...base,
+            '@type': 'Article',
+            headline: title,
+            description,
+            author: { '@type': 'Organization', name: 'Treva' },
+          };
+      }
+    }
 
     switch (pageKey) {
       case 'home':

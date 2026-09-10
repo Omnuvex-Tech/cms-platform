@@ -51,6 +51,66 @@
     box-shadow: inset 3px 0 0 var(--brand-600);
 }
 
+/* "Dynamic Pages" başlığı — açılıb-bağlanan */
+.groupHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    background: var(--surface-sunk);
+    border: none;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--n-100);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color var(--dur-1) var(--ease);
+}
+
+.groupHeader:hover { color: var(--text); }
+
+/* Author / Project / Pulse Detail alt-başlıqları */
+.subGroupHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--n-100);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+.subGroupHeader:hover {
+    background: var(--surface-sunk);
+    color: var(--text);
+}
+
+.listItemNested {
+    padding-left: var(--sp-6);
+    font-size: 13px;
+}
+
+.mutedRow {
+    padding: var(--sp-2) var(--sp-6);
+    font-size: 12.5px;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--n-100);
+}
+
 /* ---------- Sağ panel ---------- */
 
 .panel {
