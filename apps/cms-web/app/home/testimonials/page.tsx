@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/testimonials.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type LocalizedString = Record<string, string>;
 
@@ -395,7 +396,7 @@ export default function TestimonialsPage() {
         setter(prev => ({ ...prev, [lang]: value }));
     };
 
-    if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
+    if (loading) return <div className={styles.page}><Spinner block /></div>;
 
     return (
         <div className={styles.page}>

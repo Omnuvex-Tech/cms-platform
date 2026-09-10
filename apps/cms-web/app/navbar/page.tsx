@@ -5,6 +5,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -280,7 +281,7 @@ export default function NavbarPage() {
         }
     };
 
-    if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+    if (loading) return <Spinner block />;
     if (!settings) return <div className={styles.empty}>Məlumat tapılmadı</div>;
 
     return (

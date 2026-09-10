@@ -24,6 +24,7 @@ import {
     type LocalizedString,
 } from "@/components/RichEditor";
 import styles from "@/styles/layihelerimiz.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -785,7 +786,7 @@ export default function ProjectDetailEditor() {
     };
 
     if (loading) {
-        return <div className={styles.page}><p>Yüklənir...</p></div>;
+        return <div className={styles.page}><Spinner block /></div>;
     }
 
     if (loadError) {

@@ -13,6 +13,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { DatePicker } from "@/components/DatePicker";
 import { Select } from "@/components/Select";
 import styles from "@/styles/vacancy.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
@@ -743,7 +744,7 @@ export default function VacancyPage() {
     }
   };
 
-  if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
+  if (loading) return <div className={styles.page}><Spinner block /></div>;
 
   return (
     <div className={styles.page}>

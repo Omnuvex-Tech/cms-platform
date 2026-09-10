@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ChevronDown } from "lucide-react";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -97,7 +98,7 @@ export default function BrokerRegistrationsPage() {
         }
     };
 
-    if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+    if (loading) return <Spinner block />;
 
     return (
         <div className={styles.page}>

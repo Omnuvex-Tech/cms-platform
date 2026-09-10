@@ -20,6 +20,7 @@ import { apiFetch, uploadFile, toAbsUrl, generateSlug } from "@/lib/pulse-api";
 import { Avatar } from "@/components/Avatar";
 import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type LocalizedValue = string | { az?: string; en?: string; ru?: string };
 type Author = { id: string; name: LocalizedValue; slug: string; title?: LocalizedValue; linkedin?: string; avatar?: string; description?: LocalizedValue; isVisible?: boolean; order?: number };
@@ -318,7 +319,7 @@ export default function PulseAuthorsPage() {
                     <button className={styles.addBtn} onClick={openCreate}>+ Yeni Müəllif</button>
                 </div>
             </div>
-            {loading ? <div className={styles.empty}>Yüklənir...</div>
+            {loading ? <Spinner block />
                 : authors.length === 0 ? <div className={styles.empty}>Hələ müəllif yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>

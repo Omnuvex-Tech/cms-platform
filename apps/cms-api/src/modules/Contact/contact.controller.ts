@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -16,5 +24,10 @@ export class ContactController {
   @Get('submissions')
   findAllSubmissions() {
     return this.service.findAllSubmissions();
+  }
+
+  @Delete('submissions/:id')
+  deleteSubmission(@Param('id', ParseIntPipe) id: number) {
+    return this.service.deleteSubmission(id);
   }
 }

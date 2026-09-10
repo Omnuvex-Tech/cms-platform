@@ -8,6 +8,7 @@ import Heading from "@tiptap/extension-heading";
 import TiptapLink from "@tiptap/extension-link";
 import { HardBreak } from "@tiptap/extension-hard-break";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 type Lang = "az" | "en" | "ru";
@@ -227,7 +228,7 @@ export default function HeroSettingsPage() {
     }
   };
 
-  if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+  if (loading) return <Spinner block />;
 
   return (
     <div className={styles.page}>

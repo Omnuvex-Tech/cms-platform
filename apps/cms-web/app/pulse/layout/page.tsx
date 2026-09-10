@@ -4,6 +4,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 import layout from "@/styles/pulseLayout.module.css";
 
 type Article = { id: string; title: string | { az?: string; en?: string; ru?: string }; slug: string; coverImage?: string; headerPositions?: string[]; headerOrder?: number };
@@ -112,7 +113,7 @@ export default function PulseLayoutPage() {
         } finally { setSaving(false); }
     };
 
-    if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+    if (loading) return <Spinner block />;
 
     return (
         <div className={layout.page}>

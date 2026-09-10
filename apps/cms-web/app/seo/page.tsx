@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -156,7 +157,7 @@ export default function SeoPage() {
       </div>
 
       {loading ? (
-        <div className={styles.empty}>Yüklənir...</div>
+        <Spinner block />
       ) : (
         <>
           <LangTabs active={activeLang} onChange={setActiveLang} />

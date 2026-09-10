@@ -9,6 +9,7 @@ import { ImagePlus } from "lucide-react";
 import { DatePicker } from "@/components/DatePicker";
 import { Select } from "@/components/Select";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 import ed from "@/styles/pulseEditor.module.css";
 
 type Author = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
@@ -372,7 +373,7 @@ export default function PulseArticleEditPage() {
 
     const availableArticles = allArticles.filter(a => a.id !== id);
 
-    if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+    if (loading) return <Spinner block />;
 
     return (
         <div className={styles.fullWidth}>

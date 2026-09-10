@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Spinner } from "@/components/Spinner";
 import { ChevronDown } from "lucide-react";
 import styles from "@/styles/blog.module.css";
 
@@ -42,8 +44,9 @@ function decode(str: string | null | undefined) {
     return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
 }
 
-function SubmissionCard({ sub, isOpen, onToggle }: {
+function SubmissionCard({ sub, isOpen, onToggle, onDelete, deleting }: {
     sub: Submission; isOpen: boolean; onToggle: () => void;
+    onDelete: () => void; deleting: boolean;
 }) {
     return (
         <div className={`${styles.accordionItem} ${isOpen ? styles.accordionItemOpen : ""}`}>
@@ -88,6 +91,17 @@ function SubmissionCard({ sub, isOpen, onToggle }: {
                     {sub.message
                         ? <p className={styles.detailBody}>{sub.message}</p>
                         : <p className={styles.detailEmpty}>Mesaj yazılmayıb.</p>}
+
+                    <div className={styles.actions}>
+                        <button
+                            type="button"
+                            className={styles.deleteBtn}
+                            onClick={onDelete}
+                            disabled={deleting}
+                        >
+                            Sil
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
@@ -109,6 +123,8 @@ export default function SubmissionsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [openId, setOpenId] = useState<number | null>(null);
     const [search, setSearch] = useState("");
+    const [deleting, setDeleting] = useState<number | null>(null);
+    const [confirmTarget, setConfirmTarget] = useState<Submission | null>(null);
 
     useEffect(() => {
         apiFetch("/contact/submissions")
@@ -128,7 +144,26 @@ export default function SubmissionsPage() {
 
     const toggle = (id: number) => setOpenId(prev => prev === id ? null : id);
 
-    if (loading) return <div className={styles.empty}>Yüklənir...</div>;
+    const handleDelete = async () => {
+        const target = confirmTarget;
+        if (!target) return;
+        setDeleting(target.id);
+        try {
+            const res = await fetch(`${API}/contact/submissions/${target.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${getToken()}` },
+            });
+            if (!res.ok) throw new Error("Xəta baş verdi");
+            setSubmissions(prev => prev.filter(s => s.id !== target.id));
+            setConfirmTarget(null);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    if (loading) return <Spinner block />;
 
     return (
         <div className={styles.page}>
@@ -163,10 +198,21 @@ export default function SubmissionsPage() {
                             sub={sub}
                             isOpen={openId === sub.id}
                             onToggle={() => toggle(sub.id)}
+                            onDelete={() => setConfirmTarget(sub)}
+                            deleting={deleting === sub.id}
                         />
                     ))}
                 </div>
             )}
+
+            <ConfirmDialog
+                open={confirmTarget !== null}
+                message="Bu müraciət silinəcək:"
+                subject={confirmTarget?.name}
+                busy={deleting !== null}
+                onConfirm={handleDelete}
+                onCancel={() => setConfirmTarget(null)}
+            />
         </div>
     );
 }

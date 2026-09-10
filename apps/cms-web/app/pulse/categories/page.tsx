@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, generateSlug } from "@/lib/pulse-api";
 import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type Category = { id: string; name: string | { az?: string; en?: string; ru?: string }; slug: string };
 
@@ -109,7 +110,7 @@ export default function PulseCategoriesPage() {
                     <button className={styles.addBtn} onClick={openCreate}>+ Yeni Kateqoriya</button>
                 </div>
             </div>
-            {loading ? <div className={styles.empty}>Yüklənir...</div>
+            {loading ? <Spinner block />
                 : categories.length === 0 ? <div className={styles.empty}>Hələ kateqoriya yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>

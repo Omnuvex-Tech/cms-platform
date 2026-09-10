@@ -22,6 +22,7 @@ import {
 import { Thumb } from "@/components/Thumb";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import styles from "@/styles/layihelerimiz.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -540,7 +541,7 @@ export default function LayihelerimizPage() {
             </div>
 
             {loading ? (
-                <p className={styles.empty}>Yüklənir...</p>
+                <Spinner block />
             ) : items.length === 0 ? (
                 <div className={styles.empty}>
                     <p>Hələ heç bir layihə yoxdur</p>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "@/styles/vacancy.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
@@ -160,7 +161,7 @@ export default function VacancySettingPage() {
     }
   };
 
-  if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
+  if (loading) return <div className={styles.page}><Spinner block /></div>;
 
   const localizedFields = (fields: { key: keyof VacancySettings; label: string; hint: string }[]) =>
     fields.map(({ key, label, hint }) => (

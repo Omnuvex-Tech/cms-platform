@@ -15,4 +15,12 @@ export class ContactRepository {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async findSubmission(id: number) {
+    return this.prisma.contactSubmission.findUnique({ where: { id } });
+  }
+
+  async deleteSubmission(id: number) {
+    return this.prisma.contactSubmission.delete({ where: { id } });
+  }
 }

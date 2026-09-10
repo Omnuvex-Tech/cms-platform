@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ContactRepository } from './contact.repository';
 import { MailService } from '../mail/mail.service';
 import { CreateContactSubmissionDto } from './dto/create-contact-submission.dto';
@@ -49,5 +49,11 @@ export class ContactService {
 
   async findAllSubmissions() {
     return this.repo.findAllSubmissions();
+  }
+
+  async deleteSubmission(id: number) {
+    const existing = await this.repo.findSubmission(id);
+    if (!existing) throw new NotFoundException('Müraciət tapılmadı');
+    return this.repo.deleteSubmission(id);
   }
 }

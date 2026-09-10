@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiFetch, toAbsUrl } from "@/lib/pulse-api";
 import { Thumb } from "@/components/Thumb";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type Article = {
     id: string; slug: string; title: string | { az?: string; en?: string; ru?: string }; category: string | { az?: string; en?: string; ru?: string };
@@ -95,7 +96,7 @@ export default function PulseArticlesPage() {
                     <Link href="/pulse/new" className={styles.addBtn}>+ Yeni Məqalə</Link>
                 </div>
             </div>
-            {loading ? <div className={styles.empty}>Yüklənir...</div>
+            {loading ? <Spinner block />
                 : articles.length === 0 ? <div className={styles.empty}>Hələ məqalə yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>

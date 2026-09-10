@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetch, generateSlug } from "@/lib/pulse-api";
 import { LocaleChips } from "@/components/LocaleChips";
 import styles from "@/styles/blog.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type LocalizedName = string | { az?: string; en?: string; ru?: string };
 type Keyword = { id: string; name: LocalizedName; slug: string };
@@ -110,7 +111,7 @@ export default function PulseKeywordsPage() {
                     <button className={styles.addBtn} onClick={openCreate}>+ Yeni Açar söz</button>
                 </div>
             </div>
-            {loading ? <div className={styles.empty}>Yüklənir...</div>
+            {loading ? <Spinner block />
                 : keywords.length === 0 ? <div className={styles.empty}>Hələ açar söz yoxdur</div>
                     : (
                         <div className={styles.tableWrap}>

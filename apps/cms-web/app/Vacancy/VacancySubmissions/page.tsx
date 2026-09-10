@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "@/styles/vacancy.module.css";
+import { Spinner } from "@/components/Spinner";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 function getToken() { return document.cookie.split("access_token=")[1]?.split(";")[0] ?? ""; }
@@ -187,7 +188,7 @@ export default function VacancySubmissionsPage() {
 
     const toggle = (id: number) => setOpenId(prev => prev === id ? null : id);
 
-    if (loading) return <div className={styles.page}><div className={styles.empty}>Yüklənir...</div></div>;
+    if (loading) return <div className={styles.page}><Spinner block /></div>;
 
     return (
         <div className={styles.page}>

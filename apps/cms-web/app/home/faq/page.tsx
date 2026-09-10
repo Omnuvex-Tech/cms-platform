@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import styles from "@/styles/faq.module.css";
+import { Spinner } from "@/components/Spinner";
 
 type Lang = "az" | "en" | "ru";
 type LocalizedString = Record<string, string>;
@@ -309,7 +310,7 @@ export default function FaqPage() {
 
       <div className={styles.tableWrap}>
         {loading ? (
-          <div className={styles.empty}>Yüklənir...</div>
+          <Spinner block />
         ) : faqs.length === 0 ? (
           <div className={styles.empty}>Hələ FAQ əlavə edilməyib</div>
         ) : (
