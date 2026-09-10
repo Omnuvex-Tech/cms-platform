@@ -7,9 +7,9 @@ node_modules
 
 # Local env files
 
-.env.development.local
-.env.test.local
-.env.production.local
+.env
+.env.*
+!.env.example
 
 # Testing
 coverage
@@ -39,3 +39,7 @@ yarn-error.log*
 # Serve olunmayan yükləmə qovluğu — fayllar public/uploads altındadır.
 # (Nest static asset kökü: apps/cms-api/public)
 apps/cms-api/uploads/
+
+# İstifadəçi tərəfindən yüklənən media — repo-ya getmir
+apps/cms-api/public/uploads/
+!apps/cms-api/public/uploads/.gitkeep
