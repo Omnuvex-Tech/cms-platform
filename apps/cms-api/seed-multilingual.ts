@@ -82,9 +82,6 @@ async function main() {
       locationFooterAddress: { az: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan", en: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan", ru: "Sea Breeze Resort, Нардаранский район, Баку, Азербайджан" },
       locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-      seoTitle: { az: "Panorama by Elie Saab | TREVA Real Estate", en: "Panorama by Elie Saab | TREVA Real Estate", ru: "Panorama by Elie Saab | TREVA Недвижимость" },
-      seoDescription: { az: "Yüksək dəb estetikası və müasir luxury-un sophistication birləşməsi.", en: "A sophisticated blend of high-fashion aesthetics and modern luxury.", ru: "Утонченное сочетание эстетики высокой моды и современной роскоши." },
-      ogImage: "/uploads/layihelerimiz/panorama-cover.png",
     },
   ];
 

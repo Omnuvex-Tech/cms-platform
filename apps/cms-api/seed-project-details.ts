@@ -114,9 +114,6 @@ const projectDetails = [
     locationFooterAddress: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-    seoTitle: "Panorama by Elie Saab | TREVA Real Estate",
-    seoDescription: "A sophisticated blend of high-fashion aesthetics and modern luxury.",
-    ogImage: "/uploads/layihelerimiz/panorama-cover.png",
   },
   {
     categorySlug: "treva-residences",
@@ -228,9 +225,6 @@ const projectDetails = [
     locationFooterAddress: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-    seoTitle: "TREVA Residences | TREVA Real Estate",
-    seoDescription: "Premium coastal living in the heart of Sea Breeze.",
-    ogImage: "/uploads/layihelerimiz/reportage-cover.jpg",
   },
   {
     categorySlug: "reportage-heights",
@@ -342,9 +336,6 @@ const projectDetails = [
     locationFooterAddress: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-    seoTitle: "Reportage Heights | TREVA Real Estate",
-    seoDescription: "Modern waterfront living on the Caspian coast.",
-    ogImage: "/uploads/layihelerimiz/reportage-cover.jpg",
   },
   {
     categorySlug: "arabian-ranches",
@@ -456,9 +447,6 @@ const projectDetails = [
     locationFooterAddress: "Sea Breeze Resort, Nardaran District, Baku, Azerbaijan",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-    seoTitle: "Arabian Ranches | TREVA Real Estate",
-    seoDescription: "Exclusive villa living inspired by Arabian elegance.",
-    ogImage: "/uploads/layihelerimiz/arabian-cover.jpg",
   },
   {
     categorySlug: "marina-village",
@@ -570,9 +558,6 @@ const projectDetails = [
     locationFooterAddress: "Marina Village, Sea Breeze Resort, Nardaran, Baku 1097",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Marina/@40.5187,49.8671,15z",
 
-    seoTitle: "Marina Village | TREVA Real Estate",
-    seoDescription: "Yacht club living on the Caspian coast.",
-    ogImage: "/uploads/layihelerimiz/marina-cover.jpg",
   },
   {
     categorySlug: "brabus-island",
@@ -684,9 +669,6 @@ const projectDetails = [
     locationFooterAddress: "Brabus Island, Caspian Sea, near Sea Breeze Resort, Baku",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Sea+Breeze+Resort/@40.5187,49.8671,15z",
 
-    seoTitle: "Brabus Island | TREVA Real Estate",
-    seoDescription: "An iconic man-made island concept with exclusive villas.",
-    ogImage: "/uploads/layihelerimiz/brabus-cover.jpg",
   },
   {
     categorySlug: "sabah-residence",
@@ -798,9 +780,6 @@ const projectDetails = [
     locationFooterAddress: "Mikayil Mushfig kuchesi, Nardaran, Baku 1097",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Nardaran,+Baku/@40.5500,49.8800,14z",
 
-    seoTitle: "Sabah Residence | TREVA Real Estate",
-    seoDescription: "Completed premium residence with sea and city proximity.",
-    ogImage: "/uploads/layihelerimiz/sabah-cover.png",
   },
   {
     categorySlug: "toronto",
@@ -912,9 +891,6 @@ const projectDetails = [
     locationFooterAddress: "Baku, Azerbaijan",
     locationGoogleMapsUrl: "https://www.google.com/maps/place/Baku/@40.4093,49.8671,12z",
 
-    seoTitle: "Toronto | TREVA Real Estate",
-    seoDescription: "International-standard residential living in Baku.",
-    ogImage: "/uploads/layihelerimiz/reportage-cover.jpg",
   },
 ];
 

@@ -7,7 +7,6 @@ export class CreateProjectDetailDto {
   // ─── v2: blok əsaslı kontent ───
   // sections = [{ type, isVisible, ...data }]
   @IsArray() @IsOptional() sections?: any[];
-  @IsOptional() schema?: any;
 
   // ─── legacy v1 sahələri ───
   // sections-a tam keçiddən sonra silinəcək. Yeni yazılarda istifadə etmə.
@@ -49,8 +48,4 @@ export class CreateProjectDetailDto {
   @IsString() @IsOptional() locationMapImage?: string;
   @IsObject() @IsOptional() locationFooterAddress?: any;
   @IsString() @IsOptional() locationGoogleMapsUrl?: string;
-
-  @IsObject() @IsOptional() seoTitle?: any;
-  @IsObject() @IsOptional() seoDescription?: any;
-  @IsString() @IsOptional() ogImage?: string;
 }

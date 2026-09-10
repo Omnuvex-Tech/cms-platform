@@ -255,30 +255,6 @@ async function main() {
       }
     }
 
-    // Process metaTitle
-    if (article.metaTitle) {
-      const result = await processLocalizedString(article.metaTitle as any);
-      if (result.changed) {
-        updateData.metaTitle = result.value;
-        articleChanged = true;
-        console.log('  ✅ Meta title translated');
-      } else {
-        console.log('  ⏭️ Meta title skipped');
-      }
-    }
-
-    // Process metaDescription
-    if (article.metaDescription) {
-      const result = await processLocalizedString(article.metaDescription as any);
-      if (result.changed) {
-        updateData.metaDescription = result.value;
-        articleChanged = true;
-        console.log('  ✅ Meta description translated');
-      } else {
-        console.log('  ⏭️ Meta description skipped');
-      }
-    }
-
     // Process blocks
     if (article.blocks && Array.isArray(article.blocks)) {
       const processedBlocks: PulseBlock[] = [];

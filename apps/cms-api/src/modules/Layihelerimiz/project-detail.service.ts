@@ -7,7 +7,6 @@ import { ProjectDetailRepository } from './project-detail.repository';
 import { CreateProjectDetailDto } from './dto/create-project-detail.dto';
 import { UpdateProjectDetailDto } from './dto/update-project-detail.dto';
 import { withSections } from './project-sections';
-import { generateProjectDetailSchema } from './project-schema-generator';
 
 @Injectable()
 export class ProjectDetailService {
@@ -39,20 +38,6 @@ export class ProjectDetailService {
       if (slugTaken) throw new ConflictException('Bu slug artıq istifadə olunur');
     }
     return withSections(await this.repo.update(id, dto));
-  }
-
-  /** JSON-LD-ni yaradır, amma yazmır — CMS-də önizləmə üçün. */
-  async generateSchema(slug: string) {
-    const detail = await this.findBySlug(slug);
-    const baseUrl = process.env.SITE_URL!;
-    return generateProjectDetailSchema(detail, baseUrl);
-  }
-
-  /** Admin təsdiqlədikdən sonra JSON-LD-ni saxlayır. */
-  async saveSchema(id: string, schema: Record<string, any> | null) {
-    const existing = await this.repo.findById(id);
-    if (!existing) throw new NotFoundException('Layihə detalları tapılmadı');
-    return this.repo.update(id, { schema } as any);
   }
 
   async delete(id: string) {

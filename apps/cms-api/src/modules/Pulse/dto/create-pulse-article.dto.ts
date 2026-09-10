@@ -30,14 +30,6 @@ export class CreatePulseArticleDto {
   @IsOptional()
   blocks?: any[];
 
-  @IsObject()
-  @IsOptional()
-  metaTitle?: Record<string, string>;
-
-  @IsObject()
-  @IsOptional()
-  metaDescription?: Record<string, string>;
-
   @IsBoolean()
   @IsOptional()
   featured?: boolean;

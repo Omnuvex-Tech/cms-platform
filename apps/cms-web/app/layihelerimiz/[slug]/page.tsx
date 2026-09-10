@@ -716,9 +716,6 @@ export default function ProjectDetailEditor() {
 
     const [id, setId] = useState<string | null>(null);
     const [sections, setSections] = useState<any[]>([]);
-    const [seoTitle, setSeoTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [seoDescription, setSeoDescription] = useState<LocalizedString>({ az: "", en: "", ru: "" });
-    const [ogImage, setOgImage] = useState("");
 
     const [activeLang, setActiveLang] = useState<Lang>("az");
     const [loading, setLoading] = useState(true);
@@ -735,9 +732,6 @@ export default function ProjectDetailEditor() {
                 // API dual-read edir: sections boşdursa köhnə sütunlardan qurulmuş
                 // halda gəlir, ona görə burada əlavə fallback lazım deyil.
                 setSections(asArray(data.sections));
-                setSeoTitle(lv(data.seoTitle));
-                setSeoDescription(lv(data.seoDescription));
-                setOgImage(asStr(data.ogImage));
             }
         } catch (err: any) {
             // 404 = bu slug üçün hələ detal yaradılmayıb, boş formadan başlayırıq.
@@ -764,7 +758,7 @@ export default function ProjectDetailEditor() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const payload = { categorySlug: slug, sections, seoTitle, seoDescription, ogImage };
+            const payload = { categorySlug: slug, sections };
             if (id) {
                 await cmsFetch(`/layihelerimiz/project-details/${id}`, {
                     method: "PATCH",
@@ -838,21 +832,6 @@ export default function ProjectDetailEditor() {
                             + {label}
                         </button>
                     ))}
-                </div>
-            </div>
-
-            <div className={styles.fullDrawerSection}>
-                <h3 className={styles.drawerSectionTitle}>SEO</h3>
-                <LocalizedInput label="SEO başlıq" value={seoTitle} activeLang={activeLang} onChange={setSeoTitle} />
-                <div className={styles.field}>
-                    <label>SEO təsvir ({activeLang.toUpperCase()})</label>
-                    <textarea className={styles.textarea} rows={3}
-                        value={seoDescription[activeLang] ?? ""}
-                        onChange={e => setSeoDescription({ ...seoDescription, [activeLang]: e.target.value })} />
-                </div>
-                <div className={styles.field}>
-                    <label>OG şəkil</label>
-                    <FileUpload value={ogImage} onChange={setOgImage} />
                 </div>
             </div>
 

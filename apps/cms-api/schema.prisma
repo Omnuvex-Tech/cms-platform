@@ -90,9 +90,6 @@ model Vacancy {
   startDate          DateTime?
   slug               String          @unique
   category           VacancyCategory @relation(fields: [categoryId], references: [id])
-   seoTitle       Json?
-  seoDescription Json?
-  seoKeywords    Json?
 }
 
 model VacancyPageHeader {
@@ -316,9 +313,6 @@ model PulseArticle {
   keywords        PulseKeyword[]
   blocks          Json     @default("[]")
   socialLinks     Json?
-  metaTitle       Json?
-  metaDescription Json?
-  schema          Json?
   featured        Boolean  @default(false)
   published       Boolean  @default(false)
   headerPositions Json     @default("[]")
@@ -405,7 +399,6 @@ model LayihelerimizProjectDetail {
   // sections = [{ type, isVisible, ...data }]
   // type: hero | overview | features | location | layouts
   sections       Json    @default("[]")
-  schema         Json?
 
   // ─── legacy: v1 flat sütunlar ────────────────────────────
   // sections-a köçürüldükdən sonra ayrıca migration ilə silinəcək.
@@ -448,10 +441,6 @@ model LayihelerimizProjectDetail {
   locationMapImage      String?
   locationFooterAddress Json?
   locationGoogleMapsUrl String?
-
-  seoTitle       Json?
-  seoDescription Json?
-  ogImage        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

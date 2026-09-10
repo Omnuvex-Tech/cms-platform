@@ -66,12 +66,6 @@ export class ProjectDetailController {
     return this.service.findAll();
   }
 
-  // :slug-dan ƏVVƏL: Nest daha spesifik yolu seçsin.
-  @Get(':slug/schema/preview')
-  previewSchema(@Param('slug') slug: string) {
-    return this.service.generateSchema(slug);
-  }
-
   @Public()
   @Get(':slug')
   findBySlug(@Param('slug') slug: string) {
@@ -81,14 +75,6 @@ export class ProjectDetailController {
   @Post()
   create(@Body() dto: CreateProjectDetailDto) {
     return this.service.create(dto);
-  }
-
-  @Patch(':id/schema')
-  saveSchema(
-    @Param('id') id: string,
-    @Body('schema') schema: Record<string, any> | null,
-  ) {
-    return this.service.saveSchema(id, schema);
   }
 
   @Patch(':id')
