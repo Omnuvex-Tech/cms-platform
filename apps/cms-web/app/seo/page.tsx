@@ -127,6 +127,7 @@ export default function SeoPage() {
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [dynItems, setDynItems] = useState<Record<string, DynItem[] | undefined>>({});
   const [dynLoading, setDynLoading] = useState<Record<string, boolean>>({});
+  const [dynSearch, setDynSearch] = useState<Record<string, string>>({});
 
   const loadDynItems = useCallback(
     async (type: string) => {
@@ -380,26 +381,58 @@ export default function SeoPage() {
                     {dynLoading[d.type] && (
                       <div className={seo.mutedRow}>Yüklənir…</div>
                     )}
+
+                    {!dynLoading[d.type] && (dynItems[d.type]?.length ?? 0) > 0 && (
+                      <div className={seo.searchRow}>
+                        <input
+                          className={seo.searchInput}
+                          type="search"
+                          placeholder="Axtar…"
+                          value={dynSearch[d.type] ?? ""}
+                          onChange={(e) =>
+                            setDynSearch((p) => ({ ...p, [d.type]: e.target.value }))
+                          }
+                        />
+                      </div>
+                    )}
+
                     {!dynLoading[d.type] &&
                       dynItems[d.type]?.length === 0 && (
                         <div className={seo.mutedRow}>Element yoxdur</div>
                       )}
-                    {dynItems[d.type]?.map((item) => {
-                      const key = `${d.type}:${item.id}`;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          className={`${seo.listItem} ${seo.listItemNested} ${
-                            selectedKey === key ? seo.listItemActive : ""
-                          }`}
-                          onClick={() => setSelectedKey(key)}
-                          title={item.slug}
-                        >
-                          {item.label}
-                        </button>
+
+                    {(() => {
+                      const q = (dynSearch[d.type] ?? "").trim().toLowerCase();
+                      const list = (dynItems[d.type] ?? []).filter(
+                        (item) =>
+                          !q ||
+                          item.label.toLowerCase().includes(q) ||
+                          item.slug.toLowerCase().includes(q)
                       );
-                    })}
+                      if (
+                        !dynLoading[d.type] &&
+                        (dynItems[d.type]?.length ?? 0) > 0 &&
+                        list.length === 0
+                      ) {
+                        return <div className={seo.mutedRow}>Nəticə yoxdur</div>;
+                      }
+                      return list.map((item) => {
+                        const key = `${d.type}:${item.id}`;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            className={`${seo.listItem} ${seo.listItemNested} ${
+                              selectedKey === key ? seo.listItemActive : ""
+                            }`}
+                            onClick={() => setSelectedKey(key)}
+                            title={item.slug}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      });
+                    })()}
                   </>
                 )}
               </div>

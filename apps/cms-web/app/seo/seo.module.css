@@ -111,6 +111,34 @@
     border-bottom: 1px solid var(--n-100);
 }
 
+/* Alt-qrup daxilində kiçik axtarış sahəsi */
+.searchRow {
+    padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-5);
+    border-bottom: 1px solid var(--n-100);
+    background: var(--surface-sunk);
+}
+
+.searchInput {
+    width: 100%;
+    height: 30px;
+    padding: 0 var(--sp-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+
+.searchInput:hover { border-color: var(--n-300); }
+
+.searchInput:focus {
+    border-color: var(--brand-600);
+    box-shadow: var(--ring);
+}
+
 /* ---------- Sağ panel ---------- */
 
 .panel {
