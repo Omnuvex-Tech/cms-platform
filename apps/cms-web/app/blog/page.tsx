@@ -1067,7 +1067,6 @@ export default function BlogPage() {
     const [saving, setSaving] = useState(false);
     const [reordering, setReordering] = useState(false);
     const [activeLang, setActiveLang] = useState<Lang>("az");
-
     const [title, setTitle] = useState<LocalizedString>({ az: "", en: "", ru: "" });
     const [slug, setSlug] = useState("");
     const [badge, setBadge] = useState<LocalizedString>({ az: "", en: "", ru: "" });
@@ -1161,7 +1160,7 @@ export default function BlogPage() {
 
     const handleTitleChange = (val: LocalizedString) => {
         setTitle(val);
-        if (activeLang === "az") setSlug(generateSlug(val.az || ""));
+        if (activeLang === "az" && !editItem) setSlug(generateSlug(val.az || ""));
     };
 
     const handlePlacementToggle = async (key: PlacementKey) => {
