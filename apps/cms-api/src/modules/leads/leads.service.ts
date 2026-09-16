@@ -8,6 +8,8 @@ interface LeadFilters {
   status?: LeadStatus;
   temperature?: Temperature;
   channel?: Channel;
+  /** "off_plan" or "resale" — leads that engaged with that market (possibly both). */
+  market?: string;
 }
 
 // The pipeline a lead moves through. Mirrors LEAD_STAGE_ORDER in
@@ -36,6 +38,7 @@ export class LeadsService {
     if (filters.status) where.salesStatus = filters.status;
     if (filters.temperature) where.temperature = filters.temperature;
     if (filters.channel) where.channel = filters.channel;
+    if (filters.market) where.markets = { has: filters.market };
     if (filters.search) {
       where.OR = [
         { phone: { contains: filters.search, mode: 'insensitive' } },
@@ -111,7 +114,9 @@ export class LeadsService {
       'temperature',
       'owner',
       'language',
+      'markets',
       'interestedProjects',
+      'resaleApartments',
       'nextAction',
       'updatedAt',
     ];
@@ -131,7 +136,14 @@ export class LeadsService {
         l.temperature,
         l.owner?.name ?? l.owner?.email ?? '',
         l.language,
+        l.markets.join(' | '),
         l.interestedProjects.join(' | '),
+        (Array.isArray(l.resaleUnits) ? l.resaleUnits : [])
+          .map((u) => {
+            const unit = (u ?? {}) as { title?: string; slug?: string; url?: string };
+            return [unit.title || unit.slug, unit.url].filter(Boolean).join(' ');
+          })
+          .join(' | '),
         l.nextAction,
         l.updatedAt.toISOString(),
       ]

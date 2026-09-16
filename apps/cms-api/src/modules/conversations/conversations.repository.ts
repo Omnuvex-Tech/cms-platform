@@ -26,7 +26,7 @@ const detailInclude = {
     include: { author: { select: { id: true, name: true } } },
   },
   assignedTo: { select: { id: true, name: true, email: true } },
-  lead: { select: { id: true, salesStatus: true, temperature: true } },
+  lead: { select: { id: true, salesStatus: true, temperature: true, markets: true } },
   handoff: { select: { id: true, status: true, priority: true } },
 };
 

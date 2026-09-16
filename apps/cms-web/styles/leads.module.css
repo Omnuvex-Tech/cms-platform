@@ -125,3 +125,9 @@
     color: #9aa0a6;
     margin-top: 3px;
 }
+
+.marketPills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}

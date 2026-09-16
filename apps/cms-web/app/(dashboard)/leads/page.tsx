@@ -8,6 +8,7 @@ import { Search, Download, Users, ExternalLink, Clock } from "lucide-react";
 import { api, downloadFile } from "@/lib/api";
 import {
     leadStatus,
+    leadMarket,
     temperature as tempMeta,
     channelLabel,
     languageLabel,
@@ -32,9 +33,18 @@ interface LeadListItem {
     budget?: string | null;
     salesStatus: string;
     temperature: string;
+    markets: string[];
     updatedAt: string;
     owner?: { id: number; name: string | null; email: string } | null;
     _count?: { conversations: number; contactRequests: number };
+}
+
+interface ResaleUnit {
+    slug: string;
+    title?: string | null;
+    rooms?: number | null;
+    price_usd?: number | null;
+    url?: string | null;
 }
 
 interface TimelineEvent {
@@ -52,6 +62,7 @@ interface LeadDetail extends LeadListItem {
     timeframe?: string | null;
     language: string;
     interestedProjects: string[];
+    resaleUnits: ResaleUnit[];
     botNotes?: string | null;
     nextAction?: string | null;
     timeline: TimelineEvent[];
@@ -72,6 +83,18 @@ interface LeadDetail extends LeadListItem {
 const LEAD_STATUSES = Object.keys(leadStatus);
 const TEMPS = ["hot", "warm", "cold"];
 const CHANNELS = ["webchat", "whatsapp", "telegram", "instagram", "phone"];
+const MARKETS = Object.keys(leadMarket);
+
+function MarketPills({ markets }: { markets?: string[] }) {
+    if (!markets?.length) return <span className={ui.muted}>—</span>;
+    return (
+        <span className={styles.marketPills}>
+            {markets.map((m) => (
+                <StatusPill key={m} meta={leadMarket[m]} dot={false} />
+            ))}
+        </span>
+    );
+}
 
 function LeadsInner() {
     const qc = useQueryClient();
@@ -80,6 +103,7 @@ function LeadsInner() {
     const [status, setStatus] = useState("");
     const [temp, setTemp] = useState("");
     const [channel, setChannel] = useState("");
+    const [market, setMarket] = useState("");
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -92,6 +116,7 @@ function LeadsInner() {
     if (status) query.set("status", status);
     if (temp) query.set("temperature", temp);
     if (channel) query.set("channel", channel);
+    if (market) query.set("market", market);
     const qs = query.toString();
 
     const { data: leads, isLoading } = useQuery({
@@ -168,6 +193,14 @@ function LeadsInner() {
                         </option>
                     ))}
                 </select>
+                <select className={ui.select} value={market} onChange={(e) => setMarket(e.target.value)}>
+                    <option value="">All markets</option>
+                    {MARKETS.map((m) => (
+                        <option key={m} value={m}>
+                            {leadMarket[m]?.label}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className={ui.card}>
@@ -183,6 +216,7 @@ function LeadsInner() {
                                     <th>Customer</th>
                                     <th>Budget</th>
                                     <th>Project</th>
+                                    <th>Market</th>
                                     <th>Sales status</th>
                                     <th>Owner</th>
                                     <th>Updated</th>
@@ -217,6 +251,9 @@ function LeadsInner() {
                                         </td>
                                         <td>{l.budget ?? "—"}</td>
                                         <td>{l.topProject ?? "—"}</td>
+                                        <td>
+                                            <MarketPills markets={l.markets} />
+                                        </td>
                                         <td>
                                             <StatusPill meta={leadStatus[l.salesStatus]} />
                                         </td>
@@ -328,6 +365,10 @@ function LeadsInner() {
                         <div className={ui.section}>
                             <div className={ui.sectionTitle}>Bot-captured preferences</div>
                             <div className={ui.kv}>
+                                <span className={ui.kvKey}>Market</span>
+                                <span className={ui.kvVal}>
+                                    <MarketPills markets={detail.markets} />
+                                </span>
                                 <span className={ui.kvKey}>Purpose</span>
                                 <span className={ui.kvVal}>{detail.purpose ?? "—"}</span>
                                 <span className={ui.kvKey}>Budget</span>
@@ -365,6 +406,30 @@ function LeadsInner() {
                                 <p className={styles.botNotes}>{detail.botNotes}</p>
                             )}
                         </div>
+
+                        {/* Resale apartments the customer picked in the bot */}
+                        {detail.resaleUnits?.length > 0 && (
+                            <div className={ui.section}>
+                                <div className={ui.sectionTitle}>Resale apartments picked</div>
+                                {detail.resaleUnits.map((u) => (
+                                    <a
+                                        key={u.slug}
+                                        href={u.url ?? undefined}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.linkRow}
+                                    >
+                                        <span>
+                                            <span className={styles.linkType}>{u.title || u.slug}</span>
+                                            {u.rooms != null && ` · ${u.rooms} rooms`}
+                                            {u.price_usd != null &&
+                                                ` · $${Math.round(u.price_usd).toLocaleString("en-US")}`}
+                                        </span>
+                                        <ExternalLink size={13} />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Linked records */}
                         {(detail.conversations.length > 0 ||

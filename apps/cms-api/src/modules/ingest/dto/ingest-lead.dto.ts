@@ -46,6 +46,10 @@ export class IngestLeadDto {
 
   @IsOptional() @IsArray() @IsString({ each: true }) interested_projects?: string[];
   @IsOptional() @IsArray() @IsString({ each: true }) interested_unit_ids?: string[];
+  /** Markets the customer engaged with: "off_plan" and/or "resale". */
+  @IsOptional() @IsArray() @IsString({ each: true }) markets?: string[];
+  /** Resale listings the customer picked: { id, slug, title, rooms, price_usd, url }. */
+  @IsOptional() @IsArray() interested_resale_units?: Record<string, unknown>[];
   @IsOptional() @IsString() selected_payment_plan?: string | null;
   @IsOptional() @IsString() llm_notes?: string | null;
 

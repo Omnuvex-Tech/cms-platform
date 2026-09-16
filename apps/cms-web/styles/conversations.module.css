@@ -224,6 +224,11 @@
     padding: 18px;
     overflow-y: auto;
 }
+.marketPills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
 .notesHint {
     font-size: 11.5px;
     color: #9aa0a6;

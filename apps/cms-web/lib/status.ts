@@ -107,6 +107,13 @@ export const projectAudience: Record<string, StatusMeta> = {
     mixed: meta("Mixed", GRAY),
 };
 
+// Which market a lead engaged with on the bot: TREVA's off-plan projects or its
+// resale (ready, owner-listed) apartments. A lead can carry both.
+export const leadMarket: Record<string, StatusMeta> = {
+    off_plan: meta("Off-plan", BLUE),
+    resale: meta("Resale", PURPLE),
+};
+
 export const channelLabel: Record<string, string> = {
     webchat: "Web Chat",
     whatsapp: "WhatsApp",

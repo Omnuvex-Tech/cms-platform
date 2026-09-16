@@ -18,7 +18,7 @@ import {
     FileJson,
 } from "lucide-react";
 import { api, downloadFile } from "@/lib/api";
-import { conversationStatus, channelLabel, languageLabel } from "@/lib/status";
+import { conversationStatus, channelLabel, languageLabel, leadMarket } from "@/lib/status";
 import { relativeTime, initials } from "@/lib/format";
 import { useReps } from "@/lib/hooks/useReps";
 import { StatusPill } from "@/components/ui/StatusPill";
@@ -56,7 +56,12 @@ interface ConvDetail extends ConvListItem {
         createdAt: string;
         author?: { id: number; name: string | null } | null;
     }[];
-    lead?: { id: number; salesStatus: string; temperature: string } | null;
+    lead?: {
+        id: number;
+        salesStatus: string;
+        temperature: string;
+        markets?: string[];
+    } | null;
 }
 
 const STATUSES = Object.keys(conversationStatus);
@@ -316,6 +321,18 @@ function ConversationsInner() {
                             <span className={ui.kvVal}>{detail.customerPhone ?? "—"}</span>
                             <span className={ui.kvKey}>Language</span>
                             <span className={ui.kvVal}>{languageLabel[detail.language]}</span>
+                            <span className={ui.kvKey}>Market</span>
+                            <span className={ui.kvVal}>
+                                {detail.lead?.markets?.length ? (
+                                    <span className={styles.marketPills}>
+                                        {detail.lead.markets.map((m) => (
+                                            <StatusPill key={m} meta={leadMarket[m]} dot={false} />
+                                        ))}
+                                    </span>
+                                ) : (
+                                    "—"
+                                )}
+                            </span>
                             <span className={ui.kvKey}>Stage</span>
                             <span className={ui.kvVal}>{detail.stage ?? "—"}</span>
                             <span className={ui.kvKey}>Budget</span>

@@ -452,6 +452,10 @@ model Lead {
   timeframe          String?
   language           Language    @default(en)
   interestedProjects String[]
+  // Markets the customer engaged with on the bot: "off_plan" and/or "resale". Grow-only.
+  markets            String[]    @default([])
+  // Resale listings the customer picked: [{ id, slug, title, rooms, price_usd, url }].
+  resaleUnits        Json        @default("[]")
   botNotes           String?     @db.Text
   salesStatus        LeadStatus  @default(new)
   temperature        Temperature @default(warm)

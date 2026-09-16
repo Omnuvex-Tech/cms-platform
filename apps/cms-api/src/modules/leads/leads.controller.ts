@@ -22,8 +22,9 @@ export class LeadsController {
     @Query('status') status?: LeadStatus,
     @Query('temperature') temperature?: Temperature,
     @Query('channel') channel?: Channel,
+    @Query('market') market?: string,
   ) {
-    return this.leadsService.list({ search, status, temperature, channel });
+    return this.leadsService.list({ search, status, temperature, channel, market });
   }
 
   // Declared before ':id' so the static path matches first.
@@ -35,8 +36,9 @@ export class LeadsController {
     @Query('status') status?: LeadStatus,
     @Query('temperature') temperature?: Temperature,
     @Query('channel') channel?: Channel,
+    @Query('market') market?: string,
   ) {
-    return this.leadsService.exportCsv({ search, status, temperature, channel });
+    return this.leadsService.exportCsv({ search, status, temperature, channel, market });
   }
 
   @Get(':id')

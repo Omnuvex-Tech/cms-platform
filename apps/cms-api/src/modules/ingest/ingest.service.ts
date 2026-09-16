@@ -16,6 +16,19 @@ import { IngestConversationDto } from './dto/ingest-conversation.dto';
 
 const CHANNELS: Channel[] = ['webchat', 'whatsapp', 'telegram', 'instagram', 'phone'];
 
+// The two markets the bot sells in: TREVA's off-plan projects and its resale listings.
+const LEAD_MARKETS = ['off_plan', 'resale'];
+
+// One picked resale listing as the bot sends it (see the bot's lead_store._resale_picks).
+interface ResaleUnit {
+  id?: string | null;
+  slug: string;
+  title?: string | null;
+  rooms?: number | null;
+  price_usd?: number | null;
+  url?: string | null;
+}
+
 // The pipeline a lead moves through. Used to auto-advance salesStatus from
 // signals the bot/panel already gives us (e.g. a contact request coming in)
 // without ever regressing a stage a human has already progressed past.
@@ -96,16 +109,30 @@ export class IngestService {
       botNotes: this.buildBotNotes(dto),
     };
 
+    const markets = (dto.markets ?? []).filter((m) => LEAD_MARKETS.includes(m));
+    const resaleUnits = this.resaleUnits(dto.interested_resale_units);
+
     const existing = await this.ingestRepository.findLeadByPhone(phone);
 
     if (existing) {
-      const updated = await this.ingestRepository.updateLead(existing.id, shared);
+      // Markets and resale picks only ever grow: a push from a later conversation (or from a lead
+      // record that predates resale) must not wipe what this lead engaged with before.
+      const updated = await this.ingestRepository.updateLead(existing.id, {
+        ...shared,
+        markets: [...new Set([...(existing.markets ?? []), ...markets])],
+        resaleUnits: this.mergeResaleUnits(
+          this.resaleUnits(existing.resaleUnits as unknown),
+          resaleUnits,
+        ) as unknown as Prisma.InputJsonValue,
+      });
       return { id: updated.id, created: false };
     }
 
-    const created = await this.ingestRepository.createLead(
-      shared as Prisma.LeadCreateInput,
-    );
+    const created = await this.ingestRepository.createLead({
+      ...shared,
+      markets,
+      resaleUnits: resaleUnits as unknown as Prisma.InputJsonValue,
+    } as Prisma.LeadCreateInput);
     await this.ingestRepository.addTimelineEvent(
       created.id,
       'created',
@@ -510,6 +537,39 @@ export class IngestService {
     if (dto.interested_unit_ids?.length) {
       parts.push(`Selected units: ${dto.interested_unit_ids.join(', ')}`);
     }
+    const resale = this.resaleUnits(dto.interested_resale_units);
+    if (resale.length) {
+      parts.push(
+        `Selected resale apartments: ${resale
+          .map((u) => [u.title || u.slug, u.url].filter(Boolean).join(' — '))
+          .join('; ')}`,
+      );
+    }
     return parts.length ? parts.join('\n') : null;
+  }
+
+  /** Picked resale listings from a push (or the stored JSON), keeping only well-formed entries. */
+  private resaleUnits(raw: unknown): ResaleUnit[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(
+        (u): u is ResaleUnit =>
+          !!u && typeof u === 'object' && typeof (u as ResaleUnit).slug === 'string' && !!(u as ResaleUnit).slug,
+      )
+      .map((u) => ({
+        id: u.id ?? null,
+        slug: u.slug,
+        title: u.title ?? null,
+        rooms: typeof u.rooms === 'number' ? u.rooms : null,
+        price_usd: typeof u.price_usd === 'number' ? u.price_usd : null,
+        url: u.url ?? null,
+      }));
+  }
+
+  /** Existing picks first, then new ones; a re-sent listing refreshes its entry (by slug). */
+  private mergeResaleUnits(existing: ResaleUnit[], incoming: ResaleUnit[]): ResaleUnit[] {
+    const bySlug = new Map(existing.map((u) => [u.slug, u]));
+    for (const u of incoming) bySlug.set(u.slug, { ...bySlug.get(u.slug), ...u });
+    return [...bySlug.values()];
   }
 }
