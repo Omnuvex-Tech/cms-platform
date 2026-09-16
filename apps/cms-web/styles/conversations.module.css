@@ -82,6 +82,11 @@
     flex: 1;
     overflow-y: auto;
 }
+/* Positioning context for the admin-only delete control, which has to sit
+   beside the row button rather than inside it (nested buttons are invalid). */
+.inboxRow {
+    position: relative;
+}
 .inboxItem {
     display: flex;
     align-items: center;
@@ -101,6 +106,42 @@
 }
 .inboxItemActive {
     background: rgba(1, 72, 194, 0.07);
+}
+/* Reserve the gutter the delete button sits in, so it never covers the
+   timestamp or the unread badge. */
+.inboxItemDeletable {
+    padding-right: 40px;
+}
+/* Hidden until the row is hovered or the control itself is focused — an
+   irreversible action should not sit under the cursor on every row. Kept
+   focusable for keyboard users regardless. */
+.inboxDelete {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #b8bec6;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.inboxRow:hover .inboxDelete,
+.inboxDelete:focus-visible {
+    opacity: 1;
+}
+.inboxDelete:hover:not(:disabled) {
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.08);
+}
+.inboxDelete:disabled {
+    cursor: default;
 }
 /* Text column beside the channel badge. min-width:0 so long handles ellipsize
    instead of stretching the row. */

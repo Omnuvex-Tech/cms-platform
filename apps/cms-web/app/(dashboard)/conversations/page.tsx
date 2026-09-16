@@ -17,7 +17,8 @@ import {
     FileText,
     FileJson,
 } from "lucide-react";
-import { api, downloadFile } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth";
 import { conversationStatus, channelLabel, languageLabel, leadMarket } from "@/lib/status";
 import { relativeTime, initials } from "@/lib/format";
 import { useReps } from "@/lib/hooks/useReps";
@@ -84,6 +85,7 @@ function ConversationsInner() {
 
     const [selectedId, setSelectedId] = useState<number | null>(openId);
     const { data: reps } = useReps();
+    const user = useCurrentUser();
 
     useEffect(() => {
         if (openId !== null) setSelectedId(openId);
@@ -151,6 +153,37 @@ function ConversationsInner() {
             api.delete(`/conversations/${selectedId}/notes/${noteId}`),
         onSuccess: refresh,
     });
+    // Admin-only (the API enforces it too). Clearing the selection first means
+    // the detail poll below stops before it can 404 on the row we just removed;
+    // the "select the newest thread" effect then picks the next one.
+    const delConversation = useMutation({
+        mutationFn: (id: number) => api.delete(`/conversations/${id}`),
+        onSuccess: (_result, deletedId) => {
+            // Only the open thread needs deselecting — deleting some other row
+            // from the inbox must not yank the operator out of what they are
+            // reading. Dropping the cached detail stops the 2s poll below from
+            // 404ing on the row we just removed.
+            if (deletedId === selectedId) setSelectedId(null);
+            qc.removeQueries({ queryKey: ["conversation", deletedId] });
+            refresh();
+        },
+        onError: (err) =>
+            alert(err instanceof ApiError ? err.message : "Delete failed"),
+    });
+
+    const isAdmin = user?.role === "admin";
+
+    const handleDelete = (c: { id: number; threadId: string; customerHandle?: string | null; customerPhone?: string | null }) => {
+        const who = c.customerHandle ?? c.customerPhone ?? c.threadId;
+        if (
+            !confirm(
+                `Delete the conversation with ${who}? Every message and internal note ` +
+                    `on this thread is removed for everyone. This cannot be undone.`
+            )
+        )
+            return;
+        delConversation.mutate(c.id);
+    };
 
     const isClosedThread =
         detail && (detail.status === "closed" || detail.status === "spam");
@@ -218,32 +251,47 @@ function ConversationsInner() {
                         <EmptyState icon={<MessagesSquare size={24} />} title="No conversations" />
                     ) : (
                         list.map((c) => (
-                            <button
-                                key={c.id}
-                                className={`${styles.inboxItem} ${selectedId === c.id ? styles.inboxItemActive : ""}`}
-                                onClick={() => setSelectedId(c.id)}
-                            >
-                                <ChannelBadge channel={c.channel} />
-                                <div className={styles.inboxItemMain}>
-                                    <div className={styles.inboxItemTop}>
-                                        <span className={styles.inboxName}>
-                                            {c.customerHandle ?? c.customerPhone ?? c.threadId}
-                                        </span>
-                                        <span className={styles.inboxTime}>
-                                            {relativeTime(c.lastMessageAt)}
-                                        </span>
+                            // The delete control is a SIBLING of the row button, not a
+                            // child: a button inside a button is invalid markup, and
+                            // browsers drop the inner one's clicks.
+                            <div key={c.id} className={styles.inboxRow}>
+                                <button
+                                    className={`${styles.inboxItem} ${selectedId === c.id ? styles.inboxItemActive : ""} ${isAdmin ? styles.inboxItemDeletable : ""}`}
+                                    onClick={() => setSelectedId(c.id)}
+                                >
+                                    <ChannelBadge channel={c.channel} />
+                                    <div className={styles.inboxItemMain}>
+                                        <div className={styles.inboxItemTop}>
+                                            <span className={styles.inboxName}>
+                                                {c.customerHandle ?? c.customerPhone ?? c.threadId}
+                                            </span>
+                                            <span className={styles.inboxTime}>
+                                                {relativeTime(c.lastMessageAt)}
+                                            </span>
+                                        </div>
+                                        <div className={styles.inboxItemBottom}>
+                                            <span className={styles.inboxChannel}>
+                                                {channelLabel[c.channel]}
+                                            </span>
+                                            <StatusPill meta={conversationStatus[c.status]} />
+                                            {c.unreadCount > 0 && (
+                                                <span className={styles.unread}>{c.unreadCount}</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={styles.inboxItemBottom}>
-                                        <span className={styles.inboxChannel}>
-                                            {channelLabel[c.channel]}
-                                        </span>
-                                        <StatusPill meta={conversationStatus[c.status]} />
-                                        {c.unreadCount > 0 && (
-                                            <span className={styles.unread}>{c.unreadCount}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </button>
+                                </button>
+                                {isAdmin && (
+                                    <button
+                                        className={styles.inboxDelete}
+                                        disabled={delConversation.isPending}
+                                        onClick={() => handleDelete(c)}
+                                        title="Delete this conversation"
+                                        aria-label={`Delete conversation with ${c.customerHandle ?? c.customerPhone ?? c.threadId}`}
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
+                            </div>
                         ))
                     )}
                 </div>
@@ -284,6 +332,17 @@ function ConversationsInner() {
                                     {detail.botActive ? "Pause bot" : "Resume bot"}
                                 </button>
                                 <ThreadDownloadMenu id={detail.id} />
+                                {isAdmin && (
+                                    <button
+                                        className={`${ui.btn} ${ui.btnDanger} ${ui.btnSm}`}
+                                        disabled={delConversation.isPending}
+                                        onClick={() => handleDelete(detail)}
+                                        title="Delete this conversation (admins only)"
+                                    >
+                                        <Trash2 size={14} />
+                                        {delConversation.isPending ? "Deleting…" : "Delete"}
+                                    </button>
+                                )}
                             </div>
                         </div>
 

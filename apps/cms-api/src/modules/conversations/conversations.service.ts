@@ -135,6 +135,31 @@ export class ConversationsService {
     return this.get(id);
   }
 
+  /**
+   * Hard-delete a thread, admin-only (enforced on the controller). This exists
+   * for the test and junk threads that otherwise sit in the shared inbox looking
+   * like real customers; there is no soft-delete to fall back on, so the UI
+   * confirms first.
+   *
+   * Nothing is pushed to the bot: the panel record is the CRM's copy of the
+   * thread, and pausing or resetting the live conversation is a separate,
+   * deliberate action (see `setBot`). If the customer writes again, ingest
+   * simply recreates the thread.
+   */
+  async remove(id: number, userId?: number) {
+    await this.get(id);
+    // Close the ops group's escalation alert BEFORE the row goes: the alert is
+    // deleted by the handoff cascade, after which nothing can edit that Telegram
+    // message again and it would keep a live "Accept" button pointing at a
+    // conversation that no longer exists.
+    const alerted =
+      await this.conversationsRepository.findUnresolvedAlertHandoffId(id);
+    if (alerted) await this.telegramAlerts.markResolved(alerted.id, { userId });
+
+    await this.conversationsRepository.delete(id);
+    return { success: true };
+  }
+
   async setBot(id: number, dto: SetBotDto, userId?: number) {
     const conversation = await this.get(id);
     const data: Prisma.ConversationUpdateInput = { botActive: dto.active };

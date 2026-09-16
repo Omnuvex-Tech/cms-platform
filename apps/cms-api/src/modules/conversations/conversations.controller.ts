@@ -27,6 +27,7 @@ import {
   CurrentUser,
   AuthUser,
 } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -121,6 +122,23 @@ export class ConversationsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.conversationsService.addNote(id, dto, user?.sub);
+  }
+
+  /**
+   * Admin-only: a hard delete with no undo, and reps share this inbox — it is
+   * here so an admin can clear out test threads that confuse them, not so the
+   * whole team can prune the history it works from.
+   *
+   * Declared before ':id/notes/:noteId' only for readability; the paths don't
+   * overlap.
+   */
+  @Roles('admin')
+  @Delete(':id')
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.conversationsService.remove(id, user?.sub);
   }
 
   @Delete(':id/notes/:noteId')

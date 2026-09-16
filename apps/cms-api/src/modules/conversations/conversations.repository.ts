@@ -112,6 +112,30 @@ export class ConversationsRepository {
     });
   }
 
+  /**
+   * Hard-delete a thread. Messages, notes and the handoff (and, through it, the
+   * Telegram alert) go with it via the schema's cascades; a linked contact
+   * request keeps its row and only loses `conversationId` (optional relation).
+   */
+  delete(id: number) {
+    return this.prisma.conversation.delete({ where: { id } });
+  }
+
+  /**
+   * The handoff whose Telegram alert is still open, if any — read before a
+   * delete. The alert row disappears with the conversation, and after that
+   * nothing can ever edit that Telegram message again: it would sit in the ops
+   * group with a live "Accept" button pointing at a thread that no longer
+   * exists. Unlike `findOpenHandoffId` this keys off the alert rather than the
+   * handoff status, because the message is what has to be closed out.
+   */
+  findUnresolvedAlertHandoffId(conversationId: number) {
+    return this.prisma.handoff.findFirst({
+      where: { conversationId, telegramAlert: { resolvedAt: null } },
+      select: { id: true },
+    });
+  }
+
   addNote(data: Prisma.InternalNoteUncheckedCreateInput) {
     return this.prisma.internalNote.create({
       data,
