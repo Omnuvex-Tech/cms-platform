@@ -21,9 +21,19 @@ export class PulseRepository {
     });
   }
 
-  findPublishedArticles(q?: string, categorySlug?: string) {
+  findPublishedArticles(summary = false) {
     // Always fetch all published articles — filtering done in service layer
-    // because Prisma doesn't support mode:insensitive on JSON path filters
+    // because Prisma doesn't support mode:insensitive on JSON path filters.
+    // `summary` is for list pages (cards): the article body (`blocks`) and the
+    // nested `selectedArticles` are most of the payload and no card uses them.
+    if (summary) {
+      return this.prisma.pulseArticle.findMany({
+        where: { published: true },
+        omit: { blocks: true },
+        include: { author: true, keywords: true },
+        orderBy: { date: 'desc' },
+      });
+    }
     return this.prisma.pulseArticle.findMany({
       where: { published: true },
       include: {

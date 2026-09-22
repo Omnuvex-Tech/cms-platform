@@ -81,8 +81,12 @@ export class PulseService {
     return this.repo.findAllArticles();
   }
 
-  async findPublishedArticles(q?: string, categorySlug?: string) {
-    let articles = await this.repo.findPublishedArticles();
+  async findPublishedArticles(
+    q?: string,
+    categorySlug?: string,
+    options: { summary?: boolean; limit?: number } = {},
+  ) {
+    let articles: any[] = await this.repo.findPublishedArticles(options.summary);
 
     // Cross-language search: filter by title, excerpt, category in all languages (az, en, ru)
     if (q && q.trim()) {
@@ -115,6 +119,11 @@ export class PulseService {
           String(v || '').toLowerCase().includes(slug)
         );
       });
+    }
+
+    // Applied after the filters so `?q=...&limit=N` means "the first N matches".
+    if (options.limit && options.limit > 0) {
+      articles = articles.slice(0, options.limit);
     }
 
     return articles.map((article: any) => sanitizeArticleEntity(article));

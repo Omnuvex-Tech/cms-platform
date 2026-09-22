@@ -75,8 +75,17 @@ export class PulseController {
   findPublishedArticles(
     @Query('q') q?: string,
     @Query('category') category?: string,
+    @Query('limit') limit?: string,
+    // `fields=summary` drops the article body (`blocks`) and nested
+    // `selectedArticles` — for list pages that only render cards. Without it
+    // the response is unchanged.
+    @Query('fields') fields?: string,
   ) {
-    return this.service.findPublishedArticles(q, category);
+    const parsedLimit = Number.parseInt(limit ?? '', 10);
+    return this.service.findPublishedArticles(q, category, {
+      summary: fields === 'summary',
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+    });
   }
 
   @Get('articles/all')
