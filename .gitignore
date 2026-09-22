@@ -40,3 +40,6 @@ yarn-error.log*
 *.pem
 
 .claude/
+
+# CMS uploaded media (runtime data, not versioned)
+apps/cms-api/public/uploads/
